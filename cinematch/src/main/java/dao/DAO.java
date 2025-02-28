@@ -1,6 +1,8 @@
 package dao;
 
 import java.sql.*;
+import io.github.cdimascio.dotenv.Dotenv;
+
 
 public class DAO {
 	protected Connection conexao;
@@ -10,15 +12,17 @@ public class DAO {
 	}
 
 	public boolean conectar() {
-		String driverName = "org.postgresql.Driver";                    
-		String serverName = "localhost";
-		String mydatabase = "teste";
-		int porta = 5432;
-		String url = "jdbc:postgresql://" + serverName + ":" + porta +"/" + mydatabase;
-		String username = "ti2cc";
-		String password = "ti@cc";
-		boolean status = false;
-
+		Dotenv dotenv = Dotenv.load(); // Carrega as variaveis do .env
+		
+		String driverName = "org.postgresql.Driver";
+        String serverName = dotenv.get("DB_HOST");
+        int porta = Integer.parseInt(dotenv.get("DB_PORT"));
+        String mydatabase = dotenv.get("DB_NAME");
+        String url = "jdbc:postgresql://" + serverName + ":" + porta + "/" + mydatabase;
+        String username = dotenv.get("DB_USER");
+        String password = dotenv.get("DB_PASSWORD");
+        boolean status = false;
+		
 		try {
 			Class.forName(driverName);
 			conexao = DriverManager.getConnection(url, username, password);
