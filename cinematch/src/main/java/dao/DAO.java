@@ -14,6 +14,12 @@ public class DAO {
 	public boolean conectar() {
 		Dotenv dotenv = Dotenv.load(); // Carrega as variaveis do .env
 		
+		System.out.println("DB_HOST: " + dotenv.get("DB_HOST"));
+		System.out.println("DB_NAME: " + dotenv.get("DB_NAME"));
+		System.out.println("DB_PORT: " + dotenv.get("DB_PORT"));
+		System.out.println("DB_USER: " + dotenv.get("DB_USER"));
+		System.out.println("DB_PASSWORD: " + dotenv.get("DB_PASSWORD"));
+		
 		String driverName = "org.postgresql.Driver";
         String serverName = dotenv.get("DB_HOST");
         String mydatabase = dotenv.get("DB_NAME");
