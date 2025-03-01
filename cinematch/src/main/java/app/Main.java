@@ -2,7 +2,7 @@ package app;
 
 import static spark.Spark.*;
 
-public class Application {
+public class Main {
 
 //    private static UserService userService = new UserService();
 
