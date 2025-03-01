@@ -17,26 +17,34 @@ public class UserDAO extends DAO {
 	public void finalize() {
 		close();
 	}
-	
+
+
 	public boolean insert(User user) {
-	    boolean status = false;
-	    
-	    try {  
-	        Statement st = conexao.createStatement();
-	        String sql = "INSERT INTO usuario (id, first_name, last_name, username, password, gender) "
-	                   + "VALUES (" + user.getId() + ", '" + user.getFirstName() + "', '" + user.getLastName() + "', '"
-	                   + user.getEmail() + "', '" + user.getPassword() + "', '" + user.getGender() + "');";
-	        System.out.println(sql);
-	        st.executeUpdate(sql);
-	        st.close();
-	        status = true;
-	    } catch (SQLException u) {  
-	        throw new RuntimeException(u);
-	    }
-	    return status;
+		boolean status = false;
+		int generatedId = -1;
+		try {
+
+			String sql = "INSERT INTO \"user\" (id, first_name, last_name, email, password, gender) VALUES (?, ?, ?, ?, ?, ?) RETURNING id;";
+			PreparedStatement st = conexao.prepareStatement(sql);
+			st.setInt(1, user.getId());
+			st.setString(2, user.getFirstName());
+			st.setString(3, user.getLastName());
+			st.setString(4, user.getEmail());
+			st.setString(5, user.getPassword());
+			st.setString(6, String.valueOf(user.getGender()));
+
+			// Usando o SERIAL PK para o proprio banco lidar com aumentar os ids
+			ResultSet rs = st.executeQuery();
+			if (rs.next()) {
+				user.setId(rs.getInt(1)); // Set the generated ID to the user object
+				status = true;
+			}
+		} catch (SQLException u) {
+			throw new RuntimeException(u);
+		}
+		return status;
 	}
-	
-	
+
 	public User getById(int id) {
         User user = null;
         String sql = "SELECT * FROM usuario WHERE id = ?";
