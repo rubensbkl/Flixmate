@@ -4,75 +4,99 @@ import static spark.Spark.*;
 import com.google.gson.Gson;
 import dao.UserDAO;
 import model.User;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Application {
 
-//    private static UserService userService = new UserService();
-
     public static void main(String[] args) {
-    	
+
         port(6789);
 
         staticFiles.location("/public");
         staticFiles.externalLocation("webjars");
+        
+        // Configurações CORS para permitir requisições do frontend React
+        options("/*", (request, response) -> {
+            String accessControlRequestHeaders = request.headers("Access-Control-Request-Headers");
+            if (accessControlRequestHeaders != null) {
+                response.header("Access-Control-Allow-Headers", accessControlRequestHeaders);
+            }
+
+            String accessControlRequestMethod = request.headers("Access-Control-Request-Method");
+            if (accessControlRequestMethod != null) {
+                response.header("Access-Control-Allow-Methods", accessControlRequestMethod);
+            }
+
+            return "OK";
+        });
+
+        before((request, response) -> {
+            response.header("Access-Control-Allow-Origin", "*");
+            response.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            response.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Content-Length, Accept, Origin");
+            response.type("application/json");
+        });
+
 
         UserDAO userDAO = new UserDAO();
         Gson gson = new Gson();
 
-        // Página inicial (somente para usuários logados)
-        get("/", (req, res) -> {
-            res.redirect("/index.html");
-            return  null;
-        });
-      
-     // Redirecionar para login se não autenticado
-        before((req, res) -> {
-            if (!req.pathInfo().equals("/login") && !req.pathInfo().equals("/register")) {
-                if (req.session().attribute("user") == null) {
-                    res.redirect("/login");
-                }
-            }
-        });
-
-
-        get("/webjars/*", (req, res) -> {
-            // Pega o caminho do WebJar
-            String path = "/META-INF/resources/webjars/" + req.splat()[0];
-            return Application.class.getResourceAsStream(path);
+        // Rota API para dados de filmes
+        get("/api/movies/trending", (req, res) -> {
+            // Aqui você chamaria sua API de filmes (TMDB, IMDB, etc)
+            // Isso é apenas um exemplo simulado
+            Map<String, Object> movie1 = Map.of(
+                    "id", 1,
+                    "title", "Inception",
+                    "poster", "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
+                    "rating", 8.8
+            );
+            Map<String, Object> movie2 = Map.of(
+                    "id", 2,
+                    "title", "The Matrix",
+                    "poster", "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
+                    "rating", 8.7
+            );
+            return gson.toJson(List.of(movie1, movie2));
         });
 
-        // Rota de login
-        post("/login", (req, res) -> {
+        // Rota API para likes de filmes
+        post("/api/movies/like", (req, res) -> {
+            // Exemplo de como processar um like
+            Map<String, Object> requestBody = gson.fromJson(req.body(), Map.class);
+            int movieId = ((Double) requestBody.get("movieId")).intValue();
+            String userEmail = req.session().attribute("user");
+
+            // Aqui você salvaria o like no banco de dados
+
+            return gson.toJson(Map.of("status", "success"));
+        });
+
+        // Rota API para recomendações de filmes
+        get("/api/movies/recommendations", (req, res) -> {
+            String userEmail = req.session().attribute("user");
+            // Aqui você chamaria sua API de IA para gerar recomendações
+            // Baseadas no perfil do usuário
+
+            return gson.toJson(Map.of("status", "success", "movies", new ArrayList<>()));
+        });
+
+        // Rotas de autenticação
+        post("/api/login", (req, res) -> {
             User user = gson.fromJson(req.body(), User.class);
             if (userDAO.auth(user.getEmail(), user.getPassword())) {
                 req.session().attribute("user", user.getEmail());
-                System.out.println("User email set in session: " + req.session().attribute("user"));
                 return gson.toJson(Map.of("status", "success"));
             } else {
                 return gson.toJson(Map.of("status", "error", "message", "Credenciais inválidas"));
             }
         });
 
-        // Route to check session attribute
-        get("/check-session", (req, res) -> {
-            String userEmail = req.session().attribute("user");
-            if (userEmail != null) {
-                return "User email in session: " + userEmail;
-            } else {
-                return "No user email in session";
-            }
-        });
-
-        get("/login", (req, res) -> {
-            res.redirect("/login.html");
-            return null;
-        });
-
-        // Rota de registro
-        post("/register", (req, res) -> {
-            System.out.println(req.body());
+        post("/api/register", (req, res) -> {
             User user = gson.fromJson(req.body(), User.class);
             if (userDAO.insert(user)) {
                 return gson.toJson(Map.of("status", "success"));
@@ -81,17 +105,15 @@ public class Application {
             }
         });
 
-        get("/register", (req, res) -> {
-            res.redirect("/register.html");
-            return null;
-        });
-
-        // Logout
-        get("/logout", (req, res) -> {
+        get("/api/logout", (req, res) -> {
             req.session().removeAttribute("user");
-            res.redirect("/login");
-            return null;
+            return gson.toJson(Map.of("status", "success"));
         });
 
+        // Rota para servir a aplicação React para qualquer outra rota
+        get("/*", (req, res) -> {
+            res.redirect("/index.html");
+            return null;
+        });
     }
 }
