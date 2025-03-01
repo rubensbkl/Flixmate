@@ -16,7 +16,8 @@ public class Application {
         port(6789);
 
         staticFiles.location("/public");
-        
+        staticFiles.externalLocation("webjars");
+
         UserDAO userDAO = new UserDAO();
         Gson gson = new Gson();
 
@@ -27,22 +28,40 @@ public class Application {
         });
       
      // Redirecionar para login se não autenticado
-//        before((req, res) -> {
-//            if (!req.pathInfo().equals("/login") && !req.pathInfo().equals("/register")) {
-//                if (req.session().attribute("user") == null) {
-//                    res.redirect("/login");
-//                }
-//            }
-//        });
+        before((req, res) -> {
+            if (!req.pathInfo().equals("/login") && !req.pathInfo().equals("/register")) {
+                if (req.session().attribute("user") == null) {
+                    res.redirect("/login");
+                }
+            }
+        });
+
+
+        get("/webjars/*", (req, res) -> {
+            // Pega o caminho do WebJar
+            String path = "/META-INF/resources/webjars/" + req.splat()[0];
+            return Application.class.getResourceAsStream(path);
+        });
 
         // Rota de login
         post("/login", (req, res) -> {
             User user = gson.fromJson(req.body(), User.class);
             if (userDAO.auth(user.getEmail(), user.getPassword())) {
                 req.session().attribute("user", user.getEmail());
+                System.out.println("User email set in session: " + req.session().attribute("user"));
                 return gson.toJson(Map.of("status", "success"));
             } else {
                 return gson.toJson(Map.of("status", "error", "message", "Credenciais inválidas"));
+            }
+        });
+
+        // Route to check session attribute
+        get("/check-session", (req, res) -> {
+            String userEmail = req.session().attribute("user");
+            if (userEmail != null) {
+                return "User email in session: " + userEmail;
+            } else {
+                return "No user email in session";
             }
         });
 

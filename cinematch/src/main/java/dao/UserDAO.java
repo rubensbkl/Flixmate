@@ -123,19 +123,21 @@ public class UserDAO extends DAO {
 		return status;
 	}
     
-    public boolean auth(String login, String senha) {
+    public boolean auth(String email, String password) {
 		boolean resp = false;
-		
-		try {
-			Statement st = conexao.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
-			String sql = "SELECT * FROM user WHERE login LIKE '" + login + "' AND senha LIKE '" + senha  + "'";
-			System.out.println(sql);
-			ResultSet rs = st.executeQuery(sql);
+
+		String sql = "SELECT * FROM  public.\"user\" WHERE email = ? AND password = ?";
+		try (PreparedStatement pst = conexao.prepareStatement(sql)) {
+			pst.setString(1, email);
+			pst.setString(2, password);
+			System.out.println(pst);
+			ResultSet rs = pst.executeQuery();
 			resp = rs.next();
-	        st.close();
+			pst.close();
 		} catch (Exception e) {
 			System.err.println(e.getMessage());
 		}
+
 		return resp;
 	}
 }
