@@ -16,8 +16,8 @@ public class DAO {
 		
 		String driverName = "org.postgresql.Driver";
         String serverName = dotenv.get("DB_HOST");
-        int porta = Integer.parseInt(dotenv.get("DB_PORT"));
         String mydatabase = dotenv.get("DB_NAME");
+        int porta = Integer.parseInt(dotenv.get("DB_PORT"));
         String url = "jdbc:postgresql://" + serverName + ":" + porta + "/" + mydatabase;
         String username = dotenv.get("DB_USER");
         String password = dotenv.get("DB_PASSWORD");
