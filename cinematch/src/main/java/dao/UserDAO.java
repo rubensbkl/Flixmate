@@ -23,17 +23,14 @@ public class UserDAO extends DAO {
 		boolean status = false;
 		int generatedId = -1;
 		try {
-
-			String sql = "INSERT INTO \"user\" (id, first_name, last_name, email, password, gender) VALUES (?, ?, ?, ?, ?, ?) RETURNING id;";
+			String sql = "INSERT INTO \"user\" (first_name, last_name, email, password, gender) VALUES (?, ?, ?, ?, ?) RETURNING id;";
 			PreparedStatement st = conexao.prepareStatement(sql);
-			st.setInt(1, user.getId());
-			st.setString(2, user.getFirstName());
-			st.setString(3, user.getLastName());
-			st.setString(4, user.getEmail());
-			st.setString(5, user.getPassword());
-			st.setString(6, String.valueOf(user.getGender()));
+			st.setString(1, user.getFirstName());
+			st.setString(2, user.getLastName());
+			st.setString(3, user.getEmail());
+			st.setString(4, user.getPassword());
+			st.setString(5, String.valueOf(user.getGender()));
 
-			// Usando o SERIAL PK para o proprio banco lidar com aumentar os ids
 			ResultSet rs = st.executeQuery();
 			if (rs.next()) {
 				user.setId(rs.getInt(1)); // Set the generated ID to the user object
