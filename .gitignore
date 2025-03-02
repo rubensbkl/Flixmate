@@ -15,9 +15,7 @@
 /build
 
 # ReactBuilds
-cinematch/src/main/resources/public/
-resources/public/
-src/main/resources/public/
+cinematch/src/main/resources/public/*
 
 # Other misc IDEs
 .idea/
