@@ -4,8 +4,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './components/Login';
 import Register from './components/Register';
 import Home from './components/Home';
-import MovieDetail from './components/MovieDetail';
-import Recommendations from './components/Recommendations';
 import Navigation from './components/Navigation';
 import './App.css';
 
@@ -58,16 +56,6 @@ function App() {
             <Route path="/" element={
               authenticated ? 
                 <Home /> : 
-                <Navigate to="/login" />
-            } />
-            <Route path="/movie/:id" element={
-              authenticated ? 
-                <MovieDetail /> : 
-                <Navigate to="/login" />
-            } />
-            <Route path="/recommendations" element={
-              authenticated ? 
-                <Recommendations /> : 
                 <Navigate to="/login" />
             } />
           </Routes>
