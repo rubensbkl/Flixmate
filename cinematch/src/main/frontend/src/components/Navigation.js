@@ -4,21 +4,22 @@ import { Link, useNavigate } from "react-router-dom";
 const Navigation = ({ setAuthenticated }) => {
   const navigate = useNavigate();
 
+  const getCSRFToken = () => {
+      return document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("X-CSRF-Token="))
+          ?.split("=")[1];
+  };
+
   const handleLogout = () => {
       fetch("/api/logout", {
           method: "POST",
-          credentials: "include",
-          headers: {
-              "X-CSRF-Token": sessionStorage.getItem("csrf_token"),
-          },
+          credentials: "include", 
       }).then(() => {
           setAuthenticated(false);
-          sessionStorage.removeItem("authenticated");
-          sessionStorage.removeItem("csrf_token");
           navigate("/");
       });
   };
-
   return (
     <nav className="navigation">
       <ul>

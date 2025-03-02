@@ -109,8 +109,10 @@
                     String csrfToken = UUID.randomUUID().toString();
                     req.session().attribute("csrf_token", csrfToken);
 
+                    res.cookie("X-CSRF-Token", csrfToken, 3600, false, true); // Secure CSRF Token
+
                     loginAttempts.put(ip, 0); // Reset on success
-                    return gson.toJson(Map.of("status", "success", "csrf_token", csrfToken));
+                    return gson.toJson(Map.of("status", "success"));
                 } else {
                     return gson.toJson(Map.of("status", "error", "message", "Invalid credentials"));
                 }
@@ -135,17 +137,27 @@
             });
 
             post("/api/logout", (req, res) -> {
-                String csrfToken = req.headers("X-CSRF-Token");
+                // ✅ Read CSRF token from cookie instead of request headers
+                String csrfToken = req.cookie("X-CSRF-Token");
                 String sessionToken = req.session().attribute("csrf_token");
+
+//                // ✅ Debugging: Log tokens to check mismatches
+//                System.out.println("Received CSRF Token from Cookie: " + csrfToken);
+//                System.out.println("Stored CSRF Token in Session: " + sessionToken);
 
                 if (sessionToken == null || !sessionToken.equals(csrfToken)) {
                     res.status(403);
                     return gson.toJson(Map.of("status", "error", "message", "Invalid CSRF Token"));
                 }
 
+                // ✅ Clear session and CSRF token after logout
                 req.session().removeAttribute("user");
-                req.session().removeAttribute("csrf_token"); // ✅ Clear CSRF token on logout
+                req.session().removeAttribute("csrf_token");
                 req.session().invalidate();
+
+                // ✅ Clear CSRF token cookie on logout
+                res.removeCookie("X-CSRF-Token");
+
                 return gson.toJson(Map.of("status", "success"));
             });
 

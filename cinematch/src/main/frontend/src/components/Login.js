@@ -34,7 +34,6 @@ const Login = ({ setAuthenticated }) => {
           const data = await response.json();
           if (data.status === "success") {
               setAuthenticated(true);
-              sessionStorage.setItem("csrf_token", data.csrf_token); // ✅ Store CSRF token
               navigate("/");
           } else {
               setError(data.message || "Login failed!");
