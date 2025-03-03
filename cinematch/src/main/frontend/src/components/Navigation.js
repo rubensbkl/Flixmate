@@ -23,7 +23,7 @@ const Navigation = ({ setAuthenticated }) => {
   return (
     <nav className="navigation">
       <ul>
-        <li><Link to="/">Home</Link></li>
+        <li><Link to="/home">Home</Link></li>
         <li><button onClick={handleLogout}>Sair</button></li>
       </ul>
     </nav>

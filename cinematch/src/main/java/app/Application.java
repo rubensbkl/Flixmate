@@ -17,6 +17,7 @@
 
             staticFiles.location("/public");
             staticFiles.externalLocation("webjars");
+            staticFiles.externalLocation("src/main/frontend/build");
 
             // Configurações CORS para permitir requisições do frontend React
             options("/*", (request, response) -> {

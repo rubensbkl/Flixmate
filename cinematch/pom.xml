@@ -86,8 +86,8 @@
 							<goal>install-node-and-npm</goal>
 						</goals>
 						<configuration>
-							<nodeVersion>v18.12.1</nodeVersion>
-							<npmVersion>8.19.2</npmVersion>
+							<nodeVersion>v20.17.0</nodeVersion>
+							<npmVersion>10.8.2</npmVersion>
 						</configuration>
 					</execution>
 					<execution>
@@ -97,6 +97,15 @@
 						</goals>
 						<configuration>
 							<arguments>install</arguments>
+						</configuration>
+					</execution>
+					<execution>
+						<id>build tailwind css</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>run build:css</arguments>
 						</configuration>
 					</execution>
 					<execution>
