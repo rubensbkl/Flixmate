@@ -19,7 +19,6 @@ services:
       - backend
     networks:
       - app-network
-    command: npm run start
 
   db:
     image: postgres:17
