@@ -9,6 +9,10 @@ import static spark.Spark.post;
 import static spark.Spark.staticFiles;
 
 import java.util.Map;
+import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
 
 import com.google.gson.Gson;
 
@@ -25,30 +29,39 @@ import util.JWTUtil;
             staticFiles.location("/public");
             staticFiles.externalLocation("webjars");
 
+	
+    Set<String> allowedOrigins = new HashSet<>(Arrays.asList(
+        "https://flixmate.com.br",
+        "http://localhost:3000"
+    ));
 
-            // Configurações CORS para permitir requisições do frontend React
-            options("/*", (request, response) -> {
-                String accessControlRequestHeaders = request.headers("Access-Control-Request-Headers");
-                if (accessControlRequestHeaders != null) {
-                    response.header("Access-Control-Allow-Headers", accessControlRequestHeaders);
-                }
+        //  Configuração para CORS
+        options("/*", (request, response) -> {
+            String accessControlRequestHeaders = request.headers("Access-Control-Request-Headers");
+            if (accessControlRequestHeaders != null) {
+                response.header("Access-Control-Allow-Headers", accessControlRequestHeaders);
+            }
 
-                String accessControlRequestMethod = request.headers("Access-Control-Request-Method");
-                if (accessControlRequestMethod != null) {
-                    response.header("Access-Control-Allow-Methods", accessControlRequestMethod);
-                }
+            String accessControlRequestMethod = request.headers("Access-Control-Request-Method");
+            if (accessControlRequestMethod != null) {
+                response.header("Access-Control-Allow-Methods", accessControlRequestMethod);
+            }
 
-                return "OK";
-            });
+            return "OK";
+        });
 
-            // Configuração CORS correta
-            before((req, res) -> {
-                res.header("Access-Control-Allow-Origin", req.headers("Origin"));
-                res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-                res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
-                res.header("Access-Control-Allow-Credentials", "true");
-                res.type("application/json");
-            });
+        //  Middleware global de CORS com origem dinâmica
+        before((req, res) -> {
+            String origin = req.headers("Origin");
+            if (origin != null && allowedOrigins.contains(origin)) {
+                res.header("Access-Control-Allow-Origin", origin);
+            }
+
+            res.header("Access-Control-Allow-Credentials", "true");
+            res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
+            res.type("application/json");
+        });
 
             UserDAO userDAO = new UserDAO();
             Gson gson = new Gson();
@@ -94,7 +107,7 @@ import util.JWTUtil;
                     halt(403, "{\"error\":\"Token inválido\"}");
                 }
             });
-    
+
             // Fallback for React routing (Serve index.html for all unknown routes)
             get("/*", (req, res) -> {
                 return gson.toJson(Map.of("status", "success"));
