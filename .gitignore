@@ -2,7 +2,21 @@
 backend/target/
 **.env
 
-# FRONTEND
+# Certbot
+certbot/conf/
+certbot/www/
+
+# Docker volumes
+postgres_data/
+
+# Builds
+frontend/.next/
+
+# Node
+frontend/node_modules/
+
+# Maven
+backend/.mvn/
 
 # IDE
 .settings
