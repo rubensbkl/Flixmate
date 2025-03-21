@@ -28,8 +28,6 @@ cinematch/src/main/frontend/build
 # production
 /build
 
-# ReactBuilds
-cinematch/src/main/resources/public/*
 
 # Other misc IDEs
 .idea/
