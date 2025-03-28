@@ -9,7 +9,7 @@ export default function Home() {
         <TinderCards />
       </main>
       <footer>
-        <div>Footer bct</div>
+        <div>Footer</div>
       </footer>
     </div>
   );
