@@ -17,7 +17,7 @@ FROM openjdk:11
 WORKDIR /app
 
 # # Copia o arquivo .env para dentro do container
-# COPY .env .env
+COPY .env.production .env
 
 # Copia o JAR gerado pelo estágio anterior
 COPY --from=builder /app/target/cinematch-0.0.1-SNAPSHOT.jar app.jar
