@@ -24,6 +24,6 @@ jobs:
           ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_IP }} << 'EOF'
             cd /root/CineMatch
             git pull origin main
-            docker-compose -f docker-compose.yml --env-file .env.prod down
-            docker-compose -f docker-compose.yml --env-file .env.prod up -d --build
+            docker-compose -f docker-compose.yml down --volumes --remove-orphans
+            docker-compose -f docker-compose.yml up -d --build
           EOF
