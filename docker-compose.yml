@@ -47,12 +47,15 @@ services:
       - app-network
 
   certbot:
-    image: certbot/certbot
-    volumes:
-      - ./certbot/www:/var/www/certbot
-      - ./certbot/conf:/etc/letsencrypt
-    networks:
-      - app-network
+  image: certbot/certbot
+  entrypoint: /bin/sh
+  stdin_open: true
+  tty: true
+  volumes:
+    - ./certbot/www:/var/www/certbot
+    - ./certbot/conf:/etc/letsencrypt
+  networks:
+    - app-network
 
 volumes:
   postgres_data:
