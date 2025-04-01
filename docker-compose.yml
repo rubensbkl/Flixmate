@@ -1,20 +1,19 @@
 version: '3.8'
+
 services:
   backend:
     build: ./backend
-    ports:
-      - "6789:6789"
+    environment:
+      - ENV=production
     depends_on:
       - db
     networks:
       - app-network
-    
+
   frontend:
     build: ./frontend
-    ports:
-      - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=https://flixmate.com.br/api/protected/
+      - NEXT_PUBLIC_API_URL=/api  # ✅ backend é chamado pelo NGINX
     depends_on:
       - backend
     networks:
@@ -27,11 +26,11 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: cinematch
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-  
+    networks:
+      - app-network
+
   nginx:
     image: nginx:stable
     ports:
@@ -55,8 +54,8 @@ services:
     networks:
       - app-network
 
-networks:
-  app-network:
-
 volumes:
   postgres_data:
+
+networks:
+  app-network:

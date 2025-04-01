@@ -1,10 +1,13 @@
 package dao;
 
-import model.User;
-
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+
+import model.User;
 
 
 public class UserDAO extends DAO {
@@ -21,7 +24,6 @@ public class UserDAO extends DAO {
 
 	public boolean insert(User user) {
 		boolean status = false;
-		int generatedId = -1;
 		try {
 			String sql = "INSERT INTO \"user\" (first_name, last_name, email, password, gender) VALUES (?, ?, ?, ?, ?) RETURNING id;";
 			PreparedStatement st = conexao.prepareStatement(sql);
