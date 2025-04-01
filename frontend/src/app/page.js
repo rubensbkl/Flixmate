@@ -1,24 +1,12 @@
-"use client";
-
 import TinderCards from "@/components/TinderCards";
-import { useEffect, useState } from "react";
 
-export default function Home() {
-  const [apiStatus, setApiStatus] = useState(null);
-
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/ping`)
-      .then((res) => res.json())
-      .then((data) => setApiStatus(data.message))
-      .catch(() => setApiStatus("❌ Falha ao conectar com a API"));
-  }, []);
-
+export default function Home({ apiStatus }) {
   return (
     <div>
       <main>
         <TinderCards />
         <div style={{ marginTop: "2rem", fontWeight: "bold" }}>
-          API: {apiStatus || "Verificando..."}
+          API: {apiStatus || "❌ Falha ao conectar com a API"}
         </div>
       </main>
       <footer>
@@ -26,4 +14,23 @@ export default function Home() {
       </footer>
     </div>
   );
+}
+
+// SSR: Executa no servidor (dentro do container, com acesso à rede interna)
+export async function getServerSideProps() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ping`);
+    const data = await res.json();
+    return {
+      props: {
+        apiStatus: data.message || "OK",
+      },
+    };
+  } catch (error) {
+    return {
+      props: {
+        apiStatus: "❌ Falha ao conectar com a API",
+      },
+    };
+  }
 }
