@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    command: npm run dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Impede conflito com node_modules da máquina local
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:6789/api
+    depends_on:
+      - backend
+    networks:
+      - dev-network
+
+  backend:
+    image: maven:3.8.8-eclipse-temurin-17
+    working_dir: /app
+    command: mvn compile exec:java -Dexec.mainClass=app.Application
+    ports:
+      - "6789:6789"
+    volumes:
+      - ./backend:/app
+    environment:
+      - ENV=dev
+    depends_on:
+      - db
+    networks:
+      - dev-network
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: cinematch
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dev-network
+
+volumes:
+  postgres_data:
+
+networks:
+  dev-network:
