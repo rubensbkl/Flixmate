@@ -2,8 +2,13 @@
 FROM node:20-alpine AS builder
 
 # Recebe o valor da API no build (ex: /api)
+# O valor padrão é o mesmo que o da API interna
 ARG NEXT_PUBLIC_API_URL  
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+# Recebe o valor da API interna no build (ex: http://localhost:8080)
+ARG INTERNAL_API_URL
+ENV INTERNAL_API_URL=$INTERNAL_API_URL
 
 WORKDIR /app
 COPY package*.json ./
