@@ -25,5 +25,17 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 
+# Copia os arquivos de configuração necessários para o Tailwind
+COPY --from=builder /app/postcss.config.mjs ./
+COPY --from=builder /app/next.config.mjs ./
+# Copia os estilos do projeto
+COPY --from=builder /app/src/styles ./src/styles
+
+# Adicione permissões adequadas para segurança
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+RUN chown -R nextjs:nodejs /app/.next
+USER nextjs
+
 EXPOSE 3000
 CMD ["npm", "run", "start"]

@@ -2,16 +2,14 @@ version: "3.8"
 
 services:
   frontend:
-    build:
-      context: ./frontend
-      args:
-        NEXT_PUBLIC_API_URL: http://backend:6789/api
+    image: node:20-alpine
+    working_dir: /app
     command: npm run dev
     ports:
       - "3000:3000"
     volumes:
       - ./frontend:/app
-      - /app/node_modules  # Impede conflito com node_modules da máquina local
+      - /app/node_modules
     environment:
       - NEXT_PUBLIC_API_URL=http://backend:6789/api
       - NODE_ENV=development
