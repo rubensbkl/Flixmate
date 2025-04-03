@@ -20,7 +20,6 @@ import io.github.cdimascio.dotenv.Dotenv;
 import model.User;
 import util.JWTUtil;
 
-
 public class Application {
 
   public static void main(String[] args) {
@@ -38,7 +37,11 @@ public class Application {
     staticFiles.location("/public");
     staticFiles.externalLocation("webjars");
 
-    // CORS apenas em ambiente de desenvolvimento
+
+    System.out.println("Iniciando aplicação no ambiente: " + env);
+    System.out.println("Porta: " + dotenv.get("PORT", "6789"));
+
+    // CORS - Cross-Origin Resource Sharing 
     if (env.equals("dev")) {
       Set<String> allowedOrigins =
           new HashSet<>(Arrays.asList("http://localhost:3000"));
@@ -68,8 +71,25 @@ public class Application {
                    "Content-Type, Authorization, X-Requested-With, Accept");
         res.type("application/json");
       });
-    }
 
+    } else if (env.equals("production")) {
+      Set<String> allowedOrigins =
+          new HashSet<>(Arrays.asList("https://flixmate.com.br"));
+
+      before((req, res) -> {
+        String origin = req.headers("Origin");
+        if (origin != null && allowedOrigins.contains(origin)) {
+          res.header("Access-Control-Allow-Origin", origin);
+        }
+
+        res.header("Access-Control-Allow-Credentials", "true");
+        res.header("Access-Control-Allow-Methods",
+                   "GET, POST, PUT, DELETE, OPTIONS");
+        res.header("Access-Control-Allow-Headers",
+                   "Content-Type, Authorization, X-Requested-With, Accept");
+        res.type("application/json");
+      });
+    }
     UserDAO userDAO = new UserDAO();
     Gson gson = new Gson();
 
@@ -121,7 +141,5 @@ public class Application {
       return gson.toJson(Map.of("status", "ok", "message", "pong"));
     });
 
-    // Fallback
-    get("/*", (req, res) -> gson.toJson(Map.of("status", "success")));
   }
 }

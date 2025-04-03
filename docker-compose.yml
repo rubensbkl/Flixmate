@@ -14,11 +14,10 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: /api  # ou o valor correto pro nginx
-        INTERNAL_API_URL: http://backend:6789/api
+        NEXT_PUBLIC_API_URL: https://flixmate.com.br/api  # caminho real da API
     environment:
-      - NEXT_PUBLIC_API_URL=/api  # ✅ backend é chamado pelo NGINX
-      - INTERNAL_API_URL=http://backend:6789/api
+      - NEXT_PUBLIC_API_URL=https://flixmate.com.br/api  # usado em tempo de execução (SSR, etc)
+      - NODE_ENV=production
     depends_on:
       - backend
     networks:
