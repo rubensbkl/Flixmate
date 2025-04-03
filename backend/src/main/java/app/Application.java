@@ -90,6 +90,8 @@ public class Application {
         res.type("application/json");
       });
     }
+    
+    
     UserDAO userDAO = new UserDAO();
     Gson gson = new Gson();
 
