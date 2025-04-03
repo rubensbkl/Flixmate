@@ -15,8 +15,10 @@ services:
       context: ./frontend
       args:
         NEXT_PUBLIC_API_URL: /api  # ou o valor correto pro nginx
+        INTERNAL_API_URL: http://backend:6789/api
     environment:
       - NEXT_PUBLIC_API_URL=/api  # ✅ backend é chamado pelo NGINX
+      - INTERNAL_API_URL=http://backend:6789/api
     depends_on:
       - backend
     networks:
@@ -26,7 +28,7 @@ services:
     image: postgres:17
     container_name: cinematch-db
     environment:
-      POSTGRES_USER: user
+      POSTGRES_USER: POSTGRES_USER
       POSTGRES_PASSWORD: password
       POSTGRES_DB: cinematch
     volumes:

@@ -1,18 +1,21 @@
+export const dynamic = "force-dynamic";
+
 import TinderCards from "@/components/TinderCards";
 
 export default async function Home() {
   let apiStatus = "Verificando...";
 
+  const API_BASE = process.env.INTERNAL_API_URL || "http://localhost:6789/api";
+
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ping`, {
-      cache: "no-store", // evita cache em dev/SSR
+    const res = await fetch(`${API_BASE}/ping`, {
+      cache: "no-store",
     });
     const data = await res.json();
     apiStatus = data.message;
-    console.log("API Status:", apiStatus);
   } catch (err) {
     apiStatus = "❌ Falha ao conectar com a API";
-    console.error("Error fetching API status:", err);
+    console.error("Erro ao buscar ping:", err);
   }
 
   return (
