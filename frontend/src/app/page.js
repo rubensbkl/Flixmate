@@ -9,8 +9,10 @@ export default async function Home() {
     });
     const data = await res.json();
     apiStatus = data.message;
+    console.log("API Status:", apiStatus);
   } catch (err) {
     apiStatus = "❌ Falha ao conectar com a API";
+    console.error("Error fetching API status:", err);
   }
 
   return (
