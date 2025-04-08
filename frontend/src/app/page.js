@@ -1,6 +1,5 @@
 export const dynamic = "force-dynamic";
 
-import TinderCards from "@/components/TinderCards";
 
 export default async function Home() {
   let apiStatus = "Verificando...";
@@ -20,10 +19,6 @@ export default async function Home() {
   return (
     <div>
       <main>
-        <TinderCards />
-        <div style={{ marginTop: "2rem", fontWeight: "bold" }}>
-          API: {apiStatus}
-        </div>
       </main>
       <footer>
         <div>Footer</div>
