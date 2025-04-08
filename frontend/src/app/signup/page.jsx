@@ -6,12 +6,9 @@ import { useState } from "react";
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    username: "",
     email: "",
     password: "",
-    birthDate: "",
-    gender: ""
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -31,7 +28,6 @@ export default function SignUpPage() {
     setError("");
 
     try {
-      // URL da API (usa a env ou fallback para localhost)
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6789/api";
       
       const response = await fetch(`${API_BASE}/register`, {
@@ -40,12 +36,9 @@ export default function SignUpPage() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
+          username: formData.username,
           email: formData.email,
           password: formData.password,
-          gender: formData.gender.charAt(0), // Backend espera apenas o primeiro caractere
-          birthDate: formData.birthDate
         })
       });
 
@@ -90,26 +83,15 @@ export default function SignUpPage() {
           <div>
             <input
               type="text"
-              name="firstName"
+              name="username"
               placeholder="Nome de usuário"
               className="w-full p-3 border border-gray-300 rounded-lg"
-              value={formData.firstName}
+              value={formData.username}
               onChange={handleChange}
               required
             />
           </div>
           
-          <div>
-            <input
-              type="text"
-              name="lastName"
-              placeholder="Sobrenome"
-              className="w-full p-3 border border-gray-300 rounded-lg"
-              value={formData.lastName}
-              onChange={handleChange}
-              required
-            />
-          </div>
           
           <div>
             <input
@@ -135,34 +117,7 @@ export default function SignUpPage() {
               minLength={6}
             />
           </div>
-          
-          <div>
-            <input
-              type="date"
-              name="birthDate"
-              placeholder="Data de nascimento"
-              className="w-full p-3 border border-gray-300 rounded-lg"
-              value={formData.birthDate}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          
-          <div>
-            <select
-              name="gender"
-              className="w-full p-3 border border-gray-300 rounded-lg"
-              value={formData.gender}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Selecione seu gênero</option>
-              <option value="M">Masculino</option>
-              <option value="F">Feminino</option>
-              <option value="O">Outro</option>
-            </select>
-          </div>
-          
+      
           <button
             type="submit"
             className="w-full p-3 bg-black text-white rounded-lg font-medium"
