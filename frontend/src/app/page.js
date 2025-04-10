@@ -1,28 +1,27 @@
 export const dynamic = "force-dynamic";
 
-
 export default async function Home() {
-  let apiStatus = "Verificando...";
+    let apiStatus = "Verificando...";
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6789/api";
-  try {
-    const res = await fetch(`${API_BASE}/ping`, {
-      cache: "no-store",
-    });
-    const data = await res.json();
-    apiStatus = data.message;
-  } catch (err) {
-    apiStatus = "❌ Falha ao conectar com a API";
-    console.error("Erro ao buscar ping:", err);
-  }
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6789/api";
+    try {
+        const res = await fetch(`${API_BASE}/ping`, {
+            cache: "no-store",
+        });
+        const data = await res.json();
+        apiStatus = data.message;
+    } catch (err) {
+        apiStatus = "❌ Falha ao conectar com a API";
+        console.error("Erro ao buscar ping:", err);
+    }
 
-  return (
-    <div>
-      <main>
-      </main>
-      <footer>
-        <div>Footer</div>
-      </footer>
-    </div>
-  );
+    return (
+        <div>
+        <main>
+        </main>
+        <footer>
+            <div>Footer</div>
+        </footer>
+        </div>
+    );
 }
