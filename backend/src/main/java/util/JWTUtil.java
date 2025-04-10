@@ -18,14 +18,14 @@ public class JWTUtil {
     public static String generateToken(String email) {
         return JWT.create()
             .withSubject(email)
-            .withIssuer("cinematch")
+            .withIssuer("flixmate")
             .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION))
             .sign(algorithm);
     }
 
     public static DecodedJWT verifyToken(String token) {
         JWTVerifier verifier = JWT.require(algorithm)
-            .withIssuer("cinematch")
+            .withIssuer("flixmate")
             .build();
         return verifier.verify(token);
     }
