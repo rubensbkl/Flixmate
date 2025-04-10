@@ -27,15 +27,15 @@ backend/.mvn/
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # React Stuff and Compiled Files
-cinematch/target/
-cinematch/.idea/*
+flixmate/target/
+flixmate/.idea/*
 *.iml
 *.ipr
-cinematch/src/main/frontend/node_modules
+flixmate/src/main/frontend/node_modules
 /.pnp
 .pnp.js
-cinematch/src/main/frontend/coverage
-cinematch/src/main/frontend/build
+flixmate/src/main/frontend/coverage
+flixmate/src/main/frontend/build
 
 # testing
 /coverage

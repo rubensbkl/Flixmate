@@ -22,7 +22,7 @@ jobs:
       - name: Deploy to VPS
         run: |
           ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_IP }} << 'EOF'
-            cd /root/CineMatch
+            cd /root/Flixmate
             git pull origin main
             docker-compose -f docker-compose.yml down --volumes --remove-orphans
             docker-compose -f docker-compose.yml up -d --build
