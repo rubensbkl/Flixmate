@@ -113,8 +113,8 @@ export default function Home() {
                 <div className="flex justify-center py-4">
                     <div className="w-10 h-10">
                         <Image
-                            src="/cinematch-logo.png"
-                            alt="CineMatch Logo"
+                            src="/flixmate-logo.svg"
+                            alt="Flixmate Logo"
                             width={40}
                             height={40}
                         />
