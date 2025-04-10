@@ -25,11 +25,11 @@ services:
 
   db:
     image: postgres:17
-    container_name: cinematch-db
+    container_name: flixmate-db
     environment:
       POSTGRES_USER: POSTGRES_USER
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: cinematch
+      POSTGRES_DB: flixmate
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:

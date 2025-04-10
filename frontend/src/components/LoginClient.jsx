@@ -55,12 +55,12 @@ export default function LoginClient() {
     <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-white">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
-          <img src="/cinematch-logo.png" alt="CineMatch" className="h-12" />
+          <img src="/flixmate-logo.svg" alt="Flixmate" className="h-12" />
         </div>
 
         <h1 className="text-2xl font-bold text-center mb-2">Entre em uma conta</h1>
         <p className="text-center text-gray-600 mb-8">
-          Utilize seu email para entrar no CineMatch
+          Utilize seu email para entrar no Flixate
         </p>
 
         {successMessage && (
