@@ -62,15 +62,15 @@ export default function SignUpPage() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
           <img 
-            src="/flixmate-logo.svg" 
-            alt="Flixmate Logo" 
+            src="/cinematch-logo.png" 
+            alt="CineMatch" 
             className="h-12"
           />
         </div>
         
         <h1 className="text-2xl font-bold text-center mb-2">Crie uma conta</h1>
         <p className="text-center text-gray-600 mb-8">
-          Utilize seu email para entrar no Flixmate
+          Utilize seu email para entrar no CineMatch
         </p>
 
         {error && (
