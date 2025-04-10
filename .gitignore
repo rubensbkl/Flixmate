@@ -1,6 +1,7 @@
 # BACKEND
 backend/target/
 **.env
+**.dev
 
 # Certbot
 certbot/conf/
