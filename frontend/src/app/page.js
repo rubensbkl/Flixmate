@@ -26,7 +26,7 @@ const fetchPopularMovies = async (page = 1) => {
 
 const gerarRecomendacao = async () => {
     try {
-        const res = await fetch("http://localhost:8080/api/recomendacao", {
+        const res = await fetch("http://localhost:6789/api/recommendation", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
