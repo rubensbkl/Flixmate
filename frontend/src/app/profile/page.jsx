@@ -1,20 +1,45 @@
-import Navbar from '@/components/Navbar'
+"use client";
 
-export default function HistoricoPage() {
+import Navbar from '@/components/Navbar';
+import ProfileSection from '@/components/ProfileSection';
+import { UserIcon } from '@heroicons/react/24/outline';
+
+export default function ProfilePage() {
+  const recentMovies = [
+    'https://via.placeholder.com/150',
+    'https://via.placeholder.com/150',
+    'https://via.placeholder.com/150',
+  ];
+
+  const favoriteMovies = [
+    'https://via.placeholder.com/150',
+    'https://via.placeholder.com/150',
+    'https://via.placeholder.com/150',
+  ];
+
+  const recommendedMovies = [
+    'https://via.placeholder.com/150',
+    'https://via.placeholder.com/150',
+    'https://via.placeholder.com/150',
+  ];
+
   return (
-    <main className="min-h-screen pb-16 md:pb-4">
-      <h1 className="text-2xl font-bold p-4">Histórico</h1>
-      
-      <section className="px-4">
-        {/* Exemplo de dados de histórico */}
-        <ul className="space-y-4">
-          <li className="border p-4 rounded shadow-sm">Item 1 do histórico</li>
-          <li className="border p-4 rounded shadow-sm">Item 2 do histórico</li>
-          <li className="border p-4 rounded shadow-sm">Item 3 do histórico</li>
-        </ul>
+    <main className="min-h-screen pb-16 md:pb-4 bg-white flex flex-col items-center justify-center">
+      {/* Seção do perfil do usuário */}
+      <section className="flex flex-col items-center space-y-3 p-4 bg-transparent rounded-md mb-8">
+        <div className="h-16 w-16 bg-gray-200 rounded-full flex items-center justify-center">
+          <UserIcon className="h-8 w-8 text-gray-600" />
+        </div>
+        <span className="text-xl font-semibold text-gray-900">Nome Usuário</span>
       </section>
 
+      {/* Seções de filmes utilizando o componente ProfileSection */}
+      <ProfileSection title="Filmes recentes" images={recentMovies} />
+      <ProfileSection title="Filmes Favoritos" images={favoriteMovies} />
+      <ProfileSection title="Recomendados" images={recommendedMovies} />
+
+      {/* Navbar */}
       <Navbar />
     </main>
-  )
+  );
 }
