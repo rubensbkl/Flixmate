@@ -1,24 +1,25 @@
-import Header from '@/components/Header'
-import Navbar from '@/components/Navbar'
+"use client";
 
-export default function HistoricoPage() {
+import Header from '@/components/Header';
+import Navbar from '@/components/Navbar';
+import Searchbar from '@/components/Searchbar'; // Importando o componente Searchbar
+
+export default function SearchPage() {
+  const handleSearch = (query) => {
+    console.log('Buscando por:', query);
+    // Adicione a lógica de busca aqui
+  };
+
   return (
     <main className="min-h-screen pb-16 md:pb-4">
-
       <Header />
 
-      <h1 className="text-2xl font-bold p-4">Histórico</h1>
-      
-      <section className="px-4">
-        {/* Exemplo de dados de histórico */}
-        <ul className="space-y-4">
-          <li className="border p-4 rounded shadow-sm">Item 1 do histórico</li>
-          <li className="border p-4 rounded shadow-sm">Item 2 do histórico</li>
-          <li className="border p-4 rounded shadow-sm">Item 3 do histórico</li>
-        </ul>
+      {/* Barra de pesquisa */}
+      <section className="flex justify-center items-center p-4">
+        <Searchbar onSearch={handleSearch} />
       </section>
 
       <Navbar />
     </main>
-  )
+  );
 }
