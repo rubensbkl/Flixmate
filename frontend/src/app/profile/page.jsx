@@ -6,21 +6,21 @@ import { UserIcon } from '@heroicons/react/24/outline';
 
 export default function ProfilePage() {
   const recentMovies = [
-    'https://via.placeholder.com/150',
-    'https://via.placeholder.com/150',
-    'https://via.placeholder.com/150',
+    'https://image.tmdb.org/t/p/w600_and_h900_bestv2/4VtkIaj76TpQNfhDHXQDdT9uBN5.jpg',
+    'https://image.tmdb.org/t/p/w600_and_h900_bestv2/hSljn1jfCClIbHNdlz6cWQEjncV.jpg',
+    'https://image.tmdb.org/t/p/w600_and_h900_bestv2/knIEw2jWOxrb6ugNPEoaiYI6p77.jpg',
   ];
 
   const favoriteMovies = [
-    'https://via.placeholder.com/150',
-    'https://via.placeholder.com/150',
-    'https://via.placeholder.com/150',
+    'https://image.tmdb.org/t/p/w600_and_h900_bestv2/4VtkIaj76TpQNfhDHXQDdT9uBN5.jpg',
+    'https://image.tmdb.org/t/p/w600_and_h900_bestv2/hSljn1jfCClIbHNdlz6cWQEjncV.jpg',
+    'https://image.tmdb.org/t/p/w600_and_h900_bestv2/knIEw2jWOxrb6ugNPEoaiYI6p77.jpg',
   ];
 
   const recommendedMovies = [
-    'https://via.placeholder.com/150',
-    'https://via.placeholder.com/150',
-    'https://via.placeholder.com/150',
+    'https://image.tmdb.org/t/p/w600_and_h900_bestv2/4VtkIaj76TpQNfhDHXQDdT9uBN5.jpg',
+    'https://image.tmdb.org/t/p/w600_and_h900_bestv2/hSljn1jfCClIbHNdlz6cWQEjncV.jpg',
+    'https://image.tmdb.org/t/p/w600_and_h900_bestv2/knIEw2jWOxrb6ugNPEoaiYI6p77.jpg',
   ];
 
   return (
