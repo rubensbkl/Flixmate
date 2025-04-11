@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import Header from "@/components/Header";
 import Navbar from "@/components/Navbar";
+import { useState } from "react";
 
 import {
   ClockIcon as ClockOutline,
@@ -47,6 +48,8 @@ export default function HistoricoPage() {
 
   return (
     <main className="min-h-screen pb-16 flex flex-col items-center">
+      <Header />
+      
       <h1 className="text-2xl font-bold p-4">Histórico</h1>
 
       <section className="w-full max-w-md space-y-4">
