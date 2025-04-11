@@ -11,7 +11,7 @@ export default function SearchPage() {
   };
 
   return (
-    <main className="min-h-screen pb-16 md:pb-4">
+    <main className="min-h-screen pb-16 md:pb-4 bg-gray-100">
       <Header />
 
       {/* Barra de pesquisa */}
