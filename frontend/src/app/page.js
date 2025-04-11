@@ -1,11 +1,11 @@
 "use client";
 
+import Header from "@/components/Header";
+import MovieCard from "@/components/MovieCard";
+import Navbar from "@/components/Navbar";
 import { useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import TinderCard from "react-tinder-card";
-import MovieCard from "@/components/MovieCard";
-import Navbar from "@/components/Navbar";
-import Image from "next/image";
 
 const API_KEY = "17ecd463e6a7525a5e55127d3729508d";
 const TMDB_URL = "https://api.themoviedb.org/3";
@@ -149,10 +149,13 @@ export default function Home() {
         <main className="min-h-screen pb-16 md:pb-4">
             <div className="flex flex-col h-screen overflow-hidden bg-gray-100">
 
-                {/* Logo */}
+
+                {/* Header */}
+                <Header/>
+                {/* Logo
                 <div className="flex justify-center py-4">
                     <Image src="/flixmate-logo.svg" alt="Flixmate Logo" width={40} height={40} />
-                </div>
+                </div> */}
 
                 {/* Barra de progresso */}
                 <div className="relative h-1 w-full bg-gray-200">
