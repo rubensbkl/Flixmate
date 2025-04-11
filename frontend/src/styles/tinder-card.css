@@ -1,0 +1,46 @@
+/* Estilos para corrigir problemas de arrastar no MovieCard */
+
+/* Classe base para o card no estilo tinder */
+  
+  /* Previne comportamento de drag em todas as imagens e divs com background-image */
+  img, 
+  div[style*="background-image"] {
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+    
+    /* Previne seleção de texto também */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    
+    /* Previne comportamento de toque em dispositivos móveis */
+    -webkit-touch-callout: none;
+  }
+
+  /* Desabilita eventos de ponteiro em imagens internas */
+  .card-container img {
+    pointer-events: none;
+  }
+  
+  /* Animações de swipe (opcional) */
+  @keyframes swipe-left {
+    from { transform: translateX(0) rotate(0); }
+    to { transform: translateX(-300px) rotate(-30deg); opacity: 0; }
+  }
+  
+  @keyframes swipe-right {
+    from { transform: translateX(0) rotate(0); }
+    to { transform: translateX(300px) rotate(30deg); opacity: 0; }
+  }
+  
+  .swipe-left-animation {
+    animation: swipe-left 0.5s forwards;
+  }
+  
+  .swipe-right-animation {
+    animation: swipe-right 0.5s forwards;
+  }
