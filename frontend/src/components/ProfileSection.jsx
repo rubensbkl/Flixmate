@@ -5,51 +5,26 @@ import PropTypes from 'prop-types';
 
 const ProfileSection = ({ title, images }) => {
   return (
-    <div style={{ marginBottom: '2rem' }}>
-      <h2
-        style={{
-          fontSize: '1.5rem', // Fonte um pouco menor
-          fontWeight: 'bold',
-          marginBottom: '1rem',
-          fontFamily: "'Poppins', sans-serif", // Fonte estilizada
-          color: '#333',
-        }}
-      >
+    
+    <div className="text-lg md:text-xl font-bold mb-4 font-poppins text-gray-800">
+      <h2 className="text-lg md:text-xl font-bold mb-4 font-poppins text-gray-800">
         {title}
       </h2>
-      <div
-        style={{
-          display: 'flex',
-          gap: '1rem', // Espaçamento entre as imagens
-          overflowX: 'auto', // Permite rolagem horizontal, se necessário
-        }}
-      >
-        {images.map((image, index) => (
-          <div
-            key={index}
-            style={{
-              flex: '0 0 auto',
-              width: '120px', // Largura menor
-              height: '160px', // Altura menor
-              backgroundColor: '#f0f0f0',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
-            }}
-          >
-            <img
-              src={image}
-              alt={`Imagem ${index + 1}`}
-              style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                borderRadius: '8px',
-              }}
-            />
-          </div>
-        ))}
+      <div className="flex flex-col items-center justify-center">
+        <div className="flex flex-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {images.map((image, index) => (
+            <div
+              key={index}
+              className="w-full h-40 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden"
+            >
+              <img
+                src={image}
+                alt={`Imagem ${index + 1}`}
+                className="max-w-full max-h-full rounded-lg"
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
