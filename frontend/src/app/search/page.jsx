@@ -11,15 +11,20 @@ export default function SearchPage() {
   };
 
   return (
-    <main className="min-h-screen pb-16 md:pb-4 bg-gray-100">
-      <Header />
+    <div className="bg-gray-100 md:flex">
 
-      {/* Barra de pesquisa */}
-      <section className="flex justify-center items-center p-4">
-        <Searchbar onSearch={handleSearch} />
-      </section>
+        {/* Navbar */}
+        <Navbar />
 
-      <Navbar />
-    </main>
+        <main className="flex-1 overflow-hidden flex flex-col h-[calc(100vh-4rem)] md:h-screen">
+            <Header />
+
+            {/* Barra de pesquisa */}
+            <section className="flex justify-center items-center p-4">
+                <Searchbar onSearch={handleSearch} />
+            </section>
+
+        </main>
+    </div>
   );
 }
