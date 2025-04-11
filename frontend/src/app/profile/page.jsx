@@ -27,7 +27,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <main className="min-h-screen pb-16 md:pb-4 bg-white flex flex-col items-center justify-center">
+    <main className="min-h-screen pb-16 md:pb-4 bg-white flex flex-col items-center justify-center bg-gray-100">
       {/* Seção do perfil do usuário */}
       <section className="flex flex-col items-center space-y-3 p-4 bg-transparent rounded-md mb-8">
         <div className="h-16 w-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
