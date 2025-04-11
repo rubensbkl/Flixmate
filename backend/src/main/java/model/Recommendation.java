@@ -1,25 +1,20 @@
 package model;
 
-public class Interaction {
+public class Recommendation {
     private int id;
     private int userId;
     private int movieId;
-    private boolean interaction;
 
-    public Interaction() {
+    public Recommendation() {
         this.id = -1;
         this.userId = -1;
         this.movieId = -1;
-        this.interaction = false;
     }
 
-    public Interaction(int userId, int movieId, boolean interaction) {
+    public Recommendation(int userId, int movieId) {
         this.userId = userId;
         this.movieId = movieId;
-        this.interaction = interaction;
     }
-
-    // Getters e Setters
 
     public int getId() {
         return id;
@@ -33,33 +28,27 @@ public class Interaction {
         return userId;
     }
 
-    public void setUserId(int userId) {
+    public int setUserId(int userId) {
         this.userId = userId;
+        return userId;
     }
 
     public int getMovieId() {
         return movieId;
     }
 
-    public void setMovieId(int movieId) {
+    public int setMovieId(int movieId) {
         this.movieId = movieId;
-    }
-
-    public Boolean getInteraction() {
-        return interaction;
-    }
-
-    public void setInteraction(boolean interaction) {
-        this.interaction = interaction;
+        return movieId;
     }
 
     @Override
     public String toString() {
-        return "Interaction{" +
+        return "Recommendation{" +
                 "id=" + id +
                 ", userId=" + userId +
                 ", movieId=" + movieId +
-                ", interaction=" + interaction +
                 '}';
     }
+
 }

@@ -10,15 +10,21 @@ import static spark.Spark.staticFiles;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import dao.UserDAO;
 import dao.InteractionDAO;
+import dao.RecommendationDAO;
 import model.User;
 import model.Interaction;
+import model.Recommendation;
+import service.AIService;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import util.JWTUtil;
@@ -164,6 +170,40 @@ public class Application {
             } else {
                 res.status(500);
                 return gson.toJson(Map.of("error", "Erro ao registrar interação"));
+            }
+        });
+
+        RecommendationDAO recommendationDAO = new RecommendationDAO();
+
+        post("/api/recommendation", (req, res) -> {
+            res.type("application/json");
+
+            JsonObject body = JsonParser.parseString(req.body()).getAsJsonObject();
+            int userId = body.get("userId").getAsInt();
+
+            List<Interaction> interacoes = interactionDAO.getInteractionsByUserId(userId);
+
+            if (interacoes.size() < 5) {
+                res.status(400);
+                return gson.toJson(Map.of("error", "Usuário precisa ter ao menos 5 interações"));
+            }
+
+            try {
+                String recomendacao = AIService.gerarRecomendacao(interacoes);
+                boolean sucesso = interactionDAO.clear(userId);
+        
+                if (!sucesso) {
+                    res.status(500);
+                    return gson.toJson(Map.of("error", "Erro ao limpar interações"));
+                }
+        
+                res.status(200);
+                return gson.toJson(Map.of("status", "ok", "recomendacao", recomendacao));
+        
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao gerar recomendação"));
             }
         });
 
