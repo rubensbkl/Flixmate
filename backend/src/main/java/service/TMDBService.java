@@ -1,12 +1,12 @@
 package service;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class TMDBService {
     private static final String API_KEY = "17ecd463e6a7525a5e55127d3729508d";
@@ -15,7 +15,7 @@ public class TMDBService {
     public static JsonObject getMovieDetails(int movieId) {
         try {
             String urlStr = BASE_URL + movieId + "?api_key=" + API_KEY + "&language=pt-BR";
-            URL url = new URL(urlStr);
+            URL url = new URL(urlStr); // Solve JAVA 11+ issue compliance
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
             conn.setRequestMethod("GET");

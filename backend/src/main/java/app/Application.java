@@ -18,15 +18,12 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import dao.UserDAO;
 import dao.InteractionDAO;
-import dao.RecommendationDAO;
-import model.User;
-import model.Interaction;
-import model.Recommendation;
-import service.AIService;
-
+import dao.UserDAO;
 import io.github.cdimascio.dotenv.Dotenv;
+import model.Interaction;
+import model.User;
+import service.AIService;
 import util.JWTUtil;
 
 public class Application {
@@ -173,7 +170,7 @@ public class Application {
             }
         });
 
-        RecommendationDAO recommendationDAO = new RecommendationDAO();
+        // RecommendationDAO recommendationDAO = new RecommendationDAO();
 
         post("/api/recommendation", (req, res) -> {
             res.type("application/json");
