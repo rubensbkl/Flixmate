@@ -163,13 +163,13 @@ export default function Home() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 md:flex">
+        <div className="bg-gray-100 md:flex">
 
             {/* Navbar */}
             <Navbar />
 
             {/* Conteúdo principal */}
-            <main className="flex-1 overflow-hidden flex flex-col">
+            <main className="flex-1 overflow-hidden flex flex-col h-[calc(100vh-4rem)] md:h-screen">
 
                 <div className="flex-1 flex flex-col overflow-hidden pb-16 md:pb-0">
                     
@@ -248,39 +248,40 @@ export default function Home() {
                     </div>
 
                     {/* Botões de interação */}
-                    <div className="flex justify-center items-center space-x-4 pb-8 pt-2">
-                        <button
-                            onClick={resetMatches}
-                            disabled={!canSwipe}
-                            className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
-                            title="Reiniciar"
-                        >
-                            <ArrowPathIcon className="w-6 h-6 text-gray-700" />
-                        </button>
-                        <button
-                            onClick={() => swipe("left")}
-                            className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
-                            disabled={!canSwipe}
-                            title="Descurtir"
-                        >
-                            <XMarkIcon className="w-6 h-6 text-red-700" />
-                        </button>
-                        <button
-                            onClick={() => swipe("right")}
-                            className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
-                            disabled={!canSwipe}
-                            title="Curtir"
-                        >
-                            <HeartIcon className="w-6 h-6 text-green-500" />
-                        </button>
-                        <button
-                            onClick={() => alert("Modo surpresa!")}
-                            className="w-14 h-14 flex items-center justify-center bg-yellow-400 rounded-full shadow-lg hover:scale-105 transition"
-                            title="Surpresa"
-                        >
-                            <SparklesIcon className="w-6 h-6 text-gray-700" />
-                        </button>
-                    </div>
+                        <div className="flex space-x-4 py-2 justify-center">
+                            <button
+                                onClick={resetMatches}
+                                disabled={!canSwipe}
+                                className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
+                                title="Reiniciar"
+                            >
+                                <ArrowPathIcon className="w-6 h-6 text-gray-700" />
+                            </button>
+                            <button
+                                onClick={() => swipe("left")}
+                                className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
+                                disabled={!canSwipe}
+                                title="Descurtir"
+                            >
+                                <XMarkIcon className="w-6 h-6 text-red-700" />
+                            </button>
+                            <button
+                                onClick={() => swipe("right")}
+                                className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
+                                disabled={!canSwipe}
+                                title="Curtir"
+                            >
+                                <HeartIcon className="w-6 h-6 text-green-500" />
+                            </button>
+                            <button
+                                onClick={() => alert("Modo surpresa!")}
+                                className="w-14 h-14 flex items-center justify-center bg-yellow-400 rounded-full shadow-lg hover:scale-105 transition"
+                                title="Surpresa"
+                            >
+                                <SparklesIcon className="w-6 h-6 text-gray-700" />
+                            </button>
+                        </div>
+
                 </div>
                 
             </main>
