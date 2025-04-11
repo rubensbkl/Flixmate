@@ -12,7 +12,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 
 
 public class TMDBService {
-    private static final Dotenv dotenv = Dotenv.load(); // Carrega do .env
+    private static final Dotenv dotenv = Dotenv.load();
     private static final String API_KEY = dotenv.get("TMDB_API_KEY");
     private static final String BASE_URL = "https://api.themoviedb.org/3/movie/";
 

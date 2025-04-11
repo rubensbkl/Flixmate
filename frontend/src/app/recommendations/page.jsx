@@ -47,7 +47,7 @@ export default function HistoricoPage() {
   ];
 
   return (
-    <main className="min-h-screen flex flex-col items-center">
+    <main className="min-h-screen flex flex-col items-center bg-gray-100">
       <Header />
       
       <h1 className="text-2xl font-bold p-4">Histórico</h1>

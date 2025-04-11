@@ -163,146 +163,127 @@ export default function Home() {
     };
 
     return (
-        <main className="min-h-screen flex flex-col">
-            {/* Header com altura menor */}
-            <div className="flex-none">
-                {/* <Header /> */}
-            </div>
+        <div className="min-h-screen bg-gray-100 md:flex">
 
-            {/* Conteúdo principal ajustado para preencher o espaço disponível */}
-            <div className="flex-1 flex flex-col overflow-hidden bg-gray-100 pb-16 md:pb-0">
-                {/* Barra de progresso */}
-                <div className="relative h-1 w-full bg-gray-200">
-                    <div
-                        className="absolute h-1 bg-black transition-all duration-300 ease-in-out"
-                        style={{ width: `${loadingProgress}%` }}
-                    ></div>
-                </div>
+            {/* Navbar */}
+            <Navbar />
 
-                {/* Área principal - ajustada para caber na tela */}
-                <div
-                    className="h-[80vh] items-center justify-center"
+            {/* Conteúdo principal */}
+            <main className="flex-1 overflow-hidden flex flex-col">
+
+                <div className="flex-1 flex flex-col overflow-hidden pb-16 md:pb-0">
                     
-                    {...handlers}
-                >
-                    <div className="relative flex items-center justify-center w-full h-full">
-                        {currentIndex >= 0 ? (
-                            movies.map((movie, index) => {
-                                const isTop = index === currentIndex;
-                                const isNext = index === currentIndex - 1;
-                                if (!isTop && !isNext) return null;
-
-                                return (
-                                    <TinderCard
-                                        ref={isTop ? currentMovieRef : null}
-                                        key={movie.id}
-                                        onSwipe={(dir) => swiped(dir, index)}
-                                        onCardLeftScreen={() =>
-                                            outOfFrame(index)
-                                        }
-                                        preventSwipe={["up", "down"]}
-                                        className="absolute transition-all duration-300 ease-in-out"
-                                    >
-                                        <div
-                                            className={
-                                                isNext
-                                                    ? "scale-90 translate-y-4 transition-all duration-300"
-                                                    : ""
-                                            }
-                                        >
-                                            {/* Card menor para mobile */}
-                                            <div className="relative">
-                                                <ImprovedMovieCard
-                                                    movie={movie}
-                                                    isActive={isTop}
-                                                    isAnimating={
-                                                        isAnimating && isTop
-                                                    }
-                                                    swipeDirection={
-                                                        isTop
-                                                            ? swipeDirection
-                                                            : null
-                                                    }
-                                                    // Altura menor no mobile
-                                                    className="h-[60vh] md:h-[70vh]"
-                                                />
-                                            </div>
-                                        </div>
-                                    </TinderCard>
-                                );
-                            })
-                        ) : (
-                            <div className="text-center p-8 bg-white rounded-lg shadow">
-                                <h2 className="text-2xl font-bold mb-4">
-                                    Sem mais filmes!
-                                </h2>
-                                <p className="text-gray-600 mb-4">
-                                    Você viu todos os filmes disponíveis.
-                                </p>
-                                <button
-                                    onClick={resetMatches}
-                                    className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900"
-                                >
-                                    Buscar Novos Filmes
-                                </button>
-                            </div>
-                        )}
+                    {/* Barra de progresso */}
+                    <div className="relative h-1 w-full bg-gray-200">
+                        <div
+                            className="absolute h-1 bg-black transition-all duration-300 ease-in-out"
+                            style={{ width: `${loadingProgress}%` }}
+                        ></div>
                     </div>
-                </div>
 
-                {currentIndex >= 0 && (
-                    <div className="md:hidden absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex justify-center gap-4 mt-2">
+                    <div className="h-[80vh] items-center justify-center" {...handlers}>
+                        <div className="relative flex items-center justify-center w-full h-full">
+                            {currentIndex >= 0 ? (
+                                movies.map((movie, index) => {
+                                    const isTop = index === currentIndex;
+                                    const isNext = index === currentIndex - 1;
+                                    if (!isTop && !isNext) return null;
+
+                                    return (
+                                        <TinderCard
+                                            ref={isTop ? currentMovieRef : null}
+                                            key={movie.id}
+                                            onSwipe={(dir) => swiped(dir, index)}
+                                            onCardLeftScreen={() =>
+                                                outOfFrame(index)
+                                            }
+                                            preventSwipe={["up", "down"]}
+                                            className="absolute transition-all duration-300 ease-in-out"
+                                        >
+                                            <div
+                                                className={
+                                                    isNext
+                                                        ? "scale-90 translate-y-4 transition-all duration-300"
+                                                        : ""
+                                                }
+                                            >
+                                                {/* Card menor para mobile */}
+                                                <div className="relative">
+                                                    <ImprovedMovieCard
+                                                        movie={movie}
+                                                        isActive={isTop}
+                                                        isAnimating={
+                                                            isAnimating && isTop
+                                                        }
+                                                        swipeDirection={
+                                                            isTop
+                                                                ? swipeDirection
+                                                                : null
+                                                        }
+                                                        // Altura menor no mobile
+                                                        className="h-[60vh] md:h-[70vh]"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </TinderCard>
+                                    );
+                                })
+                            ) : (
+                                <div className="text-center p-8 bg-white rounded-lg shadow">
+                                    <h2 className="text-2xl font-bold mb-4">
+                                        Sem mais filmes!
+                                    </h2>
+                                    <p className="text-gray-600 mb-4">
+                                        Você viu todos os filmes disponíveis.
+                                    </p>
+                                    <button
+                                        onClick={resetMatches}
+                                        className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900"
+                                    >
+                                        Buscar Novos Filmes
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Botões de interação */}
+                    <div className="flex justify-center items-center space-x-4 pb-8 pt-2">
                         <button
                             onClick={resetMatches}
-                            className="w-12 h-12 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition"
+                            disabled={!canSwipe}
+                            className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
                             title="Reiniciar"
                         >
                             <ArrowPathIcon className="w-6 h-6 text-gray-700" />
                         </button>
                         <button
+                            onClick={() => swipe("left")}
+                            className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
+                            disabled={!canSwipe}
+                            title="Descurtir"
+                        >
+                            <XMarkIcon className="w-6 h-6 text-red-700" />
+                        </button>
+                        <button
+                            onClick={() => swipe("right")}
+                            className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
+                            disabled={!canSwipe}
+                            title="Curtir"
+                        >
+                            <HeartIcon className="w-6 h-6 text-green-500" />
+                        </button>
+                        <button
                             onClick={() => alert("Modo surpresa!")}
-                            className="w-12 h-12 flex items-center justify-center bg-yellow-400 rounded-full shadow-lg hover:scale-105 transition"
+                            className="w-14 h-14 flex items-center justify-center bg-yellow-400 rounded-full shadow-lg hover:scale-105 transition"
                             title="Surpresa"
                         >
                             <SparklesIcon className="w-6 h-6 text-gray-700" />
                         </button>
                     </div>
-                )}
-
-                {/* Botões - apenas para desktop com margem inferior */}
-                <div className="hidden md:flex justify-center items-center space-x-4 pb-8 pt-2">
-                    <button
-                        onClick={resetMatches}
-                        disabled={!canSwipe}
-                        className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
-                        title="Reiniciar"
-                    >
-                        <ArrowPathIcon className="w-6 h-6 text-gray-700" />
-                    </button>
-                    <button
-                        onClick={() => swipe("left")}
-                        className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
-                        disabled={!canSwipe}
-                        title="Descurtir"
-                    >
-                        <XMarkIcon className="w-6 h-6 text-red-700" />
-                    </button>
-
-                    <button
-                        onClick={() => swipe("right")}
-                        className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
-                        disabled={!canSwipe}
-                        title="Curtir"
-                    >
-                        <HeartIcon className="w-6 h-6 text-green-500" />
-                    </button>
                 </div>
-            </div>
-
-            {/* Navbar com altura fixa */}
-            <div className="flex-none">
-                <Navbar />
-            </div>
-        </main>
+                
+            </main>
+        </div>
     );
 }
