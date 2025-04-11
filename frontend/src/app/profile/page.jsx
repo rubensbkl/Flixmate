@@ -3,8 +3,11 @@
 import Navbar from '@/components/Navbar';
 import ProfileSection from '@/components/ProfileSection';
 import { UserIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 
 export default function ProfilePage() {
+  const [profileImage, setProfileImage] = useState(null); // Estado para armazenar a URL da imagem do perfil
+
   const recentMovies = [
     'https://image.tmdb.org/t/p/w600_and_h900_bestv2/4VtkIaj76TpQNfhDHXQDdT9uBN5.jpg',
     'https://image.tmdb.org/t/p/w600_and_h900_bestv2/hSljn1jfCClIbHNdlz6cWQEjncV.jpg',
@@ -27,8 +30,12 @@ export default function ProfilePage() {
     <main className="min-h-screen pb-16 md:pb-4 bg-white flex flex-col items-center justify-center">
       {/* Seção do perfil do usuário */}
       <section className="flex flex-col items-center space-y-3 p-4 bg-transparent rounded-md mb-8">
-        <div className="h-16 w-16 bg-gray-200 rounded-full flex items-center justify-center">
-          <UserIcon className="h-8 w-8 text-gray-600" />
+        <div className="h-16 w-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+          {profileImage ? (
+            <img src={profileImage} alt="Foto de perfil" className="h-full w-full object-cover" />
+          ) : (
+            <UserIcon className="h-8 w-8 text-gray-600" />
+          )}
         </div>
         <span className="text-xl font-semibold text-gray-900">Nome Usuário</span>
       </section>
