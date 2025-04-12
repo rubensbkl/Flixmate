@@ -20,7 +20,7 @@ public class TMDBService {
         this.API_KEY = apiKey;
     }
 
-    public static JsonObject getMovieDetails(int movieId) {
+    public JsonObject getMovieDetails(int movieId) {
         try {
             String urlStr = BASE_URL + movieId + "?api_key=" + API_KEY + "&language=pt-BR";
             URL url = new URI(urlStr).toURL(); // ✅ substituindo new URL(String)
@@ -52,7 +52,7 @@ public class TMDBService {
         }
     }
 
-    public static List<String> getRandomMovies() {
+    public List<String> getRandomMovies() {
         List<String> movieTitles = new ArrayList<>();
         try {
             String urlStr = "https://api.themoviedb.org/3/discover/movie?api_key=" + API_KEY + "&sort_by=popularity.desc&page=1&language=pt-BR";
@@ -92,7 +92,7 @@ public class TMDBService {
         return movieTitles;
     }
 
-    public static JsonArray getPopularMovies(int page) {
+    public JsonArray getPopularMovies(int page) {
         try {
             String urlStr = "https://api.themoviedb.org/3/movie/popular?api_key=" + API_KEY + "&language=pt-BR&page=" + page;
             URL url = new URI(urlStr).toURL(); // ✅ substituindo new URL(String)

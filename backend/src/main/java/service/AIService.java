@@ -1,7 +1,7 @@
 package service;
 
-import java.util.List;
 import java.util.Arrays;
+import java.util.List;
 
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
@@ -15,25 +15,27 @@ import com.azure.ai.openai.models.ChatRequestUserMessage;
 import com.azure.ai.openai.models.ChatResponseMessage;
 // import com.azure.ai.openai.models.CompletionsUsage;
 import com.azure.core.credential.AzureKeyCredential;
-// import com.azure.core.util.Configuration;
 
 import model.Interaction;
 // import com.google.gson.JsonObject;
 
 public class AIService {
-    private String endpoint = System.getenv("AZURE_OPENAI_ENDPOINT");
-    private String apiKey = System.getenv("AZURE_OPENAI_API_KEY");
-    private String deploymentName = System.getenv("AZURE_OPENAI_DEPLOYMENT_NAME");
+    private String endpoint;
+    private String apiKey;
+    private String deploymentName;
+    private TMDBService tmdb;
 
-    public AIService(String azureOpenAIEndpoint, String azureOpenAIKey, String azureOpenAIDeploymentName) {
+    public AIService(String azureOpenAIEndpoint, String azureOpenAIKey, String azureOpenAIDeploymentName, TMDBService tmdb) {
         this.endpoint = azureOpenAIEndpoint;
         this.apiKey = azureOpenAIKey;
         this.deploymentName = azureOpenAIDeploymentName;
+        this.tmdb = tmdb;
     }
 
-    public static  String gerarRecomendacao(List<Interaction> interacoes) {
+    public String gerarRecomendacao(List<Interaction> interacoes) {
         // Buscar filmes aleatórios
-        List<String> filmesAleatorios = TMDBService.getRandomMovies();
+
+        List<String> filmesAleatorios = tmdb.getRandomMovies();
 
         // Construir o prompt
         StringBuilder prompt = new StringBuilder("Usuário interagiu com os seguintes filmes: ");

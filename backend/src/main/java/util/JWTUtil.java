@@ -23,7 +23,7 @@ public class JWTUtil {
         algorithm = Algorithm.HMAC256(SECRET);
     }
 
-    public static String generateToken(String email) {
+    public String generateToken(String email) {
         return JWT.create()
             .withSubject(email)
             .withIssuer("cinematch")
@@ -31,7 +31,7 @@ public class JWTUtil {
             .sign(algorithm);
     }
 
-    public static DecodedJWT verifyToken(String token) {
+    public DecodedJWT verifyToken(String token) {
         JWTVerifier verifier = JWT.require(algorithm)
             .withIssuer("cinematch")
             .build();
