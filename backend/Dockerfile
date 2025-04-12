@@ -11,7 +11,7 @@ COPY . .
 RUN mvn clean package -DskipTests
 
 # Usa a imagem oficial do OpenJDK 17 (ou a versão que você estiver usando)
-FROM openjdk:11
+FROM openjdk:17
 
 # Define o diretório de trabalho dentro do container
 WORKDIR /app

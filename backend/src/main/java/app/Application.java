@@ -31,7 +31,7 @@ public class Application {
     public static void main(String[] args) {
 
         // Detecta o ambiente (dev ou production)
-        String env = System.getenv().getOrDefault("ENV", "dev");
+        String env = System.getenv("ENV");
 
         // Define a porta a partir da variável de ambiente ou padrão
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "6789"));
@@ -41,12 +41,14 @@ public class Application {
         staticFiles.location("/public");
         staticFiles.externalLocation("webjars");
 
-        System.out.println("Iniciando aplicação no ambiente: " + env);
-        System.out.println("Porta: " + port);
 
         // CORS - Cross-Origin Resource Sharing 
         if (env.equals("dev")) {
-            Set<String> allowedOrigins = new HashSet<>(List.of("http://localhost:3000"));
+            Set<String> allowedOrigins = new HashSet<>(List.of(
+                "http://localhost:3000",
+                "https://3bd4-187-86-247-172.ngrok-free.app",
+                "https://flixmate.com.br"
+            ));
 
             options("/*", (req, res) -> {
                 String acrh = req.headers("Access-Control-Request-Headers");
@@ -54,6 +56,8 @@ public class Application {
 
                 String acrm = req.headers("Access-Control-Request-Method");
                 if (acrm != null) res.header("Access-Control-Allow-Methods", acrm);
+
+                res.header("Access-Control-Allow-Credentials", "true");
 
                 return "OK";
             });
@@ -71,7 +75,23 @@ public class Application {
             });
 
         } else if (env.equals("production")) {
-            Set<String> allowedOrigins = new HashSet<>(List.of("https://flixmate.com.br"));
+            Set<String> allowedOrigins = new HashSet<>(List.of(
+                "http://localhost:3000",
+                "https://flixmate.com.br"
+                // Não coloque ngrok aqui em produção final
+            ));
+
+            options("/*", (req, res) -> {
+                String acrh = req.headers("Access-Control-Request-Headers");
+                if (acrh != null) res.header("Access-Control-Allow-Headers", acrh);
+
+                String acrm = req.headers("Access-Control-Request-Method");
+                if (acrm != null) res.header("Access-Control-Allow-Methods", acrm);
+
+                res.header("Access-Control-Allow-Credentials", "true");
+
+                return "OK";
+            });
 
             before((req, res) -> {
                 String origin = req.headers("Origin");

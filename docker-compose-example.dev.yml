@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:6789/api
+      - NODE_ENV=development
+    depends_on:
+      - backend
+    networks:
+      - dev-network
+
+  backend:
+    image: maven:3.8.8-eclipse-temurin-17
+    working_dir: /app
+    command: mvn compile exec:java -Dexec.mainClass=app.Application
+    ports:
+      - "6789:6789"
+    volumes:
+      - ./backend:/app
+    environment:
+      - ENV=dev
+      - PORT=6789
+      - JWT_SECRET=your_jwt_secret_here
+      - TMDB_API_KEY=your_tmdb_api_key_here
+      - AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint_here
+      - AZURE_OPENAI_API_KEY=your_azure_openai_api_key_here
+      - AZURE_OPENAI_DEPLOYMENT_NAME=your_azure_openai_deployment_name_here
+    depends_on:
+      - db
+    networks:
+      - dev-network
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: cinematch
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dev-network
+
+volumes:
+  postgres_data:
+
+networks:
+  dev-network:
