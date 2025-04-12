@@ -23,18 +23,6 @@ services:
     networks:
       - app-network
 
-  db:
-    image: postgres:17
-    container_name: cinematch-db
-    environment:
-      POSTGRES_USER: POSTGRES_USER
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: cinematch
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app-network
-
   nginx:
     image: nginx:stable
     ports:
@@ -60,9 +48,6 @@ services:
       - ./certbot/conf:/etc/letsencrypt
     networks:
       - app-network
-
-volumes:
-  postgres_data:
 
 networks:
   app-network:
