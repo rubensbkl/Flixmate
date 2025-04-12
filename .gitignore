@@ -2,6 +2,9 @@
 backend/target/
 **.env
 **.dev
+*.log
+.env*
+docker-compose.dev.yml
 
 # Certbot
 certbot/conf/
