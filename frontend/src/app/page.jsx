@@ -48,7 +48,7 @@ const gerarRecomendacao = async () => {
 
         if (res.ok) {
             const recomendacao = await res.json();
-            console.log("Nova recomendação recebida:", recomendacao);
+            alert(`Nova recomendação recebida: ${recomendacao.recomendacao}`);
             // Aqui você pode redirecionar ou mostrar a recomendação se quiser
         } else {
             console.error("Erro ao gerar recomendação");

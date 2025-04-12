@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    environment:
+      - ENV=production
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: https://flixmate.com.br/api  # caminho real da API
+    environment:
+      - NEXT_PUBLIC_API_URL=https://flixmate.com.br/api  # usado em tempo de execução (SSR, etc)
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  db:
+    image: postgres:17
+    container_name: cinematch-db
+    environment:
+      POSTGRES_USER: POSTGRES_USER
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: cinematch
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:stable
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - app-network
+
+  certbot:
+    image: certbot/certbot
+    entrypoint: /bin/sh
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
