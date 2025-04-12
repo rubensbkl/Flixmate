@@ -7,11 +7,8 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
 
-import io.github.cdimascio.dotenv.Dotenv;
-
 public class JWTUtil {
-    private static final Dotenv dotenv = Dotenv.load(); // Carrega do .env
-    private static final String SECRET = dotenv.get("JWT_SECRET");
+    private static final String SECRET = System.getenv("JWT_SECRET");
     private static final Algorithm algorithm = Algorithm.HMAC256(SECRET);
     private static final long EXPIRATION = 1000 * 60 * 60 * 24; // 24 horas
 
