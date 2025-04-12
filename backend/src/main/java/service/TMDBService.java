@@ -7,13 +7,10 @@ import java.net.URL;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
-import io.github.cdimascio.dotenv.Dotenv;
-
+import com.google.gson.JsonArray;
 
 public class TMDBService {
-    private static final Dotenv dotenv = Dotenv.load();
-    private static final String API_KEY = dotenv.get("TMDB_API_KEY");
+    private static final String API_KEY = System.getenv("TMDB_API_KEY");
     private static final String BASE_URL = "https://api.themoviedb.org/3/movie/";
 
     public static JsonObject getMovieDetails(int movieId) {
@@ -42,6 +39,38 @@ public class TMDBService {
 
             return JsonParser.parseString(response.toString()).getAsJsonObject();
 
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public static JsonArray getPopularMovies(int page) {
+        try {
+            String urlStr = "https://api.themoviedb.org/3/movie/popular?api_key=" + API_KEY + "&language=pt-BR&page=" + page;
+            URL url = new URL(urlStr);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+    
+            if (conn.getResponseCode() != 200) {
+                System.err.println("Erro ao buscar filmes populares: " + conn.getResponseCode());
+                return null;
+            }
+    
+            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            StringBuilder response = new StringBuilder();
+            String inputLine;
+    
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+            conn.disconnect();
+    
+            JsonObject jsonResponse = JsonParser.parseString(response.toString()).getAsJsonObject();
+            return jsonResponse.getAsJsonArray("results");
+    
         } catch (Exception e) {
             e.printStackTrace();
             return null;

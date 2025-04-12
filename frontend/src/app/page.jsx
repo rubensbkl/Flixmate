@@ -16,12 +16,15 @@ const API_KEY = "17ecd463e6a7525a5e55127d3729508d";
 const TMDB_URL = "https://api.themoviedb.org/3";
 
 const fetchPopularMovies = async (page = 1) => {
-    const res = await fetch(
-        `${TMDB_URL}/movie/popular?api_key=${API_KEY}&language=pt-BR&page=${page}`
-    );
+    const res = await fetch(`http://localhost:6789/api/movies/popular?page=${page}`);
     const data = await res.json();
-    console.log("Dados recebidos:", data);
-    return data.results.map((movie) => ({
+
+    if (!res.ok) {
+        console.error("Erro ao buscar filmes populares:", data.error);
+        return [];
+    }
+
+    return data.movies.map((movie) => ({
         id: movie.id,
         title: movie.title,
         studio: "TMDb",
