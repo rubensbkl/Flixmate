@@ -1,11 +1,12 @@
 package app;
 
 import static spark.Spark.before;
+import static spark.Spark.get;
 import static spark.Spark.halt;
 import static spark.Spark.options;
+import static spark.Spark.port;
 import static spark.Spark.post;
 import static spark.Spark.staticFiles;
-import static spark.Spark.port;
 
 import java.util.HashSet;
 import java.util.List;
@@ -13,8 +14,12 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
 
 import dao.InteractionDAO;
+import dao.RecommendationDAO;
 import dao.UserDAO;
 import model.Interaction;
 import model.User;
@@ -80,7 +85,7 @@ public class Application {
         // Envs de Banco
         String dbHost = System.getenv("DB_HOST");
         String dbName = System.getenv("DB_NAME");
-        String dbPort = System.getenv("DB_PORT");
+        int dbPort = Integer.parseInt(System.getenv("DB_PORT"));
         String dbUser = System.getenv("DB_USER");
         String dbPassword = System.getenv("DB_PASSWORD");
         
@@ -93,8 +98,8 @@ public class Application {
         RecommendationDAO recommendationDAO = new RecommendationDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
 
         // Services
-        AIService ai = new AIService(azureOpenAIEndpoint, azureOpenAIKey, azureOpenAIDeploymentName);
         TMDBService tmdb = new TMDBService(tmdbApiKey);
+        AIService ai = new AIService(azureOpenAIEndpoint, azureOpenAIKey, azureOpenAIDeploymentName, tmdb);
 
         // JWT Util
         JWTUtil jwt = new JWTUtil(jwtSecret);
@@ -174,7 +179,7 @@ public class Application {
         post("/api/login", (req, res) -> {
             User user = gson.fromJson(req.body(), User.class);
             if (userDAO.auth(user.getEmail(), user.getPassword())) {
-                String token = JWTUtil.generateToken(user.getEmail());
+                String token = jwt.generateToken(user.getEmail());
                 return gson.toJson(Map.of("token", token));
             }
             res.status(401);
@@ -199,7 +204,7 @@ public class Application {
 
             try {
                 String token = authHeader.substring(7);
-                var decoded = JWTUtil.verifyToken(token);
+                var decoded = jwt.verifyToken(token);
                 req.attribute("userEmail", decoded.getSubject());
             } catch (Exception e) {
                 halt(403, "{\"error\":\"Token inválido\"}");
@@ -238,7 +243,7 @@ public class Application {
             }
 
             try {
-                String recomendacao = AIService.gerarRecomendacao(interacoes);
+                String recomendacao = ai.gerarRecomendacao(interacoes);
                 boolean sucesso = interactionDAO.clear(userId);
 
                 if (!sucesso) {
@@ -259,7 +264,7 @@ public class Application {
             int page = pageParam != null ? Integer.parseInt(pageParam) : 1;
 
             try {
-                JsonArray popularMovies = TMDBService.getPopularMovies(page);
+                JsonArray popularMovies = tmdb.getPopularMovies(page);
                 return gson.toJson(Map.of("status", "ok", "movies", popularMovies));
             } catch (Exception e) {
                 e.printStackTrace();
