@@ -1,15 +1,6 @@
 version: '3.8'
 
 services:
-  backend:
-    build: ./backend
-    environment:
-      - ENV=production
-    depends_on:
-      - db
-    networks:
-      - app-network
-
   frontend:
     build:
       context: ./frontend
@@ -20,6 +11,13 @@ services:
       - NODE_ENV=production
     depends_on:
       - backend
+    networks:
+      - app-network
+
+  backend:
+    build: ./backend
+    environment:
+      - ENV=production
     networks:
       - app-network
 
