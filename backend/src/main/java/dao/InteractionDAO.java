@@ -8,9 +8,9 @@ import model.Interaction;
 
 public class InteractionDAO extends DAO {
 
-    public InteractionDAO() {
+    public InteractionDAO(String serverName, String mydatabase, int porta, String username, String password) {
         super();
-        conectar();
+        conectar(serverName, mydatabase, porta, username, password);
     }
 
     public void finalize() {

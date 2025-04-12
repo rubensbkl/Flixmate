@@ -21,6 +21,15 @@ import model.Interaction;
 // import com.google.gson.JsonObject;
 
 public class AIService {
+    private String endpoint = System.getenv("AZURE_OPENAI_ENDPOINT");
+    private String apiKey = System.getenv("AZURE_OPENAI_API_KEY");
+    private String deploymentName = System.getenv("AZURE_OPENAI_DEPLOYMENT_NAME");
+
+    public AIService(String azureOpenAIEndpoint, String azureOpenAIKey, String azureOpenAIDeploymentName) {
+        this.endpoint = azureOpenAIEndpoint;
+        this.apiKey = azureOpenAIKey;
+        this.deploymentName = azureOpenAIDeploymentName;
+    }
 
     public static  String gerarRecomendacao(List<Interaction> interacoes) {
         // Buscar filmes aleatórios
@@ -34,10 +43,6 @@ public class AIService {
         }
         prompt.append("Aqui estão alguns filmes aleatórios para a recomendação: ");
         prompt.append(String.join(", ", filmesAleatorios));
-
-        String endpoint = System.getenv("AZURE_OPENAI_ENDPOINT");
-        String apiKey = System.getenv("AZURE_OPENAI_API_KEY");
-        String deploymentName = System.getenv("AZURE_OPENAI_DEPLOYMENT_NAME");
 
         // Inicializa o cliente da Azure OpenAI
         OpenAIClient client = new OpenAIClientBuilder()

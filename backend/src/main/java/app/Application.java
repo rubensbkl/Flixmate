@@ -1,12 +1,11 @@
 package app;
 
 import static spark.Spark.before;
-import static spark.Spark.get;
 import static spark.Spark.halt;
 import static spark.Spark.options;
-import static spark.Spark.port;
 import static spark.Spark.post;
 import static spark.Spark.staticFiles;
+import static spark.Spark.port;
 
 import java.util.HashSet;
 import java.util.List;
@@ -14,12 +13,9 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonArray;
 
-import dao.UserDAO;
 import dao.InteractionDAO;
+import dao.UserDAO;
 import model.Interaction;
 import model.User;
 import service.AIService;
@@ -28,21 +24,89 @@ import util.JWTUtil;
 
 public class Application {
 
+    /**
+     * Validates the required environment variables for the application.
+     * Throws an exception if any required variable is missing or empty.
+     */
+    public static void validateRequiredEnvs() {
+        // List of required environment variables
+        String[] requiredEnvs = {
+                "ENV",
+                "PORT",
+                "JWT_SECRET",
+                "TMDB_API_KEY",
+                "AZURE_OPENAI_ENDPOINT",
+                "AZURE_OPENAI_API_KEY",
+                "AZURE_OPENAI_DEPLOYMENT_NAME",
+                "DB_HOST",
+                "DB_PORT",
+                "DB_NAME",
+                "DB_USER",
+                "DB_PASSWORD"
+        };
+
+        // Check each required environment variable
+        for (String env : requiredEnvs) {
+            String value = System.getenv(env);
+            if (value == null || value.isEmpty()) {
+                throw new IllegalStateException("Missing required environment variable: " + env);
+            }
+        }
+
+        System.out.println("All required environment variables are set.");
+    }
+
+    /**
+     * Main method to start the application.
+     * 
+     * @param args Command line arguments
+     */
     public static void main(String[] args) {
 
-        // Detecta o ambiente (dev ou production)
-        String env = System.getenv("ENV");
+        // Valida as variáveis de ambiente necessárias
+        validateRequiredEnvs();
 
-        // Define a porta a partir da variável de ambiente ou padrão
-        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "6789"));
-        port(port);
+        // Pegar todas as variáveis de ambiente respectivamente
+        String env = System.getenv("ENV");
+        // Pegar a porta do servidor
+        int porta = Integer.parseInt(System.getenv("PORT"));
+        // Envs de autenticação
+        String jwtSecret = System.getenv("JWT_SECRET");
+        String tmdbApiKey = System.getenv("TMDB_API_KEY");
+        // Envs de IA
+        String azureOpenAIEndpoint = System.getenv("AZURE_OPENAI_ENDPOINT");
+        String azureOpenAIKey = System.getenv("AZURE_OPENAI_API_KEY");
+        String azureOpenAIDeploymentName = System.getenv("AZURE_OPENAI_DEPLOYMENT_NAME");
+        // Envs de Banco
+        String dbHost = System.getenv("DB_HOST");
+        String dbName = System.getenv("DB_NAME");
+        String dbPort = System.getenv("DB_PORT");
+        String dbUser = System.getenv("DB_USER");
+        String dbPassword = System.getenv("DB_PASSWORD");
+        
+        // Libs
+        Gson gson = new Gson();
+
+        // DAOs
+        UserDAO userDAO = new UserDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
+        InteractionDAO interactionDAO = new InteractionDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
+        RecommendationDAO recommendationDAO = new RecommendationDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
+
+        // Services
+        AIService ai = new AIService(azureOpenAIEndpoint, azureOpenAIKey, azureOpenAIDeploymentName);
+        TMDBService tmdb = new TMDBService(tmdbApiKey);
+
+        // JWT Util
+        JWTUtil jwt = new JWTUtil(jwtSecret);
+
+        // Configurar a porta do servidor
+        port(porta);
 
         // Static files e webjars
         staticFiles.location("/public");
         staticFiles.externalLocation("webjars");
 
-
-        // CORS - Cross-Origin Resource Sharing 
+        // CORS - Cross-Origin Resource Sharing
         if (env.equals("dev")) {
             Set<String> allowedOrigins = new HashSet<>(List.of(
                 "http://localhost:3000",
@@ -76,9 +140,9 @@ public class Application {
 
         } else if (env.equals("production")) {
             Set<String> allowedOrigins = new HashSet<>(List.of(
-                "http://localhost:3000",
-                "https://flixmate.com.br"
-                // Não coloque ngrok aqui em produção final
+                    "http://localhost:3000",
+                    "https://flixmate.com.br"
+            // Não coloque ngrok aqui em produção final
             ));
 
             options("/*", (req, res) -> {
@@ -105,12 +169,8 @@ public class Application {
                 res.type("application/json");
             });
         }
-        
-        
-        Gson gson = new Gson();
-        UserDAO userDAO = new UserDAO();
-        InteractionDAO interactionDAO = new InteractionDAO();
-        
+
+        // Endpoints
         post("/api/login", (req, res) -> {
             User user = gson.fromJson(req.body(), User.class);
             if (userDAO.auth(user.getEmail(), user.getPassword())) {

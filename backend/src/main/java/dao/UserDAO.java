@@ -12,9 +12,9 @@ import model.User;
 
 public class UserDAO extends DAO {
 	
-	public UserDAO() {
+	public UserDAO(String serverName, String mydatabase, int porta, String username, String password) {
 		super();
-		conectar();
+        conectar(serverName, mydatabase, porta, username, password);
 	}
 	
 	public void finalize() {

@@ -6,9 +6,9 @@ import model.Recommendation;
 
 public class RecommendationDAO extends DAO {
 
-    public RecommendationDAO() {
+    public RecommendationDAO(String serverName, String mydatabase, int porta, String username, String password) {
         super();
-        conectar();
+        conectar(serverName, mydatabase, porta, username, password);
     }
 
     public void finalize() {
