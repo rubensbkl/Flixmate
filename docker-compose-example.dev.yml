@@ -39,21 +39,5 @@ services:
     networks:
       - dev-network
 
-  db:
-    image: postgres:17
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: cinematch
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - dev-network
-
-volumes:
-  postgres_data:
-
 networks:
   dev-network:

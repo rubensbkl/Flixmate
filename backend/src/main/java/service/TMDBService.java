@@ -13,8 +13,12 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonArray;
 
 public class TMDBService {
-    private static final String API_KEY = System.getenv("TMDB_API_KEY");
+    private String API_KEY;
     private static final String BASE_URL = "https://api.themoviedb.org/3/movie/";
+
+    public TMDBService(String apiKey) {
+        this.API_KEY = apiKey;
+    }
 
     public static JsonObject getMovieDetails(int movieId) {
         try {
