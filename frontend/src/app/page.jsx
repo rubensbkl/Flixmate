@@ -12,9 +12,6 @@ import { useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import TinderCard from "react-tinder-card";
 
-const API_KEY = "17ecd463e6a7525a5e55127d3729508d";
-const TMDB_URL = "https://api.themoviedb.org/3";
-
 const fetchPopularMovies = async (page = 1) => {
     const res = await fetch(`http://localhost:6789/api/movies/popular?page=${page}`);
     const data = await res.json();
@@ -36,7 +33,9 @@ const fetchPopularMovies = async (page = 1) => {
     }));
 };
 
+
 const gerarRecomendacao = async () => {
+    console.log("🔁 Tentando gerar recomendação...");
     try {
         const res = await fetch("http://localhost:6789/api/recommendation", {
             method: "POST",
@@ -67,6 +66,8 @@ export default function Home() {
     const [swipeDirection, setSwipeDirection] = useState(null);
     const currentMovieRef = useRef(null);
     const canSwipe = currentIndex >= 0 && !isAnimating;
+    const recommendationTriggeredRef = useRef(false);
+
 
     const updateProgress = (index) => {
         const seen = movies.length - (index + 1);
@@ -89,6 +90,8 @@ export default function Home() {
     useEffect(() => {
         updateProgress(currentIndex);
     }, [currentIndex, movies.length]);
+
+
 
     const swiped = async (direction, index) => {
         setIsAnimating(true);
@@ -119,13 +122,13 @@ export default function Home() {
         // 2. Atualizar contador
         setInteractionCount((prev) => {
             const updated = prev + 1;
-
-            // 3. Se chegou a 20, chama o backend para gerar recomendação
-            if (updated >= 10) {
-                gerarRecomendacao();
-                return 0; // zera para o próximo ciclo
+        
+            if (updated >= 10 && !recommendationTriggeredRef.current) {
+              recommendationTriggeredRef.current = true;
+              gerarRecomendacao();
+              return 0;
             }
-
+        
             return updated;
         });
 
@@ -156,6 +159,8 @@ export default function Home() {
     });
 
     const resetMatches = async () => {
+        recommendationTriggeredRef.current = false; // ← reseta o gatilho da recomendação
+    
         const fetched = await fetchPopularMovies(
             Math.floor(Math.random() * 5) + 1
         );
