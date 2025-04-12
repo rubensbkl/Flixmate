@@ -1,0 +1,4 @@
+.env*
+*.log
+docker-compose.dev.yml
+docker-compose.yml
