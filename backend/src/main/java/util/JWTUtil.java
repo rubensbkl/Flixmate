@@ -13,12 +13,10 @@ public class JWTUtil {
     private static final long EXPIRATION = 1000 * 60 * 60 * 24; // 24 horas
 
     public JWTUtil(String secret) {
-        if (secret != null) {
-            this.SECRET = secret;
-        } else if (secret.isEmpty()) {
-            throw new IllegalArgumentException("Secret cannot be null");
+        if (secret == null || secret.isEmpty()) {
+            throw new IllegalArgumentException("Secret cannot be null or empty");
         } else {
-            throw new IllegalArgumentException("Secret cannot be empty");
+            this.SECRET = secret;
         }
         algorithm = Algorithm.HMAC256(SECRET);
     }
