@@ -13,7 +13,7 @@ import { useSwipeable } from "react-swipeable";
 import TinderCard from "react-tinder-card";
 
 const fetchPopularMovies = async (page = 1) => {
-    const res = await fetch(`http://localhost:6789/api/movies/popular?page=${page}`);
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/movies/popular?page=${page}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -37,7 +37,7 @@ const fetchPopularMovies = async (page = 1) => {
 const gerarRecomendacao = async () => {
     console.log("🔁 Tentando gerar recomendação...");
     try {
-        const res = await fetch("http://localhost:6789/api/recommendation", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/recommendation`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -106,7 +106,7 @@ export default function Home() {
 
         // 1. Enviar interação para o backend
         try {
-            await fetch("http://localhost:6789/api/feedback", {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/feedback`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
