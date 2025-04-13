@@ -2,6 +2,7 @@
 
 import ImprovedMovieCard from "@/components/ImprovedMovieCard";
 import Navbar from "@/components/Navbar";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import {
     ArrowPathIcon,
     HeartIcon,
@@ -33,17 +34,19 @@ const fetchMovies = async (page = 1) => {
     }));
 };
 
-
 const gerarRecomendacao = async () => {
     console.log("🔁 Tentando gerar recomendação...");
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/recommendation`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                userId: 1, // substitua pelo ID do usuário
-            }),
-        });
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation`,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userId: 1, // substitua pelo ID do usuário
+                }),
+            }
+        );
 
         if (res.ok) {
             const recomendacao = await res.json();
@@ -68,7 +71,6 @@ export default function Home() {
     const canSwipe = currentIndex >= 0 && !isAnimating;
     const recommendationTriggeredRef = useRef(false);
 
-
     const updateProgress = (index) => {
         const seen = movies.length - (index + 1);
         const progress = (seen / movies.length) * 100;
@@ -90,8 +92,6 @@ export default function Home() {
     useEffect(() => {
         updateProgress(currentIndex);
     }, [currentIndex, movies.length]);
-
-
 
     const swiped = async (direction, index) => {
         setIsAnimating(true);
@@ -122,13 +122,13 @@ export default function Home() {
         // 2. Atualizar contador
         setInteractionCount((prev) => {
             const updated = prev + 1;
-        
+
             if (updated >= 10 && !recommendationTriggeredRef.current) {
-              recommendationTriggeredRef.current = true;
-              gerarRecomendacao();
-              return 0;
+                recommendationTriggeredRef.current = true;
+                gerarRecomendacao();
+                return 0;
             }
-        
+
             return updated;
         });
 
@@ -161,7 +161,7 @@ export default function Home() {
     const resetMatches = async () => {
         recommendationTriggeredRef.current = false; // ← reseta o gatilho da recomendação
     
-        const fetched = await fetchMovies(
+        const fetched = await fetchPopularMovies(
             Math.floor(Math.random() * 5) + 1
         );
         const reversed = fetched.reverse();
@@ -171,91 +171,101 @@ export default function Home() {
     };
 
     return (
-        <div className="bg-gray-100 md:flex">
+        <ProtectedRoute>
+            <div className="bg-gray-100 md:flex">
+                {/* Navbar */}
+                <Navbar />
 
-            {/* Navbar */}
-            <Navbar />
-
-            {/* Conteúdo principal */}
-            <main className="flex-1 overflow-hidden flex flex-col h-[calc(100vh-4rem)] md:h-screen">
-
-                <div className="flex-1 flex flex-col overflow-hidden pb-16 md:pb-0">
-                    
-                    {/* Barra de progresso */}
-                    <div className="relative h-1 w-full bg-gray-200">
-                        <div
-                            className="absolute h-1 bg-black transition-all duration-300 ease-in-out"
-                            style={{ width: `${loadingProgress}%` }}
-                        ></div>
-                    </div>
-
-                    <div className="h-[80vh] items-center justify-center" {...handlers}>
-                        <div className="relative flex items-center justify-center w-full h-full">
-                            {currentIndex >= 0 ? (
-                                movies.map((movie, index) => {
-                                    const isTop = index === currentIndex;
-                                    const isNext = index === currentIndex - 1;
-                                    if (!isTop && !isNext) return null;
-
-                                    return (
-                                        <TinderCard
-                                            ref={isTop ? currentMovieRef : null}
-                                            key={movie.id}
-                                            onSwipe={(dir) => swiped(dir, index)}
-                                            onCardLeftScreen={() =>
-                                                outOfFrame(index)
-                                            }
-                                            preventSwipe={["up", "down"]}
-                                            className="absolute transition-all duration-300 ease-in-out"
-                                        >
-                                            <div
-                                                className={
-                                                    isNext
-                                                        ? "scale-90 translate-y-4 transition-all duration-300"
-                                                        : ""
-                                                }
-                                            >
-                                                {/* Card menor para mobile */}
-                                                <div className="relative">
-                                                    <ImprovedMovieCard
-                                                        movie={movie}
-                                                        isActive={isTop}
-                                                        isAnimating={
-                                                            isAnimating && isTop
-                                                        }
-                                                        swipeDirection={
-                                                            isTop
-                                                                ? swipeDirection
-                                                                : null
-                                                        }
-                                                        // Altura menor no mobile
-                                                        className="h-[60vh] md:h-[70vh]"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </TinderCard>
-                                    );
-                                })
-                            ) : (
-                                <div className="text-center p-8 bg-white rounded-lg shadow">
-                                    <h2 className="text-2xl font-bold mb-4">
-                                        Sem mais filmes!
-                                    </h2>
-                                    <p className="text-gray-600 mb-4">
-                                        Você viu todos os filmes disponíveis.
-                                    </p>
-                                    <button
-                                        onClick={resetMatches}
-                                        className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900"
-                                    >
-                                        Buscar Novos Filmes
-                                    </button>
-                                </div>
-                            )}
+                {/* Conteúdo principal */}
+                <main className="flex-1 overflow-hidden flex flex-col h-[calc(100vh-4rem)] md:h-screen">
+                    <div className="flex-1 flex flex-col overflow-hidden pb-16 md:pb-0">
+                        {/* Barra de progresso */}
+                        <div className="relative h-1 w-full bg-gray-200">
+                            <div
+                                className="absolute h-1 bg-black transition-all duration-300 ease-in-out"
+                                style={{ width: `${loadingProgress}%` }}
+                            ></div>
                         </div>
-                    </div>
 
-                    {/* Botões de interação */}
+                        <div
+                            className="h-[80vh] items-center justify-center"
+                            {...handlers}
+                        >
+                            <div className="relative flex items-center justify-center w-full h-full">
+                                {currentIndex >= 0 ? (
+                                    movies.map((movie, index) => {
+                                        const isTop = index === currentIndex;
+                                        const isNext =
+                                            index === currentIndex - 1;
+                                        if (!isTop && !isNext) return null;
+
+                                        return (
+                                            <TinderCard
+                                                ref={
+                                                    isTop
+                                                        ? currentMovieRef
+                                                        : null
+                                                }
+                                                key={movie.id}
+                                                onSwipe={(dir) =>
+                                                    swiped(dir, index)
+                                                }
+                                                onCardLeftScreen={() =>
+                                                    outOfFrame(index)
+                                                }
+                                                preventSwipe={["up", "down"]}
+                                                className="absolute transition-all duration-300 ease-in-out"
+                                            >
+                                                <div
+                                                    className={
+                                                        isNext
+                                                            ? "scale-90 translate-y-4 transition-all duration-300"
+                                                            : ""
+                                                    }
+                                                >
+                                                    {/* Card menor para mobile */}
+                                                    <div className="relative">
+                                                        <ImprovedMovieCard
+                                                            movie={movie}
+                                                            isActive={isTop}
+                                                            isAnimating={
+                                                                isAnimating &&
+                                                                isTop
+                                                            }
+                                                            swipeDirection={
+                                                                isTop
+                                                                    ? swipeDirection
+                                                                    : null
+                                                            }
+                                                            // Altura menor no mobile
+                                                            className="h-[60vh] md:h-[70vh]"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </TinderCard>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="text-center p-8 bg-white rounded-lg shadow">
+                                        <h2 className="text-2xl font-bold mb-4">
+                                            Sem mais filmes!
+                                        </h2>
+                                        <p className="text-gray-600 mb-4">
+                                            Você viu todos os filmes
+                                            disponíveis.
+                                        </p>
+                                        <button
+                                            onClick={resetMatches}
+                                            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900"
+                                        >
+                                            Buscar Novos Filmes
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Botões de interação */}
                         <div className="flex space-x-4 py-2 justify-center">
                             <button
                                 onClick={resetMatches}
@@ -289,10 +299,9 @@ export default function Home() {
                                 <SparklesIcon className="w-6 h-6 text-gray-700" />
                             </button>
                         </div>
-
-                </div>
-                
-            </main>
-        </div>
+                    </div>
+                </main>
+            </div>
+        </ProtectedRoute>
     );
 }

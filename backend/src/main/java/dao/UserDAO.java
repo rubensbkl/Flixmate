@@ -10,18 +10,19 @@ import java.util.List;
 import model.User;
 
 public class UserDAO extends DAO {
-    
+
     public UserDAO(String serverName, String mydatabase, int porta, String username, String password) {
         super();
         conectar(serverName, mydatabase, porta, username, password);
     }
-    
+
     public void finalize() {
         close();
     }
 
     /**
      * Insere um novo usuário no banco de dados
+     * 
      * @param user O usuário a ser inserido
      * @return true se a inserção foi bem-sucedida, false caso contrário
      */
@@ -51,6 +52,7 @@ public class UserDAO extends DAO {
 
     /**
      * Busca um usuário pelo seu ID
+     * 
      * @param id O ID do usuário a ser buscado
      * @return O usuário encontrado ou null se não encontrado
      */
@@ -64,13 +66,12 @@ public class UserDAO extends DAO {
 
             if (rs.next()) {
                 user = new User(
-                    rs.getInt("id"),
-                    rs.getString("first_name"),
-                    rs.getString("last_name"),
-                    rs.getString("email"),
-                    rs.getString("password"),
-                    rs.getString("gender").charAt(0)
-                );
+                        rs.getInt("id"),
+                        rs.getString("first_name"),
+                        rs.getString("last_name"),
+                        rs.getString("email"),
+                        rs.getString("password"),
+                        rs.getString("gender").charAt(0));
             }
             rs.close();
             st.close();
@@ -82,6 +83,7 @@ public class UserDAO extends DAO {
 
     /**
      * Retorna todos os usuários cadastrados
+     * 
      * @return Lista de todos os usuários
      */
     public List<User> getAll() {
@@ -93,13 +95,12 @@ public class UserDAO extends DAO {
 
             while (rs.next()) {
                 User user = new User(
-                    rs.getInt("id"),
-                    rs.getString("first_name"),
-                    rs.getString("last_name"),
-                    rs.getString("email"),
-                    rs.getString("password"),
-                    rs.getString("gender").charAt(0)
-                );
+                        rs.getInt("id"),
+                        rs.getString("first_name"),
+                        rs.getString("last_name"),
+                        rs.getString("email"),
+                        rs.getString("password"),
+                        rs.getString("gender").charAt(0));
                 users.add(user);
             }
             rs.close();
@@ -112,6 +113,7 @@ public class UserDAO extends DAO {
 
     /**
      * Atualiza os dados de um usuário
+     * 
      * @param user O usuário com os dados atualizados
      * @return true se a atualização foi bem-sucedida, false caso contrário
      */
@@ -138,27 +140,29 @@ public class UserDAO extends DAO {
 
     /**
      * Remove um usuário pelo seu ID
+     * 
      * @param id O ID do usuário a ser removido
      * @return true se a remoção foi bem-sucedida, false caso contrário
      */
     public boolean delete(int id) {
         boolean status = false;
-        try {  
+        try {
             String sql = "DELETE FROM \"user\" WHERE id = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setInt(1, id);
             int affectedRows = st.executeUpdate();
             status = (affectedRows > 0);
             st.close();
-        } catch (SQLException e) {  
+        } catch (SQLException e) {
             System.err.println("Erro ao excluir usuário: " + e.getMessage());
         }
         return status;
     }
-    
+
     /**
      * Autentica um usuário pelo email e senha
-     * @param email O email do usuário
+     * 
+     * @param email    O email do usuário
      * @param password A senha do usuário
      * @return true se autenticação bem-sucedida, false caso contrário
      */
@@ -169,10 +173,10 @@ public class UserDAO extends DAO {
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setString(1, email);
             st.setString(2, password);
-            
+
             ResultSet rs = st.executeQuery();
             resp = rs.next(); // Se encontrou um registro, autenticação bem-sucedida
-            
+
             rs.close();
             st.close();
         } catch (SQLException e) {
@@ -183,6 +187,7 @@ public class UserDAO extends DAO {
 
     /**
      * Verifica se um email já está em uso
+     * 
      * @param email O email a ser verificado
      * @return true se o email já existe, false caso contrário
      */
@@ -192,15 +197,46 @@ public class UserDAO extends DAO {
             String sql = "SELECT 1 FROM \"user\" WHERE email = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setString(1, email);
-            
+
             ResultSet rs = st.executeQuery();
             exists = rs.next();
-            
+
             rs.close();
             st.close();
         } catch (SQLException e) {
             System.err.println("Erro ao verificar email: " + e.getMessage());
         }
         return exists;
+    }
+
+    /**
+     * Busca um usuário pelo seu email
+     * 
+     * @param email O email do usuário a ser buscado
+     * @return O usuário encontrado ou null se não encontrado
+     */
+    public User getByEmail(String email) {
+        User user = null;
+        try {
+            String sql = "SELECT * FROM \"user\" WHERE email = ?";
+            PreparedStatement st = conexao.prepareStatement(sql);
+            st.setString(1, email);
+            ResultSet rs = st.executeQuery();
+
+            if (rs.next()) {
+                user = new User(
+                        rs.getInt("id"),
+                        rs.getString("first_name"),
+                        rs.getString("last_name"),
+                        rs.getString("email"),
+                        rs.getString("password"),
+                        rs.getString("gender").charAt(0));
+            }
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar usuário por email: " + e.getMessage());
+        }
+        return user;
     }
 }

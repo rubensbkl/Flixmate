@@ -1,25 +1,28 @@
-"use client";
+'use client';
 
+import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function SignUpPage() {
+  const { login } = useAuth();
+  const router = useRouter();
+
   const [formData, setFormData] = useState({
-    username: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
+    gender: "",
   });
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -30,24 +33,16 @@ export default function SignUpPage() {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || "Erro ao criar conta");
-      }
+      if (!response.ok) throw new Error(data.error || "Erro ao criar conta");
 
-      // Redireciona para login após registro bem-sucedido
-      router.push("/login?registered=true");
+      login(data.user, data.token); // login automático
+      router.push("/");
     } catch (err) {
       setError(err.message || "Ocorreu um erro ao criar sua conta");
     } finally {
@@ -59,13 +54,9 @@ export default function SignUpPage() {
     <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-white">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
-          <img 
-            src="/flixmate-logo.svg" 
-            alt="Flixmate" 
-            className="h-12"
-          />
+          <img src="/flixmate-logo.svg" alt="Flixmate" className="h-12" />
         </div>
-        
+
         <h1 className="text-2xl font-bold text-center mb-2">Crie uma conta</h1>
         <p className="text-center text-gray-600 mb-8">
           Utilize seu email para entrar no Flixmate
@@ -78,44 +69,56 @@ export default function SignUpPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <input
-              type="text"
-              name="username"
-              placeholder="Nome de usuário"
-              className="w-full p-3 border border-gray-300 rounded-lg"
-              value={formData.username}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          
-          
-          <div>
-            <input
-              type="email"
-              name="email"
-              placeholder="Email"
-              className="w-full p-3 border border-gray-300 rounded-lg"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          
-          <div>
-            <input
-              type="password"
-              name="password"
-              placeholder="Senha"
-              className="w-full p-3 border border-gray-300 rounded-lg"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              minLength={6}
-            />
-          </div>
-      
+          <input
+            type="text"
+            name="firstName"
+            placeholder="Nome"
+            className="w-full p-3 border border-gray-300 rounded-lg"
+            value={formData.firstName}
+            onChange={handleChange}
+            required
+          />
+          <input
+            type="text"
+            name="lastName"
+            placeholder="Sobrenome"
+            className="w-full p-3 border border-gray-300 rounded-lg"
+            value={formData.lastName}
+            onChange={handleChange}
+            required
+          />
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            className="w-full p-3 border border-gray-300 rounded-lg"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+          <input
+            type="password"
+            name="password"
+            placeholder="Senha (mín. 6 caracteres)"
+            className="w-full p-3 border border-gray-300 rounded-lg"
+            value={formData.password}
+            onChange={handleChange}
+            required
+            minLength={6}
+          />
+          <select
+            name="gender"
+            className="w-full p-3 border border-gray-300 rounded-lg"
+            value={formData.gender}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Selecione o gênero</option>
+            <option value="M">Masculino</option>
+            <option value="F">Feminino</option>
+            <option value="O">Outro</option>
+          </select>
+
           <button
             type="submit"
             className="w-full p-3 bg-black text-white rounded-lg font-medium"
@@ -124,7 +127,7 @@ export default function SignUpPage() {
             {isLoading ? "Cadastrando..." : "Cadastrar"}
           </button>
         </form>
-        
+
         <p className="text-center mt-6 text-gray-600">
           Já tem uma conta?{" "}
           <Link href="/login" className="text-blue-600 font-medium">

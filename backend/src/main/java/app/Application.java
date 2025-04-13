@@ -8,6 +8,7 @@ import static spark.Spark.port;
 import static spark.Spark.post;
 import static spark.Spark.staticFiles;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -87,14 +88,15 @@ public class Application {
         int dbPort = Integer.parseInt(System.getenv("DB_PORT"));
         String dbUser = System.getenv("DB_USER");
         String dbPassword = System.getenv("DB_PASSWORD");
-        
+
         // Libs
         Gson gson = new Gson();
 
         // DAOs
         UserDAO userDAO = new UserDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
         InteractionDAO interactionDAO = new InteractionDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
-        // RecommendationDAO recommendationDAO = new RecommendationDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
+        // RecommendationDAO recommendationDAO = new RecommendationDAO(dbHost, dbName,
+        // dbPort, dbUser, dbPassword);
 
         // Services
         TMDBService tmdb = new TMDBService(tmdbApiKey);
@@ -113,17 +115,18 @@ public class Application {
         // CORS - Cross-Origin Resource Sharing
         if (env.equals("dev")) {
             Set<String> allowedOrigins = new HashSet<>(List.of(
-                "http://localhost:3000",
-                "https://3bd4-187-86-247-172.ngrok-free.app",
-                "https://flixmate.com.br"
-            ));
+                    "http://localhost:3000",
+                    "https://3bd4-187-86-247-172.ngrok-free.app",
+                    "https://flixmate.com.br"));
 
             options("/*", (req, res) -> {
                 String acrh = req.headers("Access-Control-Request-Headers");
-                if (acrh != null) res.header("Access-Control-Allow-Headers", acrh);
+                if (acrh != null)
+                    res.header("Access-Control-Allow-Headers", acrh);
 
                 String acrm = req.headers("Access-Control-Request-Method");
-                if (acrm != null) res.header("Access-Control-Allow-Methods", acrm);
+                if (acrm != null)
+                    res.header("Access-Control-Allow-Methods", acrm);
 
                 res.header("Access-Control-Allow-Credentials", "true");
 
@@ -145,15 +148,16 @@ public class Application {
         } else if (env.equals("production")) {
             Set<String> allowedOrigins = new HashSet<>(List.of(
                     "http://localhost:3000",
-                    "https://flixmate.com.br"
-            ));
+                    "https://flixmate.com.br"));
 
             options("/*", (req, res) -> {
                 String acrh = req.headers("Access-Control-Request-Headers");
-                if (acrh != null) res.header("Access-Control-Allow-Headers", acrh);
+                if (acrh != null)
+                    res.header("Access-Control-Allow-Headers", acrh);
 
                 String acrm = req.headers("Access-Control-Request-Method");
-                if (acrm != null) res.header("Access-Control-Allow-Methods", acrm);
+                if (acrm != null)
+                    res.header("Access-Control-Allow-Methods", acrm);
 
                 res.header("Access-Control-Allow-Credentials", "true");
 
@@ -177,8 +181,22 @@ public class Application {
         post("/api/login", (req, res) -> {
             User user = gson.fromJson(req.body(), User.class);
             if (userDAO.auth(user.getEmail(), user.getPassword())) {
+                // Buscar os dados completos do usuário
+                User fullUser = userDAO.getByEmail(user.getEmail());
+
+                // Gerar token JWT
                 String token = jwt.generateToken(user.getEmail());
-                return gson.toJson(Map.of("token", token));
+
+                // Criar resposta com token e dados básicos do usuário (sem senha)
+                Map<String, Object> response = new HashMap<>();
+                response.put("token", token);
+                response.put("user", Map.of(
+                        "id", fullUser.getId(),
+                        "firstName", fullUser.getFirstName(),
+                        "lastName", fullUser.getLastName(),
+                        "email", fullUser.getEmail()));
+
+                return gson.toJson(response);
             }
             res.status(401);
             return gson.toJson(Map.of("error", "Credenciais inválidas"));
@@ -186,14 +204,78 @@ public class Application {
 
         post("/api/register", (req, res) -> {
             User user = gson.fromJson(req.body(), User.class);
-            if (userDAO.insert(user)) {
-                res.status(201);
-                return gson.toJson(Map.of("status", "success"));
+
+            // Verificações básicas
+            if (user.getEmail() == null || user.getPassword() == null ||
+                    user.getFirstName() == null || user.getLastName() == null ||
+                    user.getGender() == '\0') {
+                res.status(400);
+                return gson.toJson(Map.of("error", "Todos os campos são obrigatórios"));
             }
-            res.status(400);
-            return gson.toJson(Map.of("error", "Erro ao criar usuário"));
+
+            // Verificar se o email já existe
+            if (userDAO.getByEmail(user.getEmail()) != null) {
+                res.status(400);
+                return gson.toJson(Map.of("error", "Email já cadastrado"));
+            }
+
+            // Inserir no banco
+            if (userDAO.insert(user)) {
+                // Gerar token
+                User fullUser = userDAO.getByEmail(user.getEmail());
+                String token = jwt.generateToken(fullUser.getEmail());
+
+                Map<String, Object> userData = Map.of(
+                        "id", fullUser.getId(),
+                        "firstName", fullUser.getFirstName(),
+                        "lastName", fullUser.getLastName(),
+                        "email", fullUser.getEmail(),
+                        "gender", fullUser.getGender());
+
+                res.status(201);
+                return gson.toJson(Map.of(
+                        "status", "success",
+                        "token", token,
+                        "user", userData));
+            }
+
+            res.status(500);
+            return gson.toJson(Map.of("error", "Erro ao criar conta"));
         });
 
+        get("/api/verify", (req, res) -> {
+            String authHeader = req.headers("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                res.status(401);
+                return gson.toJson(Map.of("valid", false, "error", "Token não fornecido"));
+            }
+
+            try {
+                String token = authHeader.substring(7);
+                var decoded = jwt.verifyToken(token);
+                String userEmail = decoded.getSubject();
+
+                // Buscar informações do usuário
+                User user = userDAO.getByEmail(userEmail);
+                if (user == null) {
+                    res.status(401);
+                    return gson.toJson(Map.of("valid", false, "error", "Usuário não encontrado"));
+                }
+
+                Map<String, Object> userData = Map.of(
+                        "id", user.getId(),
+                        "firstName", user.getFirstName(),
+                        "lastName", user.getLastName(),
+                        "email", user.getEmail());
+
+                return gson.toJson(Map.of("valid", true, "user", userData));
+            } catch (Exception e) {
+                res.status(401);
+                return gson.toJson(Map.of("valid", false, "error", "Token inválido"));
+            }
+        });
+
+        // Middleware de autenticação para rotas protegidas
         before("/api/protected/*", (req, res) -> {
             String authHeader = req.headers("Authorization");
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
