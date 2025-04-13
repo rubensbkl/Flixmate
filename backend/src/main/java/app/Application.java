@@ -257,7 +257,7 @@ public class Application {
             }
         });
 
-        get("/api/movies/popular", (req, res) -> {
+        get("/api/movies", (req, res) -> {
             String pageParam = req.queryParams("page");
             int page = pageParam != null ? Integer.parseInt(pageParam) : 1;
 
