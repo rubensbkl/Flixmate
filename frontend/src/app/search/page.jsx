@@ -2,6 +2,7 @@
 
 import Header from '@/components/Header';
 import Navbar from '@/components/Navbar';
+import ProtectedRoute from '@/components/ProtectedRoute'; // Importando o componente ProtectedRoute
 import Searchbar from '@/components/Searchbar'; // Importando o componente Searchbar
 
 export default function SearchPage() {
@@ -11,6 +12,7 @@ export default function SearchPage() {
   };
 
   return (
+    <ProtectedRoute>
     <div className="bg-gray-100 md:flex">
 
         {/* Navbar */}
@@ -26,5 +28,6 @@ export default function SearchPage() {
 
         </main>
     </div>
+    </ProtectedRoute>
   );
 }
