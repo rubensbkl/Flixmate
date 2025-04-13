@@ -1,5 +1,5 @@
 # Usa a imagem oficial do Maven para compilar o projeto
-FROM maven:3.9.9-eclipse-temurin-21 AS builder
+FROM maven:3.9.9-eclipse-temurin-17 AS builder
 
 # Define o diretório de trabalho dentro do container
 WORKDIR /app
@@ -11,7 +11,7 @@ COPY . .
 RUN mvn clean package -DskipTests
 
 # Usa a imagem oficial do OpenJDK 17 (ou a versão que você estiver usando)
-FROM eclipse-temurin:21
+FROM eclipse-temurin:17
 
 # Define o diretório de trabalho dentro do container
 WORKDIR /app
