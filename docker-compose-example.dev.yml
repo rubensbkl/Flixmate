@@ -35,7 +35,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:6789/api
+      - NEXT_PUBLIC_API_URL=http://backend:6789
       - NODE_ENV=development
     depends_on:
       - backend
