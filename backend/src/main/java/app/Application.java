@@ -14,12 +14,11 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonArray;
 
 import dao.InteractionDAO;
-import dao.RecommendationDAO;
 import dao.UserDAO;
 import model.Interaction;
 import model.User;
@@ -95,7 +94,7 @@ public class Application {
         // DAOs
         UserDAO userDAO = new UserDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
         InteractionDAO interactionDAO = new InteractionDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
-        RecommendationDAO recommendationDAO = new RecommendationDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
+        // RecommendationDAO recommendationDAO = new RecommendationDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
 
         // Services
         TMDBService tmdb = new TMDBService(tmdbApiKey);
