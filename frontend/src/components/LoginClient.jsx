@@ -27,7 +27,7 @@ export default function LoginClient() {
 
     try {
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/login`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
