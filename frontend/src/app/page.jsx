@@ -12,8 +12,8 @@ import { useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import TinderCard from "react-tinder-card";
 
-const fetchPopularMovies = async (page = 1) => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies/popular?page=${page}`);
+const fetchMovies = async (page = 1) => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies?page=${page}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -78,7 +78,7 @@ export default function Home() {
     useEffect(() => {
         const loadMovies = async () => {
             const page = Math.floor(Math.random() * 5) + 1;
-            const fetched = await fetchPopularMovies(page);
+            const fetched = await fetchMovies(page);
             const reversed = fetched.reverse();
             setMovies(reversed);
             setCurrentIndex(reversed.length - 1);
@@ -161,7 +161,7 @@ export default function Home() {
     const resetMatches = async () => {
         recommendationTriggeredRef.current = false; // ← reseta o gatilho da recomendação
     
-        const fetched = await fetchPopularMovies(
+        const fetched = await fetchMovies(
             Math.floor(Math.random() * 5) + 1
         );
         const reversed = fetched.reverse();
