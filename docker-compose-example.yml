@@ -1,19 +1,6 @@
 version: '3.8'
 
 services:
-  frontend:
-    build:
-      context: ./frontend
-      args:
-        NEXT_PUBLIC_API_URL: https://flixmate.com.br/api  # caminho real da API
-    environment:
-      - NEXT_PUBLIC_API_URL=https://flixmate.com.br/api  # usado em tempo de execução (SSR, etc)
-      - NODE_ENV=production
-    depends_on:
-      - backend
-    networks:
-      - app-network
-
   backend:
     build: ./backend
     environment:
@@ -29,6 +16,19 @@ services:
       - AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint_here
       - AZURE_OPENAI_API_KEY=your_azure_openai_api_key_here
       - AZURE_OPENAI_DEPLOYMENT_NAME=your_azure_openai_deployment_name_here
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: https://flixmate.com.br/api  # caminho real da API
+    environment:
+      - NEXT_PUBLIC_API_URL=https://flixmate.com.br/api  # usado em tempo de execução (SSR, etc)
+      - NODE_ENV=production
+    depends_on:
+      - backend
     networks:
       - app-network
 
