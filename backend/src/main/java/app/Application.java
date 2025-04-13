@@ -147,7 +147,6 @@ public class Application {
             Set<String> allowedOrigins = new HashSet<>(List.of(
                     "http://localhost:3000",
                     "https://flixmate.com.br"
-            // Não coloque ngrok aqui em produção final
             ));
 
             options("/*", (req, res) -> {
