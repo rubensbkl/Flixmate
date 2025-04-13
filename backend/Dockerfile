@@ -22,5 +22,8 @@ COPY --from=builder /app/target/cinematch-0.0.1-SNAPSHOT.jar app.jar
 # Copia a pasta public para dentro do container
 COPY public /app/public
 
+# Define a variável de ambiente para evitar problemas de entropia
+ENV JAVA_OPTS="-Djava.security.egd=file:/dev/./urandom"
+
 # Define o comando para executar a aplicação
-CMD ["java", "-jar", "app.jar"]
+CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
