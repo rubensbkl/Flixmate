@@ -59,20 +59,19 @@ const removeDuplicateMovies = (movies) => {
 };
 
 // Função para buscar filmes da API
-const fetchMovies = async (userId) => {
+const fetchMovies = async (userId, currentPage) => {
     try {
-        // Verifica se temos um cache válido
         const cachedMovies = movieCache.get(userId);
-        if (cachedMovies) {
+        if (cachedMovies && currentPage  === 1) {  // só usa cache se for página 1
             console.log("Usando filmes em cache");
             return cachedMovies;
         }
         
-        console.log("Buscando novos filmes da API");
+        console.log("Buscando novos filmes da API, página: " + currentPage);
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId }),
+            body: JSON.stringify({ userId, page: currentPage }),
         });
         
         if (!res.ok) {
@@ -80,12 +79,10 @@ const fetchMovies = async (userId) => {
         }
         
         const data = await res.json();
-        
         if (!data.movies || !Array.isArray(data.movies)) {
             throw new Error("Formato de resposta inválido");
         }
         
-        // Processa os filmes recebidos
         const processedMovies = data.movies.map((movie) => ({
             id: movie.id,
             title: movie.title,
@@ -97,11 +94,15 @@ const fetchMovies = async (userId) => {
             popularity: movie.popularity,
         }));
         
-        // Remove duplicatas e armazena no cache
         const uniqueMovies = removeDuplicateMovies(processedMovies);
-        movieCache.store(userId, uniqueMovies);
-        
+
+        // Cache só a primeira página (opcional)
+        if (currentPage === 1) {
+            movieCache.store(userId, uniqueMovies);
+        }
+
         return uniqueMovies;
+
     } catch (error) {
         console.error("Erro ao buscar filmes:", error);
         return [];
@@ -145,6 +146,7 @@ export default function Home() {
     const userId = useRef(null);
     const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(false);
     const [showRecommendationLoader, setShowRecommendationLoader] = useState(false);
+    const currentPage = useRef(1);
 
     // Inicialize userId logo no início
     useEffect(() => {
@@ -168,29 +170,28 @@ export default function Home() {
         setLoadingProgress(progress);
     }, []);
 
-    // Função para carregar filmes
     const loadMovies = useCallback(async () => {
         if (!userId.current) return;
-        
+      
         setLoading(true);
         try {
-            const fetchedMovies = await fetchMovies(userId.current);
-            
-            if (fetchedMovies.length > 0) {
-                // Inverte a ordem para que possamos começar do primeiro item
-                const reversedMovies = [...fetchedMovies].reverse();
-                setMovies(reversedMovies);
-                setCurrentIndex(reversedMovies.length - 1);
-                updateProgress(0);
-            } else {
-                setMovies([]);
-                setCurrentIndex(-1);
-                setLoadingProgress(100);
-            }
+          const fetchedMovies = await fetchMovies(userId.current, currentPage.current);
+      
+          if (fetchedMovies.length > 0) {
+            const reversedMovies = [...fetchedMovies].reverse();
+            setMovies(reversedMovies);
+            setCurrentIndex(reversedMovies.length - 1);
+            updateProgress(0);
+          } else {
+            // Se não veio nada, assume fim dos filmes — mas pode tentar próxima página se quiser
+            setMovies([]);
+            setCurrentIndex(-1);
+            setLoadingProgress(100);
+          }
         } catch (err) {
-            console.error("Erro ao carregar filmes:", err);
+          console.error("Erro ao carregar filmes:", err);
         } finally {
-            setLoading(false);
+          setLoading(false);
         }
     }, [updateProgress]);
 
@@ -291,19 +292,14 @@ export default function Home() {
         trackMouse: true,
     });
 
-    // Função para resetar e buscar novos filmes
     const resetMatches = async () => {
-        // Resetar o contador de interações
         setInteractionCount(0);
-        
-        // Limpar o cache para forçar o carregamento de novos filmes
+        currentPage.current = 1;
         if (userId.current) {
-            movieCache.clear(userId.current);
-            await loadMovies();
+          movieCache.clear(userId.current);
+          await loadMovies();
         }
     };
-
-
 
     // Renderização condicional durante o carregamento
     if (loading && movies.length === 0) {
@@ -386,10 +382,13 @@ export default function Home() {
                                             Você viu todos os filmes disponíveis.
                                         </p>
                                         <button
-                                            onClick={resetMatches}
+                                            onClick={() => {
+                                                currentPage.current += 1;
+                                                loadMovies();
+                                            }}
                                             className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900"
                                         >
-                                            Buscar Novos Filmes
+                                            Buscar Mais Filmes
                                         </button>
                                     </div>
                                 )}
