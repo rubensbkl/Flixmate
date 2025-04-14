@@ -1,35 +1,54 @@
 'use client';
 import "@/styles/tinder-card.css";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 
-const ImprovedMovieCard = ({ movie, onSwipe, isActive = true, isAnimating = false, swipeDirection = null }) => {
+// Usando memo para evitar re-renderizações desnecessárias
+const ImprovedMovieCard = memo(({ 
+  movie, 
+  isActive = true, 
+  isAnimating = false, 
+  swipeDirection = null,
+  className = ""
+}) => {
   // Estado para controlar se mostra a descrição completa
   const [showFullDescription, setShowFullDescription] = useState(false);
-
-  // Função para prevenir o comportamento padrão de drag de imagens
-  const preventDragHandler = (e) => {
-    e.preventDefault();
-    return false;
-  };
 
   // Efeito para resetar descrição quando card muda
   useEffect(() => {
     setShowFullDescription(false);
-  }, [movie]);
+  }, [movie?.id]);
 
-  // Pegando o caminho do poster ou usando um fallback
-  const posterPath = movie.image;
+  // Garantir tratamento de erro para poster path
+  const posterPath = movie?.image || 'https://via.placeholder.com/500x750?text=No+Image';
+
+  // Prevenir eventos padrão que podem atrapalhar a interação do swipe
+  const preventDefaultHandler = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  };
+
+  if (!movie) {
+    return null;
+  }
 
   return (
     <div
-      className="relative h-[70vh] w-[90vw] max-w-md md:h-[75vh] md:w-[95vw] md:max-w-lg rounded-3xl overflow-hidden shadow-xl transition-all duration-300"
+      className={`relative rounded-3xl overflow-hidden shadow-xl transition-all duration-300 ${className}`}
       style={{
         touchAction: 'none',
+        userSelect: 'none', 
         transform: isActive ? 'scale(1)' : 'scale(0.95)',
         transition: 'all 0.3s ease',
+        minHeight: '400px', // Garante altura mínima
+        width: '100%',      // Garante largura completa
+        display: 'block',   // Garante que o elemento seja exibido como bloco
+        backgroundColor: '#f0f0f0', // Cor de fundo como fallback
       }}
+      onDragStart={preventDefaultHandler}
+      onContextMenu={preventDefaultHandler}
     >
-      {/* Usando div com background-image ao invés de img para evitar problemas de drag */}
+      {/* Usado div com background-image ao invés de img para melhor controle */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
@@ -37,27 +56,27 @@ const ImprovedMovieCard = ({ movie, onSwipe, isActive = true, isAnimating = fals
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
-        onDragStart={preventDragHandler}
+        draggable="false"
       />
       
       {/* Indicadores de swipe */}
       {swipeDirection === 'left' && (
-        <div className="absolute top-8 left-8 bg-red-500 text-white py-1 px-4 rounded-full transform -rotate-12 font-bold">
+        <div className="absolute top-8 left-8 bg-red-500 text-white py-1 px-4 rounded-full transform -rotate-12 font-bold z-10">
           DISLIKE
         </div>
       )}
       {swipeDirection === 'right' && (
-        <div className="absolute top-8 right-8 bg-green-500 text-white py-1 px-4 rounded-full transform rotate-12 font-bold">
+        <div className="absolute top-8 right-8 bg-green-500 text-white py-1 px-4 rounded-full transform rotate-12 font-bold z-10">
           LIKE
         </div>
       )}
 
       {/* Overlay gradiente para legibilidade do texto */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
       
       {/* Informações do filme */}
       <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-        <h2 className="text-xl font-bold">{movie.title}</h2>
+        <h2 className="text-xl font-bold truncate">{movie.title}</h2>
         <p className="text-sm opacity-90">
           {movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A'}
         </p>
@@ -89,6 +108,9 @@ const ImprovedMovieCard = ({ movie, onSwipe, isActive = true, isAnimating = fals
       </div>
     </div>
   );
-};
+});
+
+// Definindo displayName para o componente memo
+ImprovedMovieCard.displayName = 'ImprovedMovieCard';
 
 export default ImprovedMovieCard;
