@@ -13,278 +13,136 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useSwipeable } from "react-swipeable";
 import TinderCard from "react-tinder-card";
 
-// Cache para armazenar os filmes por usuário
-const movieCache = {
-    data: {},
-    timestamp: {},
-    CACHE_DURATION: 30 * 60 * 1000, // 30 minutos em milissegundos
-    
-    // Verifica se o cache para este usuário está válido
-    isValid: function(userId) {
-        return (
-            this.data[userId] && 
-            this.timestamp[userId] && 
-            Date.now() - this.timestamp[userId] < this.CACHE_DURATION
-        );
-    },
-    
-    // Armazena filmes no cache
-    store: function(userId, movies) {
-        this.data[userId] = [...movies]; // Clone para evitar mutações
-        this.timestamp[userId] = Date.now();
-    },
-    
-    // Obtém filmes do cache
-    get: function(userId) {
-        return this.isValid(userId) ? [...this.data[userId]] : null;
-    },
-    
-    // Limpa o cache para um usuário específico
-    clear: function(userId) {
-        delete this.data[userId];
-        delete this.timestamp[userId];
-    }
-};
-
-// Função para remover filmes duplicados baseado no ID
-const removeDuplicateMovies = (movies) => {
-    const uniqueIds = new Set();
-    return movies.filter(movie => {
-        if (uniqueIds.has(movie.id)) {
-            return false;
-        }
-        uniqueIds.add(movie.id);
-        return true;
-    });
-};
-
-// Função para buscar filmes da API
-const fetchMovies = async (userId, currentPage) => {
-    try {
-        const cachedMovies = movieCache.get(userId);
-        if (cachedMovies && currentPage  === 1) {  // só usa cache se for página 1
-            console.log("Usando filmes em cache");
-            return cachedMovies;
-        }
-        
-        console.log("Buscando novos filmes da API, página: " + currentPage);
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId, page: currentPage }),
-        });
-        
-        if (!res.ok) {
-            throw new Error(`Erro na API: ${res.status}`);
-        }
-        
-        const data = await res.json();
-        if (!data.movies || !Array.isArray(data.movies)) {
-            throw new Error("Formato de resposta inválido");
-        }
-        
-        const processedMovies = data.movies.map((movie) => ({
-            id: movie.id,
-            title: movie.title,
-            studio: "TMDb",
-            image: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
-            description: movie.overview,
-            release_date: movie.release_date,
-            vote_average: movie.vote_average,
-            popularity: movie.popularity,
-        }));
-        
-        const uniqueMovies = removeDuplicateMovies(processedMovies);
-
-        // Cache só a primeira página (opcional)
-        if (currentPage === 1) {
-            movieCache.store(userId, uniqueMovies);
-        }
-
-        return uniqueMovies;
-
-    } catch (error) {
-        console.error("Erro ao buscar filmes:", error);
-        return [];
-    }
-};
-
-const gerarRecomendacao = async (userId) => {
-    console.log("🔁 Tentando gerar recomendação...");
-    try {
-        const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation`,
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId }),
-            }
-        );
-
-        if (res.ok) {
-            const recomendacao = await res.json();
-            alert(`Nova recomendação recebida: ${recomendacao.recomendacao}`);
-            // Limpa o cache para forçar novo carregamento
-            movieCache.clear(userId);
-        } else {
-            console.error("Erro ao gerar recomendação");
-        }
-    } catch (error) {
-        console.error("Erro de conexão ao gerar recomendação:", error);
-    }
-};
+import { loadSession, saveSession, clearSession } from "@/lib/session";
+import { fetchMovies, sendFeedback, gerarRecomendacao } from "@/lib/api";
+import { movieCache } from "@/lib/cache";
 
 export default function Home() {
-    const [interactionCount, setInteractionCount] = useState(0);
     const [movies, setMovies] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(-1);
-    const [loadingProgress, setLoadingProgress] = useState(0);
+    const [interactionCount, setInteractionCount] = useState(0);
+    const [loading, setLoading] = useState(true);
     const [isAnimating, setIsAnimating] = useState(false);
     const [swipeDirection, setSwipeDirection] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const currentMovieRef = useRef(null);
-    const userId = useRef(null);
     const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(false);
-    const [showRecommendationLoader, setShowRecommendationLoader] = useState(false);
+    
+    const userId = useRef(1);
     const currentPage = useRef(1);
+    const currentMovieRef = useRef(null);
 
-    // Inicialize userId logo no início
-    useEffect(() => {
-        try {
-            const user = JSON.parse(localStorage.getItem("user"));
-            if (user && user.id) {
-                userId.current = user.id;
-            } else {
-                // Fallback para 1 se não conseguir obter o ID do usuário
-                userId.current = 1;
-                console.warn("ID do usuário não encontrado, usando fallback");
-            }
-        } catch (error) {
-            console.error("Erro ao obter ID do usuário:", error);
-            userId.current = 1;
-        }
-    }, []);
-
-    const updateProgress = useCallback((count) => {
-        const progress = (count / 10) * 100;
-        setLoadingProgress(progress);
-    }, []);
-
-    const loadMovies = useCallback(async () => {
-        if (!userId.current) return;
-      
-        setLoading(true);
-        try {
-          const fetchedMovies = await fetchMovies(userId.current, currentPage.current);
-      
-          if (fetchedMovies.length > 0) {
-            const reversedMovies = [...fetchedMovies].reverse();
-            setMovies(reversedMovies);
-            setCurrentIndex(reversedMovies.length - 1);
-            updateProgress(0);
-          } else {
-            // Se não veio nada, assume fim dos filmes — mas pode tentar próxima página se quiser
-            setMovies([]);
-            setCurrentIndex(-1);
-            setLoadingProgress(100);
-          }
-        } catch (err) {
-          console.error("Erro ao carregar filmes:", err);
-        } finally {
-          setLoading(false);
-        }
-    }, [updateProgress]);
-
-    // Carrega filmes quando o componente é montado
-    useEffect(() => {
-        if (userId.current) {
-            loadMovies();
-        }
-    }, [loadMovies]);
-
-    // Atualiza o progresso quando o índice atual muda
-    useEffect(() => {
-        updateProgress(interactionCount);
-    }, [interactionCount, updateProgress]);
-
-    useEffect(() => {
-        if (isLoadingRecommendation) {
-            setShowRecommendationLoader(true);
-        }
-    }, [isLoadingRecommendation]);
-
-    // Verifica se pode deslizar
     const canSwipe = currentIndex >= 0 && !isAnimating && !loading && !isLoadingRecommendation;
 
-    // Função executada quando um cartão é deslizado
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem("user"));
+        userId.current = user?.id || 1;
+    }, []);
+    
+    const loadMovies = useCallback(async () => {
+        const session = loadSession(userId.current);
+        if (session) {
+            console.log("🔄 Restaurando sessão");
+            setMovies(session.movies);
+            setCurrentIndex(session.currentIndex);
+            setInteractionCount(session.interactionCount);
+            currentPage.current = session.currentPage || 1;
+            setLoading(false);
+            return;
+        }
+    
+        setLoading(true);
+        try {
+            const fetchedMovies = await fetchMovies(userId.current, currentPage.current);
+            const reversed = [...fetchedMovies].reverse();
+            const startIdx = reversed.length - 1;
+        
+            setMovies(reversed);
+            setCurrentIndex(startIdx);
+            setInteractionCount(0);
+            saveSession(userId.current, {
+                movies: reversed,
+                currentIndex: startIdx,
+                interactionCount: 0,
+                currentPage: currentPage.current
+            });
+        
+        } catch (err) {
+            console.error("Erro ao carregar filmes:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+    
+    useEffect(() => { if (userId.current) loadMovies(); }, [loadMovies]);
+    
     const swiped = async (direction, index) => {
         if (!canSwipe) return;
-        
+    
+        const liked = direction === "right";
+        const movie = movies[index];
+        console.log(`${liked ? "Curtiu" : "Descartou"}: ${movie.title}`);
+    
         setIsAnimating(true);
         setSwipeDirection(direction);
-
-        const value = direction === "right";
-        const movie = movies[index];
-
-        console.log(`Você ${value ? "curtiu" : "descartou"}: ${movie.title}`);
-
-        // Enviar interação para o backend
-        try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    userId: userId.current,
-                    movieId: movie.id,
-                    interaction: value,
-                }),
-            });
-        } catch (error) {
-            console.error("Erro ao enviar interação:", error);
-        }
-
-        // Atualiza contador e verifica se precisa gerar recomendação
+    
+        await sendFeedback(userId.current, movie.id, liked);
+    
         const newCount = interactionCount + 1;
         setInteractionCount(newCount);
-        
+        saveSession(userId.current, {
+            movies,
+            currentIndex: index - 1,
+            interactionCount: newCount,
+            currentPage: currentPage.current
+        });
+    
         if (newCount >= 10) {
-            setTimeout(() => {
-              setIsLoadingRecommendation(true);
-            }, 300);
-          
+            setIsLoadingRecommendation(true);
             await gerarRecomendacao(userId.current);
-          
-            // simula tempo de carregamento antes de sumir o loader
-            setTimeout(() => {
-              setIsLoadingRecommendation(false);
-              setShowRecommendationLoader(false);
-            }, 1500);
-          
+            setIsLoadingRecommendation(false);
             setInteractionCount(0);
-        }
 
-        // Avança para o próximo card com atraso para animação
+            setCurrentIndex(index - 1);
+            saveSession(userId.current, {
+                movies,
+                currentIndex: index - 1,
+                interactionCount: 0,
+                currentPage: currentPage.current
+            });
+
+            // Libera a animação e reseta direção depois
+            setTimeout(() => {
+                setIsAnimating(false);
+                setSwipeDirection(null);
+            }, 300);
+
+            return; // <-- pra evitar o setTimeout abaixo
+        }
+    
+        // Só decrementa aqui se não teve recomendação
         setTimeout(() => {
-            setCurrentIndex((prev) => prev - 1);
+            setCurrentIndex(prev => prev - 1);
             setIsAnimating(false);
             setSwipeDirection(null);
         }, 300);
     };
-
-    // Função para deslizar programaticamente
+    
     const swipe = (dir) => {
         if (canSwipe && currentMovieRef.current) {
             setSwipeDirection(dir);
             currentMovieRef.current.swipe(dir);
         }
     };
-
-    // Quando um cartão sai da tela
-    const outOfFrame = (idx) => {
-        console.log(`${movies[idx]?.title} saiu da tela.`);
+    
+    const outOfFrame = (idx) => console.log(`${movies[idx]?.title} saiu da tela.`);
+    
+    const resetMatches = async () => {
+        setInteractionCount(0);
+        clearSession(userId.current);
+        currentPage.current = 1;
+        movieCache.clear(userId.current);
+        await loadMovies();
     };
-
-    // Configuração de deslizamento
+    
     const handlers = useSwipeable({
         onSwipedLeft: () => swipe("left"),
         onSwipedRight: () => swipe("right"),
@@ -292,22 +150,13 @@ export default function Home() {
         trackMouse: true,
     });
 
-    const resetMatches = async () => {
-        setInteractionCount(0);
-        currentPage.current = 1;
-        if (userId.current) {
-          movieCache.clear(userId.current);
-          await loadMovies();
-        }
-    };
-
     // Renderização condicional durante o carregamento
     if (loading && movies.length === 0) {
         return (
             <ProtectedRoute>
                 <div className="bg-gray-100 md:flex">
                     <Navbar />
-                    <main className="flex-1 overflow-hidden flex flex-col h-[calc(100vh-4rem)] md:h-screen items-center justify-center">
+                    <main className="flex-1 overflow-hidden flex flex-col h-[calc(100vh-4rem)] items-center justify-center">
                         <div className="text-xl font-semibold">Carregando filmes...</div>
                         <div className="mt-4 w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
                     </main>
@@ -329,7 +178,7 @@ export default function Home() {
                         <div className="relative h-1 w-full bg-gray-200">
                             <div
                                 className="absolute h-1 bg-black transition-all duration-300 ease-in-out"
-                                style={{ width: `${loadingProgress}%` }}
+                                style={{ width: `${(interactionCount / 10) * 100}%` }}
                             ></div>
                         </div>
 
@@ -384,6 +233,8 @@ export default function Home() {
                                         <button
                                             onClick={() => {
                                                 currentPage.current += 1;
+                                                clearSession(userId.current);
+                                                movieCache.clear(userId.current);
                                                 loadMovies();
                                             }}
                                             className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900"
@@ -433,7 +284,7 @@ export default function Home() {
                     </div>
 
                     <div className={`fixed inset-0 bg-gray-100 flex flex-col items-center justify-center transition-opacity duration-500 ${
-                        showRecommendationLoader ? "opacity-100" : "opacity-0 pointer-events-none"
+                        isLoadingRecommendation  ? "opacity-100" : "opacity-0 pointer-events-none"
                     }`}>
                         <div className="text-xl font-semibold">Gerando recomendação...</div>
                         <div className="mt-4 w-16 h-16 border-t-4 border-yellow-500 border-solid rounded-full animate-spin"></div>
