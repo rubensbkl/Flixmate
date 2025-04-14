@@ -2,43 +2,45 @@
 
 -- Criar tabela de usuários
 CREATE TABLE IF NOT EXISTS "user" (
- id SERIAL PRIMARY KEY,
- first_name VARCHAR(100) NOT NULL,
- last_name VARCHAR(100) NOT NULL,
- email VARCHAR(100) UNIQUE NOT NULL,
- password VARCHAR(255) NOT NULL,
- gender CHAR(1) NOT NULL
+    id SERIAL PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    gender CHAR(1) NOT NULL,
+    content_filter BOOLEAN DEFAULT TRUE,  -- Filtro para conteúdo adulto
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Criar tabela de gêneros (do TMDB)
 CREATE TABLE IF NOT EXISTS genres (
- id INTEGER PRIMARY KEY,  -- Usando o mesmo ID que o TMDB usa
- name VARCHAR(50) NOT NULL
+    id INTEGER PRIMARY KEY,  -- Usando o mesmo ID que o TMDB usa
+    name VARCHAR(50) NOT NULL
 );
 
 -- Criar tabela de gêneros preferidos dos usuários (relação muitos-para-muitos)
 CREATE TABLE IF NOT EXISTS user_preferred_genres (
- id SERIAL PRIMARY KEY,
- user_id INTEGER REFERENCES "user"(id) ON DELETE CASCADE,
- genre_id INTEGER REFERENCES genres(id) ON DELETE CASCADE,
- UNIQUE(user_id, genre_id)  -- Evita duplicatas
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES "user"(id) ON DELETE CASCADE,
+    genre_id INTEGER REFERENCES genres(id) ON DELETE CASCADE,
+    UNIQUE(user_id, genre_id)  -- Evita duplicatas
 );
 
 -- Criar tabela de interações
 CREATE TABLE IF NOT EXISTS interactions (
- id SERIAL PRIMARY KEY,
- user_id INTEGER REFERENCES "user"(id),
- movie_id INTEGER NOT NULL,
- interaction BOOLEAN NOT NULL,
- created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES "user"(id),
+    movie_id INTEGER NOT NULL,
+    interaction BOOLEAN NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Criar tabela de recomendações
 CREATE TABLE IF NOT EXISTS recommendations (
- id SERIAL PRIMARY KEY,
- user_id INTEGER REFERENCES "user"(id),
- movie_id INTEGER NOT NULL,
- created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES "user"(id),
+    movie_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Criar índices para melhorar performance

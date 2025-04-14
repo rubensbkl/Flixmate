@@ -239,4 +239,28 @@ public class UserDAO extends DAO {
         }
         return user;
     }
+
+    public boolean getContentFilter(int userId) {
+        boolean contentFilter = false;
+        try {
+            String sql = "SELECT content_filter FROM \"user\" WHERE id = ?";
+            PreparedStatement st = conexao.prepareStatement(sql);
+            st.setInt(1, userId);
+            ResultSet rs = st.executeQuery();
+    
+            if (rs.next()) {
+                contentFilter = rs.getBoolean("content_filter");
+            } else {
+                System.err.println("Usuário com ID " + userId + " não encontrado.");
+            }
+    
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar content filter: " + e.getMessage());
+        }
+    
+        return contentFilter;
+    }
+    
 }
