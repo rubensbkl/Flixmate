@@ -165,4 +165,5 @@ public class RecommendationDAO extends DAO {
         }
         return count;
     }
+    
 }

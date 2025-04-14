@@ -237,4 +237,5 @@ public class UserPreferredGenreDAO extends DAO {
         }
         return count;
     }
+
 }
