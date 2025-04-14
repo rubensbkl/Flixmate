@@ -353,6 +353,9 @@ public class Application {
             int page = requestBody.has("page") ? requestBody.get("page").getAsInt() : 1;
             System.out.println("Page: " + page);
             try {
+                // Pega a flag do filtro adulto do usuário
+                boolean contentFilter = userDAO.getContentFilter(userId);
+                System.out.println("Content Filter: " + contentFilter);
                 // DAO de preferências
                 List<Genre> preferredGenresList = upgDAO.getPreferredGenres(userId);
                 List<Integer> preferredGenres = preferredGenresList.stream()
@@ -376,6 +379,14 @@ public class Application {
                                 JsonObject movie = element.getAsJsonObject();
                                 if (movie.has("id")) {
                                     int movieId = movie.get("id").getAsInt();
+
+                                    // Verifica se é conteúdo adulto e se o filtro está ativado
+                                    boolean isAdult = movie.has("adult") && movie.get("adult").getAsBoolean();
+                                    if (contentFilter && isAdult) {
+                                        // Pula o filme se for adulto e o usuário não quiser ver
+                                        System.out.println("Filme " + movieId + " é adulto e o filtro está ativado. Pulando...");
+                                        return;
+                                    }
                                     // Só adiciona se ainda não existe no mapa
                                     if (!uniqueMoviesMap.containsKey(movieId)) {
                                         uniqueMoviesMap.put(movieId, movie);
@@ -402,13 +413,16 @@ public class Application {
                     return Integer.compare(score2, score1); // Ordem decrescente
                 });
                 
-                // Limita a quantidade de filmes retornados para melhorar performance do cliente
-                // Podemos enviar mais que 10 para ter um cache maior no frontend
-                List<JsonObject> topMovies = allMovies.stream().limit(40).toList();
+                int totalMovies = allMovies.size();
+                int moviesToReturn = (totalMovies / 10) * 10; // maior múltiplo de 10 menor ou igual
+                if (moviesToReturn == 0 && totalMovies > 0) {
+                    moviesToReturn = Math.min(10, totalMovies);
+                }
+                List<JsonObject> topMovies = allMovies.stream().limit(moviesToReturn).toList();
                 
                 // Log para debug
-                System.out.println("Total de filmes após remover duplicatas: " + allMovies.size());
-                System.out.println("Enviando " + topMovies.size() + " filmes para o cliente");
+                System.out.println("Total de filmes após remover duplicatas e aplicar filtros: " + totalMovies);
+                System.out.println("Enviando " + moviesToReturn + " filmes para o cliente");
                 
                 return gson.toJson(Map.of("status", "ok", "movies", topMovies));
             } catch (Exception e) {
