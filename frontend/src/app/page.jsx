@@ -143,6 +143,8 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const currentMovieRef = useRef(null);
     const userId = useRef(null);
+    const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(false);
+    const [showRecommendationLoader, setShowRecommendationLoader] = useState(false);
 
     // Inicialize userId logo no início
     useEffect(() => {
@@ -161,11 +163,10 @@ export default function Home() {
         }
     }, []);
 
-    const updateProgress = useCallback((index) => {
-        const seen = movies.length - (index + 1);
-        const progress = (seen / movies.length) * 100;
+    const updateProgress = useCallback((count) => {
+        const progress = (count / 10) * 100;
         setLoadingProgress(progress);
-    }, [movies.length]);
+    }, []);
 
     // Função para carregar filmes
     const loadMovies = useCallback(async () => {
@@ -180,7 +181,7 @@ export default function Home() {
                 const reversedMovies = [...fetchedMovies].reverse();
                 setMovies(reversedMovies);
                 setCurrentIndex(reversedMovies.length - 1);
-                updateProgress(reversedMovies.length - 1);
+                updateProgress(0);
             } else {
                 setMovies([]);
                 setCurrentIndex(-1);
@@ -202,11 +203,17 @@ export default function Home() {
 
     // Atualiza o progresso quando o índice atual muda
     useEffect(() => {
-        updateProgress(currentIndex);
-    }, [currentIndex, updateProgress]);
+        updateProgress(interactionCount);
+    }, [interactionCount, updateProgress]);
+
+    useEffect(() => {
+        if (isLoadingRecommendation) {
+            setShowRecommendationLoader(true);
+        }
+    }, [isLoadingRecommendation]);
 
     // Verifica se pode deslizar
-    const canSwipe = currentIndex >= 0 && !isAnimating && !loading;
+    const canSwipe = currentIndex >= 0 && !isAnimating && !loading && !isLoadingRecommendation;
 
     // Função executada quando um cartão é deslizado
     const swiped = async (direction, index) => {
@@ -239,11 +246,20 @@ export default function Home() {
         const newCount = interactionCount + 1;
         setInteractionCount(newCount);
         
-        // Verifica se atingiu 10 interações para gerar recomendação
         if (newCount >= 10) {
-            console.log("Atingiu 10 interações, gerando recomendação...");
-            setInteractionCount(0); // Reseta o contador
-            gerarRecomendacao(userId.current);
+            setTimeout(() => {
+              setIsLoadingRecommendation(true);
+            }, 300);
+          
+            await gerarRecomendacao(userId.current);
+          
+            // simula tempo de carregamento antes de sumir o loader
+            setTimeout(() => {
+              setIsLoadingRecommendation(false);
+              setShowRecommendationLoader(false);
+            }, 1500);
+          
+            setInteractionCount(0);
         }
 
         // Avança para o próximo card com atraso para animação
@@ -286,6 +302,8 @@ export default function Home() {
             await loadMovies();
         }
     };
+
+
 
     // Renderização condicional durante o carregamento
     if (loading && movies.length === 0) {
@@ -414,8 +432,16 @@ export default function Home() {
                             </button>
                         </div>
                     </div>
+
+                    <div className={`fixed inset-0 bg-gray-100 flex flex-col items-center justify-center transition-opacity duration-500 ${
+                        showRecommendationLoader ? "opacity-100" : "opacity-0 pointer-events-none"
+                    }`}>
+                        <div className="text-xl font-semibold">Gerando recomendação...</div>
+                        <div className="mt-4 w-16 h-16 border-t-4 border-yellow-500 border-solid rounded-full animate-spin"></div>
+                    </div>
                 </main>
             </div>
+
         </ProtectedRoute>
     );
 }
