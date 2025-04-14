@@ -67,7 +67,7 @@ public class AIService {
         ChatCompletions response = client.getChatCompletions(deploymentName, options);
         ChatResponseMessage message = response.getChoices().get(0).getMessage();
 
-        System.out.println("Resposta do modelo: " + message.getContent());
+        System.out.println("Gerando resposta...");
 
         return message.getContent();
     }
