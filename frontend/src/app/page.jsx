@@ -9,32 +9,106 @@ import {
     SparklesIcon,
     XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useSwipeable } from "react-swipeable";
 import TinderCard from "react-tinder-card";
 
-const fetchMovies = async (page = 1) => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies?page=${page}`);
-    const data = await res.json();
-
-    if (!res.ok) {
-        console.error("Erro ao buscar filmes populares:", data.error);
-        return [];
+// Cache para armazenar os filmes por usuário
+const movieCache = {
+    data: {},
+    timestamp: {},
+    CACHE_DURATION: 30 * 60 * 1000, // 30 minutos em milissegundos
+    
+    // Verifica se o cache para este usuário está válido
+    isValid: function(userId) {
+        return (
+            this.data[userId] && 
+            this.timestamp[userId] && 
+            Date.now() - this.timestamp[userId] < this.CACHE_DURATION
+        );
+    },
+    
+    // Armazena filmes no cache
+    store: function(userId, movies) {
+        this.data[userId] = [...movies]; // Clone para evitar mutações
+        this.timestamp[userId] = Date.now();
+    },
+    
+    // Obtém filmes do cache
+    get: function(userId) {
+        return this.isValid(userId) ? [...this.data[userId]] : null;
+    },
+    
+    // Limpa o cache para um usuário específico
+    clear: function(userId) {
+        delete this.data[userId];
+        delete this.timestamp[userId];
     }
-
-    return data.movies.map((movie) => ({
-        id: movie.id,
-        title: movie.title,
-        studio: "TMDb",
-        image: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
-        description: movie.overview,
-        release_date: movie.release_date,
-        vote_average: movie.vote_average,
-        popularity: movie.popularity,
-    }));
 };
 
-const gerarRecomendacao = async () => {
+// Função para remover filmes duplicados baseado no ID
+const removeDuplicateMovies = (movies) => {
+    const uniqueIds = new Set();
+    return movies.filter(movie => {
+        if (uniqueIds.has(movie.id)) {
+            return false;
+        }
+        uniqueIds.add(movie.id);
+        return true;
+    });
+};
+
+// Função para buscar filmes da API
+const fetchMovies = async (userId) => {
+    try {
+        // Verifica se temos um cache válido
+        const cachedMovies = movieCache.get(userId);
+        if (cachedMovies) {
+            console.log("Usando filmes em cache");
+            return cachedMovies;
+        }
+        
+        console.log("Buscando novos filmes da API");
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId }),
+        });
+        
+        if (!res.ok) {
+            throw new Error(`Erro na API: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        
+        if (!data.movies || !Array.isArray(data.movies)) {
+            throw new Error("Formato de resposta inválido");
+        }
+        
+        // Processa os filmes recebidos
+        const processedMovies = data.movies.map((movie) => ({
+            id: movie.id,
+            title: movie.title,
+            studio: "TMDb",
+            image: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
+            description: movie.overview,
+            release_date: movie.release_date,
+            vote_average: movie.vote_average,
+            popularity: movie.popularity,
+        }));
+        
+        // Remove duplicatas e armazena no cache
+        const uniqueMovies = removeDuplicateMovies(processedMovies);
+        movieCache.store(userId, uniqueMovies);
+        
+        return uniqueMovies;
+    } catch (error) {
+        console.error("Erro ao buscar filmes:", error);
+        return [];
+    }
+};
+
+const gerarRecomendacao = async (userId) => {
     console.log("🔁 Tentando gerar recomendação...");
     try {
         const res = await fetch(
@@ -42,16 +116,15 @@ const gerarRecomendacao = async () => {
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    userId: 1, // substitua pelo ID do usuário
-                }),
+                body: JSON.stringify({ userId }),
             }
         );
 
         if (res.ok) {
             const recomendacao = await res.json();
             alert(`Nova recomendação recebida: ${recomendacao.recomendacao}`);
-            // Aqui você pode redirecionar ou mostrar a recomendação se quiser
+            // Limpa o cache para forçar novo carregamento
+            movieCache.clear(userId);
         } else {
             console.error("Erro ao gerar recomendação");
         }
@@ -67,50 +140,93 @@ export default function Home() {
     const [loadingProgress, setLoadingProgress] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
     const [swipeDirection, setSwipeDirection] = useState(null);
+    const [loading, setLoading] = useState(true);
     const currentMovieRef = useRef(null);
-    const canSwipe = currentIndex >= 0 && !isAnimating;
-    const recommendationTriggeredRef = useRef(false);
+    const userId = useRef(null);
 
-    const updateProgress = (index) => {
+    // Inicialize userId logo no início
+    useEffect(() => {
+        try {
+            const user = JSON.parse(localStorage.getItem("user"));
+            if (user && user.id) {
+                userId.current = user.id;
+            } else {
+                // Fallback para 1 se não conseguir obter o ID do usuário
+                userId.current = 1;
+                console.warn("ID do usuário não encontrado, usando fallback");
+            }
+        } catch (error) {
+            console.error("Erro ao obter ID do usuário:", error);
+            userId.current = 1;
+        }
+    }, []);
+
+    const updateProgress = useCallback((index) => {
         const seen = movies.length - (index + 1);
         const progress = (seen / movies.length) * 100;
         setLoadingProgress(progress);
-    };
+    }, [movies.length]);
 
+    // Função para carregar filmes
+    const loadMovies = useCallback(async () => {
+        if (!userId.current) return;
+        
+        setLoading(true);
+        try {
+            const fetchedMovies = await fetchMovies(userId.current);
+            
+            if (fetchedMovies.length > 0) {
+                // Inverte a ordem para que possamos começar do primeiro item
+                const reversedMovies = [...fetchedMovies].reverse();
+                setMovies(reversedMovies);
+                setCurrentIndex(reversedMovies.length - 1);
+                updateProgress(reversedMovies.length - 1);
+            } else {
+                setMovies([]);
+                setCurrentIndex(-1);
+                setLoadingProgress(100);
+            }
+        } catch (err) {
+            console.error("Erro ao carregar filmes:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, [updateProgress]);
+
+    // Carrega filmes quando o componente é montado
     useEffect(() => {
-        const loadMovies = async () => {
-            const page = Math.floor(Math.random() * 5) + 1;
-            const fetched = await fetchMovies(page);
-            const reversed = fetched.reverse();
-            setMovies(reversed);
-            setCurrentIndex(reversed.length - 1);
-            updateProgress(reversed.length - 1); // progresso inicial
-        };
-        loadMovies();
-    }, []);
+        if (userId.current) {
+            loadMovies();
+        }
+    }, [loadMovies]);
 
+    // Atualiza o progresso quando o índice atual muda
     useEffect(() => {
         updateProgress(currentIndex);
-    }, [currentIndex, movies.length]);
+    }, [currentIndex, updateProgress]);
 
+    // Verifica se pode deslizar
+    const canSwipe = currentIndex >= 0 && !isAnimating && !loading;
+
+    // Função executada quando um cartão é deslizado
     const swiped = async (direction, index) => {
+        if (!canSwipe) return;
+        
         setIsAnimating(true);
         setSwipeDirection(direction);
 
-        const value = direction === "right" ? true : false;
+        const value = direction === "right";
         const movie = movies[index];
 
-        console.log(
-            `Você ${value === true ? "curtiu" : "descartou"}: ${movie.title}`
-        );
+        console.log(`Você ${value ? "curtiu" : "descartou"}: ${movie.title}`);
 
-        // 1. Enviar interação para o backend
+        // Enviar interação para o backend
         try {
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    userId: 1, // substitua pelo ID real do usuário logado
+                    userId: userId.current,
                     movieId: movie.id,
                     interaction: value,
                 }),
@@ -119,20 +235,18 @@ export default function Home() {
             console.error("Erro ao enviar interação:", error);
         }
 
-        // 2. Atualizar contador
-        setInteractionCount((prev) => {
-            const updated = prev + 1;
+        // Atualiza contador e verifica se precisa gerar recomendação
+        const newCount = interactionCount + 1;
+        setInteractionCount(newCount);
+        
+        // Verifica se atingiu 10 interações para gerar recomendação
+        if (newCount >= 10) {
+            console.log("Atingiu 10 interações, gerando recomendação...");
+            setInteractionCount(0); // Reseta o contador
+            gerarRecomendacao(userId.current);
+        }
 
-            if (updated >= 10 && !recommendationTriggeredRef.current) {
-                recommendationTriggeredRef.current = true;
-                gerarRecomendacao();
-                return 0;
-            }
-
-            return updated;
-        });
-
-        // 4. Avança para o próximo card
+        // Avança para o próximo card com atraso para animação
         setTimeout(() => {
             setCurrentIndex((prev) => prev - 1);
             setIsAnimating(false);
@@ -140,6 +254,7 @@ export default function Home() {
         }, 300);
     };
 
+    // Função para deslizar programaticamente
     const swipe = (dir) => {
         if (canSwipe && currentMovieRef.current) {
             setSwipeDirection(dir);
@@ -147,10 +262,12 @@ export default function Home() {
         }
     };
 
+    // Quando um cartão sai da tela
     const outOfFrame = (idx) => {
         console.log(`${movies[idx]?.title} saiu da tela.`);
     };
 
+    // Configuração de deslizamento
     const handlers = useSwipeable({
         onSwipedLeft: () => swipe("left"),
         onSwipedRight: () => swipe("right"),
@@ -158,17 +275,32 @@ export default function Home() {
         trackMouse: true,
     });
 
+    // Função para resetar e buscar novos filmes
     const resetMatches = async () => {
-        recommendationTriggeredRef.current = false; // ← reseta o gatilho da recomendação
-    
-        const fetched = await fetchPopularMovies(
-            Math.floor(Math.random() * 5) + 1
-        );
-        const reversed = fetched.reverse();
-        setMovies(reversed);
-        setCurrentIndex(reversed.length - 1);
-        updateProgress(reversed.length - 1);
+        // Resetar o contador de interações
+        setInteractionCount(0);
+        
+        // Limpar o cache para forçar o carregamento de novos filmes
+        if (userId.current) {
+            movieCache.clear(userId.current);
+            await loadMovies();
+        }
     };
+
+    // Renderização condicional durante o carregamento
+    if (loading && movies.length === 0) {
+        return (
+            <ProtectedRoute>
+                <div className="bg-gray-100 md:flex">
+                    <Navbar />
+                    <main className="flex-1 overflow-hidden flex flex-col h-[calc(100vh-4rem)] md:h-screen items-center justify-center">
+                        <div className="text-xl font-semibold">Carregando filmes...</div>
+                        <div className="mt-4 w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
+                    </main>
+                </div>
+            </ProtectedRoute>
+        );
+    }
 
     return (
         <ProtectedRoute>
@@ -188,59 +320,41 @@ export default function Home() {
                         </div>
 
                         <div
-                            className="h-[80vh] items-center justify-center"
+                            className="h-[80vh] flex items-center justify-center relative"
                             {...handlers}
                         >
                             <div className="relative flex items-center justify-center w-full h-full">
                                 {currentIndex >= 0 ? (
                                     movies.map((movie, index) => {
                                         const isTop = index === currentIndex;
-                                        const isNext =
-                                            index === currentIndex - 1;
+                                        const isNext = index === currentIndex - 1;
+                                        
+                                        // Só renderizar o cartão atual e o próximo
                                         if (!isTop && !isNext) return null;
 
                                         return (
                                             <TinderCard
-                                                ref={
-                                                    isTop
-                                                        ? currentMovieRef
-                                                        : null
-                                                }
-                                                key={movie.id}
-                                                onSwipe={(dir) =>
-                                                    swiped(dir, index)
-                                                }
-                                                onCardLeftScreen={() =>
-                                                    outOfFrame(index)
-                                                }
+                                                ref={isTop ? currentMovieRef : null}
+                                                key={`${movie.id}-${index}`}
+                                                onSwipe={(dir) => swiped(dir, index)}
+                                                onCardLeftScreen={() => outOfFrame(index)}
                                                 preventSwipe={["up", "down"]}
-                                                className="absolute transition-all duration-300 ease-in-out"
+                                                className="absolute inset-0 flex items-center justify-center"
                                             >
                                                 <div
-                                                    className={
+                                                    className={`w-[90vw] max-w-md ${
                                                         isNext
                                                             ? "scale-90 translate-y-4 transition-all duration-300"
                                                             : ""
-                                                    }
+                                                    }`}
                                                 >
-                                                    {/* Card menor para mobile */}
-                                                    <div className="relative">
-                                                        <ImprovedMovieCard
-                                                            movie={movie}
-                                                            isActive={isTop}
-                                                            isAnimating={
-                                                                isAnimating &&
-                                                                isTop
-                                                            }
-                                                            swipeDirection={
-                                                                isTop
-                                                                    ? swipeDirection
-                                                                    : null
-                                                            }
-                                                            // Altura menor no mobile
-                                                            className="h-[60vh] md:h-[70vh]"
-                                                        />
-                                                    </div>
+                                                    <ImprovedMovieCard
+                                                        movie={movie}
+                                                        isActive={isTop}
+                                                        isAnimating={isAnimating && isTop}
+                                                        swipeDirection={isTop ? swipeDirection : null}
+                                                        className="h-[60vh] md:h-[70vh]"
+                                                    />
                                                 </div>
                                             </TinderCard>
                                         );
@@ -251,8 +365,7 @@ export default function Home() {
                                             Sem mais filmes!
                                         </h2>
                                         <p className="text-gray-600 mb-4">
-                                            Você viu todos os filmes
-                                            disponíveis.
+                                            Você viu todos os filmes disponíveis.
                                         </p>
                                         <button
                                             onClick={resetMatches}
@@ -269,7 +382,7 @@ export default function Home() {
                         <div className="flex space-x-4 py-2 justify-center">
                             <button
                                 onClick={resetMatches}
-                                disabled={!canSwipe}
+                                disabled={loading}
                                 className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
                                 title="Reiniciar"
                             >
@@ -294,6 +407,7 @@ export default function Home() {
                             <button
                                 onClick={() => alert("Modo surpresa!")}
                                 className="w-14 h-14 flex items-center justify-center bg-yellow-400 rounded-full shadow-lg hover:scale-105 transition"
+                                disabled={!canSwipe}
                                 title="Surpresa"
                             >
                                 <SparklesIcon className="w-6 h-6 text-gray-700" />

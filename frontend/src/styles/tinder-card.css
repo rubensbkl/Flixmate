@@ -1,6 +1,23 @@
 /* Estilos para corrigir problemas de arrastar no MovieCard */
 
-/* Classe base para o card no estilo tinder */
+/* Estilos para a biblioteca react-tinder-card */
+.react-tinder-card {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+  }
+  
+  /* Garante que os cards fiquem visíveis */
+  .react-tinder-card.inset-0 {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
   
   /* Previne comportamento de drag em todas as imagens e divs com background-image */
   img, 
@@ -11,7 +28,7 @@
     -o-user-drag: none;
     user-drag: none;
     
-    /* Previne seleção de texto também */
+    /* Previne seleção de texto */
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -19,14 +36,20 @@
     
     /* Previne comportamento de toque em dispositivos móveis */
     -webkit-touch-callout: none;
-  }
-
-  /* Desabilita eventos de ponteiro em imagens internas */
-  .card-container img {
     pointer-events: none;
   }
   
-  /* Animações de swipe (opcional) */
+  /* Desabilitar eventos de toque para elementos internos */
+  .swipe * {
+    touch-action: none;
+  }
+  
+  /* Garantir que o cartão possa ser movido pelo TinderCard */
+  .swipe {
+    touch-action: none;
+  }
+  
+  /* Animações de swipe */
   @keyframes swipe-left {
     from { transform: translateX(0) rotate(0); }
     to { transform: translateX(-300px) rotate(-30deg); opacity: 0; }
@@ -43,4 +66,21 @@
   
   .swipe-right-animation {
     animation: swipe-right 0.5s forwards;
+  }
+  
+  /* Fix para iOS */
+  html, body {
+    overscroll-behavior-y: contain;
+    overscroll-behavior-x: contain;
+    touch-action: pan-y;
+  }
+  
+  /* Evitar que a página inteira deslize em dispositivos móveis */
+  @media (pointer: coarse) {
+    body {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
   }

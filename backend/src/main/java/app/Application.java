@@ -8,11 +8,14 @@ import static spark.Spark.port;
 import static spark.Spark.post;
 import static spark.Spark.staticFiles;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
+import java.util.function.Consumer;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -21,10 +24,13 @@ import com.google.gson.JsonParser;
 
 import dao.InteractionDAO;
 import dao.UserDAO;
+import dao.UserPreferredGenreDAO;
+import model.Genre;
 import model.Interaction;
 import model.User;
 import service.AIService;
 import service.TMDBService;
+import service.UserPreferredGenreService;
 import util.JWTUtil;
 
 public class Application {
@@ -95,10 +101,12 @@ public class Application {
         // DAOs
         UserDAO userDAO = new UserDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
         InteractionDAO interactionDAO = new InteractionDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
+        UserPreferredGenreDAO upgDAO = new UserPreferredGenreDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
         // RecommendationDAO recommendationDAO = new RecommendationDAO(dbHost, dbName,
         // dbPort, dbUser, dbPassword);
 
         // Services
+        UserPreferredGenreService userPreferredGenreService = new UserPreferredGenreService();
         TMDBService tmdb = new TMDBService(tmdbApiKey);
         AIService ai = new AIService(azureOpenAIEndpoint, azureOpenAIKey, azureOpenAIDeploymentName, tmdb);
 
@@ -339,17 +347,74 @@ public class Application {
             }
         });
 
-        get("/api/movies", (req, res) -> {
-            String pageParam = req.queryParams("page");
-            int page = pageParam != null ? Integer.parseInt(pageParam) : 1;
-
+        post("/api/movies", (req, res) -> {
+            JsonObject requestBody = gson.fromJson(req.body(), JsonObject.class);
+            int userId = requestBody.get("userId").getAsInt();
+            int page = requestBody.has("page") ? requestBody.get("page").getAsInt() : 1;
+            System.out.println("Page: " + page);
             try {
+                // DAO de preferências
+                List<Genre> preferredGenresList = upgDAO.getPreferredGenres(userId);
+                List<Integer> preferredGenres = preferredGenresList.stream()
+                    .map(Genre::getId)
+                    .toList();
+                    
+                // Pega filmes de várias listas
+                JsonArray trendingMovies = tmdb.getTrendingMovies(page);
                 JsonArray popularMovies = tmdb.getPopularMovies(page);
-                return gson.toJson(Map.of("status", "ok", "movies", popularMovies));
+                JsonArray topRatedMovies = tmdb.getTopRatedMovies(page);
+                JsonArray upcomingMovies = tmdb.getUpcomingMovies(page);
+                
+                // Usamos um Set para evitar duplicatas por ID
+                Map<Integer, JsonObject> uniqueMoviesMap = new HashMap<>();
+                
+                // Função para processar cada array e adicionar ao mapa de filmes únicos
+                Consumer<JsonArray> processMovies = (moviesArray) -> {
+                    if (moviesArray != null) {
+                        moviesArray.forEach(element -> {
+                            if (element.isJsonObject()) {
+                                JsonObject movie = element.getAsJsonObject();
+                                if (movie.has("id")) {
+                                    int movieId = movie.get("id").getAsInt();
+                                    // Só adiciona se ainda não existe no mapa
+                                    if (!uniqueMoviesMap.containsKey(movieId)) {
+                                        uniqueMoviesMap.put(movieId, movie);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                };
+                
+                // Processa todas as listas
+                processMovies.accept(trendingMovies);
+                processMovies.accept(popularMovies);
+                processMovies.accept(topRatedMovies);
+                processMovies.accept(upcomingMovies);
+                
+                // Converte o mapa para uma lista
+                List<JsonObject> allMovies = new ArrayList<>(uniqueMoviesMap.values());
+                
+                // Ordena pela compatibilidade com os gêneros preferidos
+                allMovies.sort((m1, m2) -> {
+                    int score1 = userPreferredGenreService.calculateGenreScore(m1, preferredGenres);
+                    int score2 = userPreferredGenreService.calculateGenreScore(m2, preferredGenres);
+                    return Integer.compare(score2, score1); // Ordem decrescente
+                });
+                
+                // Limita a quantidade de filmes retornados para melhorar performance do cliente
+                // Podemos enviar mais que 10 para ter um cache maior no frontend
+                List<JsonObject> topMovies = allMovies.stream().limit(40).toList();
+                
+                // Log para debug
+                System.out.println("Total de filmes após remover duplicatas: " + allMovies.size());
+                System.out.println("Enviando " + topMovies.size() + " filmes para o cliente");
+                
+                return gson.toJson(Map.of("status", "ok", "movies", topMovies));
             } catch (Exception e) {
                 e.printStackTrace();
                 res.status(500);
-                return gson.toJson(Map.of("error", "Erro ao buscar filmes populares"));
+                return gson.toJson(Map.of("error", "Erro ao buscar recomendações de filmes: " + e.getMessage()));
             }
         });
     }
