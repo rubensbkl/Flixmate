@@ -11,6 +11,18 @@ export default function LoginClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  
+
+  useEffect(() => {
+    return () => {
+      setEmail({
+        email: '',
+      });
+      setPassword({
+        password: '',
+      });
+    };
+  }, []);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -87,7 +99,7 @@ export default function LoginClient() {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4" key="login-form" autoComplete="off">
                     <div>
                         <input
                             type="email"
@@ -96,6 +108,7 @@ export default function LoginClient() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
+                            autoComplete="new-email"
                         />
                     </div>
 
@@ -107,6 +120,7 @@ export default function LoginClient() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
+                            autoComplete="new-password"
                         />
                     </div>
 

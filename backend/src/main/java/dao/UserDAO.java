@@ -29,7 +29,7 @@ public class UserDAO extends DAO {
     public boolean insert(User user) {
         boolean status = false;
         try {
-            String sql = "INSERT INTO \"user\" (first_name, last_name, email, password, gender) VALUES (?, ?, ?, ?, ?) RETURNING id;";
+            String sql = "INSERT INTO users (first_name, last_name, email, password, gender) VALUES (?, ?, ?, ?, ?) RETURNING id;";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setString(1, user.getFirstName());
             st.setString(2, user.getLastName());
@@ -59,7 +59,7 @@ public class UserDAO extends DAO {
     public User getById(int id) {
         User user = null;
         try {
-            String sql = "SELECT * FROM \"user\" WHERE id = ?";
+            String sql = "SELECT * FROM users WHERE id = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setInt(1, id);
             ResultSet rs = st.executeQuery();
@@ -89,7 +89,7 @@ public class UserDAO extends DAO {
     public List<User> getAll() {
         List<User> users = new ArrayList<>();
         try {
-            String sql = "SELECT * FROM \"user\"";
+            String sql = "SELECT * FROM users";
             Statement st = conexao.createStatement();
             ResultSet rs = st.executeQuery(sql);
 
@@ -120,7 +120,7 @@ public class UserDAO extends DAO {
     public boolean update(User user) {
         boolean status = false;
         try {
-            String sql = "UPDATE \"user\" SET first_name = ?, last_name = ?, email = ?, password = ?, gender = ? WHERE id = ?";
+            String sql = "UPDATE users SET first_name = ?, last_name = ?, email = ?, password = ?, gender = ? WHERE id = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setString(1, user.getFirstName());
             st.setString(2, user.getLastName());
@@ -147,7 +147,7 @@ public class UserDAO extends DAO {
     public boolean delete(int id) {
         boolean status = false;
         try {
-            String sql = "DELETE FROM \"user\" WHERE id = ?";
+            String sql = "DELETE FROM users WHERE id = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setInt(1, id);
             int affectedRows = st.executeUpdate();
@@ -169,7 +169,7 @@ public class UserDAO extends DAO {
     public boolean auth(String email, String password) {
         boolean resp = false;
         try {
-            String sql = "SELECT * FROM \"user\" WHERE email = ? AND password = ?";
+            String sql = "SELECT * FROM users WHERE email = ? AND password = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setString(1, email);
             st.setString(2, password);
@@ -194,7 +194,7 @@ public class UserDAO extends DAO {
     public boolean emailExists(String email) {
         boolean exists = false;
         try {
-            String sql = "SELECT 1 FROM \"user\" WHERE email = ?";
+            String sql = "SELECT 1 FROM users WHERE email = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setString(1, email);
 
@@ -218,7 +218,7 @@ public class UserDAO extends DAO {
     public User getByEmail(String email) {
         User user = null;
         try {
-            String sql = "SELECT * FROM \"user\" WHERE email = ?";
+            String sql = "SELECT * FROM users WHERE email = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setString(1, email);
             ResultSet rs = st.executeQuery();
@@ -243,7 +243,7 @@ public class UserDAO extends DAO {
     public boolean getContentFilter(int userId) {
         boolean contentFilter = false;
         try {
-            String sql = "SELECT content_filter FROM \"user\" WHERE id = ?";
+            String sql = "SELECT content_filter FROM users WHERE id = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setInt(1, userId);
             ResultSet rs = st.executeQuery();

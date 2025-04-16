@@ -3,7 +3,7 @@ package service;
 import com.google.gson.JsonObject;
 import java.util.List;
 
-public class UserPreferredGenreService {
+public class UserGenreService {
 
     public int calculateGenreScore(JsonObject movie, List<Integer> preferredGenres) {
         if (!movie.has("genre_ids")) {

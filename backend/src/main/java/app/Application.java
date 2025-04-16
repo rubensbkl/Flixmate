@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import java.util.function.Consumer;
 
 import com.google.gson.Gson;
@@ -22,15 +21,22 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import dao.InteractionDAO;
+import dao.FeedbackDAO;
+import dao.MovieDAO;
+import dao.MovieGenreDAO;
 import dao.UserDAO;
-import dao.UserPreferredGenreDAO;
+import dao.UserGenreDAO;
+import model.Feedback;
 import model.Genre;
-import model.Interaction;
+import model.Movie;
 import model.User;
 import service.AIService;
+import service.FeedbackService;
+import service.MovieGenreService;
+import service.MovieService;
+import service.RecommendationService;
 import service.TMDBService;
-import service.UserPreferredGenreService;
+import service.UserGenreService;
 import util.JWTUtil;
 
 public class Application {
@@ -99,16 +105,20 @@ public class Application {
         Gson gson = new Gson();
 
         // DAOs
+        FeedbackDAO feedbackDAO = new FeedbackDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
+        MovieDAO movieDAO = new MovieDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
+        MovieGenreDAO movieGenreDAO = new MovieGenreDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
         UserDAO userDAO = new UserDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
-        InteractionDAO interactionDAO = new InteractionDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
-        UserPreferredGenreDAO upgDAO = new UserPreferredGenreDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
-        // RecommendationDAO recommendationDAO = new RecommendationDAO(dbHost, dbName,
-        // dbPort, dbUser, dbPassword);
+        UserGenreDAO userGenreDAO = new UserGenreDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
 
         // Services
-        UserPreferredGenreService userPreferredGenreService = new UserPreferredGenreService();
         TMDBService tmdb = new TMDBService(tmdbApiKey);
         AIService ai = new AIService(azureOpenAIEndpoint, azureOpenAIKey, azureOpenAIDeploymentName, tmdb);
+        RecommendationService recommendationService = new RecommendationService(tmdb);
+        UserGenreService userGenreService = new UserGenreService();
+        MovieGenreService movieGenreService = new MovieGenreService(movieGenreDAO);
+        MovieService movieService = new MovieService(movieDAO, movieGenreService, tmdb);
+        FeedbackService feedbackService = new FeedbackService(feedbackDAO, movieService);
 
         // JWT Util
         JWTUtil jwt = new JWTUtil(jwtSecret);
@@ -302,45 +312,91 @@ public class Application {
         get("/api/ping", (req, res) -> gson.toJson(Map.of("status", "ok", "message", "pong")));
 
         post("/api/feedback", (req, res) -> {
-            Interaction interaction = gson.fromJson(req.body(), Interaction.class);
-            if (interaction.getUserId() <= 0 || interaction.getMovieId() <= 0 || interaction.getInteraction() == null) {
-                res.status(400);
-                return gson.toJson(Map.of("error", "Dados inválidos"));
-            }
+            try {
+                Feedback feedback = gson.fromJson(req.body(), Feedback.class);
 
-            boolean sucesso = interactionDAO.insert(interaction);
-
-            if (sucesso) {
-                res.status(201);
-                return gson.toJson(Map.of("status", "Interação registrada com sucesso"));
-            } else {
+                boolean sucesso = feedbackService.registrarFeedback(feedback);
+        
+                if (sucesso) {
+                    res.status(201);
+                    return gson.toJson(Map.of("status", "Interação registrada com sucesso"));
+                } else {
+                    res.status(500);
+                    return gson.toJson(Map.of("status", "Erro ao registrar interação"));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
                 res.status(500);
-                return gson.toJson(Map.of("error", "Erro ao registrar interação"));
+                return gson.toJson(Map.of("error", "Erro no servidor"));
             }
         });
 
         post("/api/recommendation", (req, res) -> {
+            System.out.println("Recebida requisição para /api/recommendation");
+
             JsonObject body = JsonParser.parseString(req.body()).getAsJsonObject();
+            System.out.println("Corpo da requisição: " + body);
+
             int userId = body.get("userId").getAsInt();
+            System.out.println("ID do usuário: " + userId);
 
-            List<Interaction> interacoes = interactionDAO.getInteractionsByUserId(userId);
-
-            if (interacoes.size() < 5) {
+            List<Feedback> interacoes = feedbackDAO.getFeedbacksByUserId(userId);
+            // Verifica se o usuário tem interações
+            if (interacoes.isEmpty()) {
                 res.status(400);
-                return gson.toJson(Map.of("error", "Usuário precisa ter ao menos 5 interações"));
+                return gson.toJson(Map.of("error", "Usuário não possui interações"));
             }
 
-            try {
-                String recomendacao = ai.gerarRecomendacao(interacoes);
-                boolean sucesso = interactionDAO.clear(userId);
+            // Enriquecer as interações com detalhes dos filmes
+            System.out.println("Enriquecendo interações do usuário com detalhes dos filmes:");
+            for (Feedback feedback : interacoes) {
+                Movie movie = movieService.buscarFilmePorId(feedback.getMovieId());
+                ArrayList<Genre> generos = movieGenreService.buscarGenerosDoFilme(feedback.getMovieId());
+                
+                // Formatar os gêneros como string
+                StringBuilder genresStr = new StringBuilder();
+                for (int i = 0; i < generos.size(); i++) {
+                    if (i > 0) genresStr.append(", ");
+                    genresStr.append(generos.get(i).getName()).append(" (ID: ").append(generos.get(i).getId()).append(")");
+                }
+                
+                // Adicionar detalhes do filme ao feedback
+                feedback.setMovieTitle(movie.getTitle());
+                feedback.setMovieGenres(genresStr.toString());
+                feedback.setReleaseDate(movie.getReleaseDate());
+                feedback.setPopularity(movie.getPopularity());
+                feedback.setAdult(movie.getAdult());
+                feedback.setOriginalLanguage(movie.getOriginalLanguage());
+                
+                // Adicionar gêneros ao filme original
+                ArrayList<Integer> generosIds = new ArrayList<>();
+                for (Genre g : generos) {
+                    generosIds.add(g.getId());
+                }
+                movie.setGenreIds(generosIds);
+            }
+            
+            List<Genre> generosFavoritos = userGenreDAO.getPreferredGenres(userId);
+            List<Movie> candidateMovies = recommendationService.getCandidateMovies(interacoes);
+            
 
-                if (!sucesso) {
+            try {
+                System.out.println("Chamando IA para gerar recomendação...");
+                int recommendedMovieId = ai.gerarRecomendacao(interacoes, generosFavoritos, candidateMovies);
+                System.out.println("ID do filme recomendado: " + recommendedMovieId);
+
+                System.out.println("Limpando interações do usuário...");
+                boolean clearFeedback = feedbackDAO.clear(userId);
+                System.out.println("Resultado da limpeza: " + clearFeedback);
+
+                if (!clearFeedback) {
                     res.status(500);
                     return gson.toJson(Map.of("error", "Erro ao limpar interações"));
                 }
 
-                return gson.toJson(Map.of("status", "ok", "recomendacao", recomendacao));
+                return gson.toJson(Map.of("status", "ok", "recomendacao", recommendedMovieId));
             } catch (Exception e) {
+                System.out.println("Erro ao gerar recomendação:");
                 e.printStackTrace();
                 res.status(500);
                 return gson.toJson(Map.of("error", "Erro ao gerar recomendação"));
@@ -357,7 +413,7 @@ public class Application {
                 boolean contentFilter = userDAO.getContentFilter(userId);
                 System.out.println("Content Filter: " + contentFilter);
                 // DAO de preferências
-                List<Genre> preferredGenresList = upgDAO.getPreferredGenres(userId);
+                List<Genre> preferredGenresList = userGenreDAO.getPreferredGenres(userId);
                 List<Integer> preferredGenres = preferredGenresList.stream()
                     .map(Genre::getId)
                     .toList();
@@ -408,8 +464,8 @@ public class Application {
                 
                 // Ordena pela compatibilidade com os gêneros preferidos
                 allMovies.sort((m1, m2) -> {
-                    int score1 = userPreferredGenreService.calculateGenreScore(m1, preferredGenres);
-                    int score2 = userPreferredGenreService.calculateGenreScore(m2, preferredGenres);
+                    int score1 = userGenreService.calculateGenreScore(m1, preferredGenres);
+                    int score2 = userGenreService.calculateGenreScore(m2, preferredGenres);
                     return Integer.compare(score2, score1); // Ordem decrescente
                 });
                 

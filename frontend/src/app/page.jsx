@@ -20,7 +20,7 @@ import { movieCache } from "@/lib/cache";
 export default function Home() {
     const [movies, setMovies] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(-1);
-    const [interactionCount, setInteractionCount] = useState(0);
+    const [feedbackCount, setFeedbackCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [isAnimating, setIsAnimating] = useState(false);
     const [swipeDirection, setSwipeDirection] = useState(null);
@@ -43,7 +43,7 @@ export default function Home() {
             console.log("🔄 Restaurando sessão");
             setMovies(session.movies);
             setCurrentIndex(session.currentIndex);
-            setInteractionCount(session.interactionCount);
+            setFeedbackCount(session.feedbackCount);
             currentPage.current = session.currentPage || 1;
             setLoading(false);
             return;
@@ -57,11 +57,11 @@ export default function Home() {
         
             setMovies(reversed);
             setCurrentIndex(startIdx);
-            setInteractionCount(0);
+            setFeedbackCount(0);
             saveSession(userId.current, {
                 movies: reversed,
                 currentIndex: startIdx,
-                interactionCount: 0,
+                feedbackCount: 0,
                 currentPage: currentPage.current
             });
         
@@ -86,12 +86,12 @@ export default function Home() {
     
         await sendFeedback(userId.current, movie.id, liked);
     
-        const newCount = interactionCount + 1;
-        setInteractionCount(newCount);
+        const newCount = feedbackCount + 1;
+        setFeedbackCount(newCount);
         saveSession(userId.current, {
             movies,
             currentIndex: index - 1,
-            interactionCount: newCount,
+            feedbackCount: newCount,
             currentPage: currentPage.current
         });
     
@@ -99,13 +99,13 @@ export default function Home() {
             setIsLoadingRecommendation(true);
             await gerarRecomendacao(userId.current);
             setIsLoadingRecommendation(false);
-            setInteractionCount(0);
+            setFeedbackCount(0);
 
             setCurrentIndex(index - 1);
             saveSession(userId.current, {
                 movies,
                 currentIndex: index - 1,
-                interactionCount: 0,
+                feedbackCount: 0,
                 currentPage: currentPage.current
             });
 
@@ -136,7 +136,7 @@ export default function Home() {
     const outOfFrame = (idx) => console.log(`${movies[idx]?.title} saiu da tela.`);
     
     const resetMatches = async () => {
-        setInteractionCount(0);
+        setFeedbackCount(0);
         clearSession(userId.current);
         currentPage.current = 1;
         movieCache.clear(userId.current);
@@ -178,7 +178,7 @@ export default function Home() {
                         <div className="relative h-1 w-full bg-gray-200">
                             <div
                                 className="absolute h-1 bg-black transition-all duration-300 ease-in-out"
-                                style={{ width: `${(interactionCount / 10) * 100}%` }}
+                                style={{ width: `${(feedbackCount / 10) * 100}%` }}
                             ></div>
                         </div>
 
