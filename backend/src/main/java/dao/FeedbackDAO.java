@@ -6,11 +6,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import model.Interaction;
+import model.Feedback;
 
-public class InteractionDAO extends DAO {
+public class FeedbackDAO extends DAO {
 
-    public InteractionDAO(String serverName, String mydatabase, int porta, String username, String password) {
+    public FeedbackDAO(String serverName, String mydatabase, int porta, String username, String password) {
         super();
         conectar(serverName, mydatabase, porta, username, password);
     }
@@ -21,17 +21,17 @@ public class InteractionDAO extends DAO {
 
     /**
      * Insere uma nova interação no banco de dados
-     * @param interaction A interação a ser inserida
+     * @param feedback A interação a ser inserida
      * @return true se a inserção foi bem-sucedida, false caso contrário
      */
-    public boolean insert(Interaction interaction) {
+    public boolean insert(Feedback feedback) {
         boolean status = false;
         try {
-            String sql = "INSERT INTO interactions (user_id, movie_id, interaction) VALUES (?, ?, ?)";
+            String sql = "INSERT INTO feedbacks (user_id, movie_id, feedback) VALUES (?, ?, ?)";
             PreparedStatement st = conexao.prepareStatement(sql);
-            st.setInt(1, interaction.getUserId());
-            st.setInt(2, interaction.getMovieId());
-            st.setBoolean(3, interaction.getInteraction());
+            st.setInt(1, feedback.getUserId());
+            st.setInt(2, feedback.getMovieId());
+            st.setBoolean(3, feedback.getFeedback());
             
             int affectedRows = st.executeUpdate();
             status = (affectedRows > 0);
@@ -47,18 +47,18 @@ public class InteractionDAO extends DAO {
      * @param userId O ID do usuário
      * @return Lista de interações do usuário
      */
-    public List<Interaction> getInteractionsByUserId(int userId) {
-        List<Interaction> interacoes = new ArrayList<>();
+    public List<Feedback> getFeedbacksByUserId(int userId) {
+        List<Feedback> interacoes = new ArrayList<>();
         try {
-            String sql = "SELECT * FROM interactions WHERE user_id = ?";
+            String sql = "SELECT * FROM feedbacks WHERE user_id = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setInt(1, userId);
             ResultSet rs = st.executeQuery();
 
             while (rs.next()) {
                 int movieId = rs.getInt("movie_id");
-                boolean interaction = rs.getBoolean("interaction");
-                interacoes.add(new Interaction(userId, movieId, interaction));
+                boolean feedback = rs.getBoolean("feedback");
+                interacoes.add(new Feedback(userId, movieId, feedback));
             }
             rs.close();
             st.close();
@@ -74,25 +74,25 @@ public class InteractionDAO extends DAO {
      * @param movieId O ID do filme
      * @return A interação encontrada ou null se não existir
      */
-    public Interaction getInteraction(int userId, int movieId) {
-        Interaction interaction = null;
+    public Feedback getFeedback(int userId, int movieId) {
+        Feedback feedback = null;
         try {
-            String sql = "SELECT * FROM interactions WHERE user_id = ? AND movie_id = ?";
+            String sql = "SELECT * FROM feedbacks WHERE user_id = ? AND movie_id = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setInt(1, userId);
             st.setInt(2, movieId);
             ResultSet rs = st.executeQuery();
 
             if (rs.next()) {
-                boolean value = rs.getBoolean("interaction");
-                interaction = new Interaction(userId, movieId, value);
+                boolean value = rs.getBoolean("feedback");
+                feedback = new Feedback(userId, movieId, value);
             }
             rs.close();
             st.close();
         } catch (SQLException e) {
             System.err.println("Erro ao buscar interação específica: " + e.getMessage());
         }
-        return interaction;
+        return feedback;
     }
 
     /**
@@ -103,7 +103,7 @@ public class InteractionDAO extends DAO {
     public boolean clear(int userId) {
         boolean status = false;
         try {
-            String sql = "DELETE FROM interactions WHERE user_id = ?";
+            String sql = "DELETE FROM feedbacks WHERE user_id = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setInt(1, userId);
             
@@ -118,17 +118,17 @@ public class InteractionDAO extends DAO {
 
     /**
      * Atualiza uma interação existente
-     * @param interaction A interação com os dados atualizados
+     * @param feedback A interação com os dados atualizados
      * @return true se a atualização foi bem-sucedida, false caso contrário
      */
-    public boolean update(Interaction interaction) {
+    public boolean update(Feedback feedback) {
         boolean status = false;
         try {
-            String sql = "UPDATE interactions SET interaction = ? WHERE user_id = ? AND movie_id = ?";
+            String sql = "UPDATE feedbacks SET feedback = ? WHERE user_id = ? AND movie_id = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
-            st.setBoolean(1, interaction.getInteraction());
-            st.setInt(2, interaction.getUserId());
-            st.setInt(3, interaction.getMovieId());
+            st.setBoolean(1, feedback.getFeedback());
+            st.setInt(2, feedback.getUserId());
+            st.setInt(3, feedback.getMovieId());
             
             int affectedRows = st.executeUpdate();
             status = (affectedRows > 0);
@@ -144,10 +144,10 @@ public class InteractionDAO extends DAO {
      * @param userId O ID do usuário
      * @return O número de interações
      */
-    public int countInteractions(int userId) {
+    public int countfeedbacks(int userId) {
         int count = 0;
         try {
-            String sql = "SELECT COUNT(*) FROM interactions WHERE user_id = ?";
+            String sql = "SELECT COUNT(*) FROM feedbacks WHERE user_id = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setInt(1, userId);
             ResultSet rs = st.executeQuery();
