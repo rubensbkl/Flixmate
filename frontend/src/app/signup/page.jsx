@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useEffect } from "react";
 
 export default function SignUpPage() {
   const { login } = useAuth();
@@ -16,6 +17,18 @@ export default function SignUpPage() {
     password: "",
     gender: "",
   });
+
+  useEffect(() => {
+    return () => {
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        gender: "",
+      });
+    };
+  }, []);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -68,7 +81,7 @@ export default function SignUpPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" key="signup-form" autoComplete="off">
           <input
             type="text"
             name="firstName"
@@ -77,6 +90,7 @@ export default function SignUpPage() {
             value={formData.firstName}
             onChange={handleChange}
             required
+            autoComplete="new-firstName"
           />
           <input
             type="text"
@@ -86,6 +100,7 @@ export default function SignUpPage() {
             value={formData.lastName}
             onChange={handleChange}
             required
+            autoComplete="new-lastName"
           />
           <input
             type="email"
@@ -95,6 +110,7 @@ export default function SignUpPage() {
             value={formData.email}
             onChange={handleChange}
             required
+            autoComplete="new-email"
           />
           <input
             type="password"
@@ -105,6 +121,8 @@ export default function SignUpPage() {
             onChange={handleChange}
             required
             minLength={6}
+            autoComplete="new-password"
+            
           />
           <select
             name="gender"
@@ -112,6 +130,7 @@ export default function SignUpPage() {
             value={formData.gender}
             onChange={handleChange}
             required
+            autoComplete="new-gender"
           >
             <option value="">Selecione o gênero</option>
             <option value="M">Masculino</option>
