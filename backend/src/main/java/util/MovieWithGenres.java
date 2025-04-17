@@ -1,10 +1,10 @@
 package util;
 
-import model.Genre;
-import model.Movie;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import model.Genre;
+import model.Movie;
 
 /**
  * Classe de transferência de dados (DTO) que representa um filme com seus gêneros
@@ -24,7 +24,7 @@ public class MovieWithGenres extends Movie {
               movie.getOriginalLanguage(), movie.getPopularity(), movie.getAdult());
         this.genres = genres != null ? new ArrayList<>(genres) : new ArrayList<>();
     }
-    
+
     public List<Genre> getGenres() {
         return new ArrayList<>(genres);
     }

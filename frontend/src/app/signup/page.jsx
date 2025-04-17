@@ -1,5 +1,4 @@
 "use client";
-
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,6 +12,7 @@ export default function SignUpPage() {
         email: "",
         password: "",
         gender: "",
+        birthdate: "",
         favoriteGenres: [],
     });
     const [step, setStep] = useState(1); // Controle de etapas
@@ -76,6 +76,26 @@ export default function SignUpPage() {
         });
     };
 
+    // Função para verificar se o usuário é maior de idade
+    const isAdult = (birthdate) => {
+        if (!birthdate) return false;
+
+        const today = new Date();
+        const birthDate = new Date(birthdate);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+
+        // Ajusta a idade se ainda não fez aniversário este ano
+        if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && today.getDate() < birthDate.getDate())
+        ) {
+            age--;
+        }
+
+        return age >= 18;
+    };
+
     const nextStep = () => {
         // Simple validation for first step
         if (step === 1) {
@@ -84,22 +104,26 @@ export default function SignUpPage() {
                 !formData.lastName ||
                 !formData.email ||
                 !formData.password ||
-                !formData.gender
+                !formData.gender ||
+                !formData.birthdate
             ) {
                 setError("Por favor, preencha todos os campos");
                 return;
             }
+
             // Email validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(formData.email)) {
                 setError("Por favor, insira um email válido");
                 return;
             }
+
             // Password length validation
             if (formData.password.length < 6) {
                 setError("A senha deve ter pelo menos 6 caracteres");
                 return;
             }
+
             // Password strength validation
             const passwordRegex =
                 /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{6,}$/;
@@ -131,13 +155,22 @@ export default function SignUpPage() {
             return;
         }
 
+        // Calcular se é maior de idade
+        const isUserAdult = isAdult(formData.birthdate);
+
+        console.log("isUserAdult", isUserAdult);
+        console.log("formData", formData);
+
         try {
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/api/register`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(formData),
+                    body: JSON.stringify({
+                        ...formData,
+                        isUserAdult,
+                    }),
                 }
             );
 
@@ -226,6 +259,25 @@ export default function SignUpPage() {
                             minLength={6}
                             autoComplete="new-password"
                         />
+
+                        <div className="space-y-1">
+                            <label
+                                htmlFor="birthdate"
+                                className="block text-sm text-gray-700 font-medium"
+                            >
+                                Data de Nascimento
+                            </label>
+                            <input
+                                type="date"
+                                id="birthdate"
+                                name="birthdate"
+                                className="w-full p-3 border border-gray-300 rounded-lg"
+                                value={formData.birthdate}
+                                onChange={handleChange}
+                                required
+                            />
+                        </div>
+
                         <select
                             name="gender"
                             className="w-full p-3 border border-gray-300 rounded-lg"
