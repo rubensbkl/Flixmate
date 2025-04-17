@@ -1,6 +1,7 @@
 package service;
 
 import java.sql.SQLException;
+import java.util.List;
 
 import dao.FeedbackDAO;
 import model.Feedback;
@@ -14,31 +15,31 @@ public class FeedbackService {
         this.movieService = movieService;
     }
 
-    public boolean registrarFeedback(Feedback feedback) {
+    public boolean storeFeedback(int userId, int movieId, boolean feedback) {
+        // Criar um objeto Feedback
+        Feedback feedbackObj = new Feedback(userId, movieId, feedback);
+
         try {
             // Verificar se o feedback é válido
-            if (feedback == null || feedback.getUserId() <= 0 || feedback.getMovieId() <= 0) {
+            if (feedbackObj == null || feedbackObj.getUserId() <= 0 || feedbackObj.getMovieId() <= 0) {
                 throw new NoSuchFieldException("Feedback inválido");
             }
 
-            if (feedbackDAO.getFeedback(feedback.getUserId(), feedback.getMovieId()) != null) {
-                System.err.println("Feedback já existe para o usuário " + feedback.getUserId() + " e filme "
-                        + feedback.getMovieId());
+            // Verificar se o feedback já existe
+            if (feedbackDAO.getFeedback(feedbackObj.getUserId(), feedbackObj.getMovieId()) != null) {
+                System.err.println("Feedback já existe para o usuário " + feedbackObj.getUserId() + " e filme "
+                        + feedbackObj.getMovieId());
                 throw new IllegalStateException("Feedback já existe");
             }
 
-            // Obter o filme do feedback
-            int movieId = feedback.getMovieId();
-
-            boolean movieSaved = movieService.buscarESalvarFilme(movieId);
-
-            if (!movieSaved) {
-                System.err.println("Erro ao salvar filme ID " + movieId);
-                throw new IllegalArgumentException("Erro ao salvar filme");
+            // Verificar se o filme existe
+            if (movieService.buscarFilmePorId(movieId) == null) {
+                System.err.println("Filme não encontrado");
+                throw new NoSuchFieldException("Filme não encontrado");
             }
 
             // Inserir o feedback
-            if (feedbackDAO.insert(feedback)) {
+            if (feedbackDAO.insert(feedbackObj)) {
                 System.out.println("Feedback registrado com sucesso");
             } else {
                 System.err.println("Erro ao registrar feedback");
@@ -63,4 +64,48 @@ public class FeedbackService {
             return false;
         }
     }
+
+    public Feedback getFeedback(int userId, int movieId) {
+        try {
+            // Verificar se o feedback existe
+            Feedback feedback = feedbackDAO.getFeedback(userId, movieId);
+            if (feedback == null) {
+                System.err.println("Feedback não encontrado");
+                throw new NoSuchFieldException("Feedback não encontrado");
+            }
+            return feedback;
+        } catch (Exception e) {
+            // Tratar exceções específicas
+            if (e instanceof NoSuchFieldException) {
+                System.err.println("Erro: " + e.getMessage());
+                return null;
+            } else {
+                System.err.println("Erro inesperado: " + e.getMessage());
+                return null;
+            }
+        }
+    }
+
+    // feedbackDAO.getFeedbacksByUserId
+    public List<Feedback> getFeedbacksByUserId(int userId) {
+        try {
+            // Verificar se o feedback existe
+            List<Feedback> feedbacks = feedbackDAO.getFeedbacksByUserId(userId);
+            if (feedbacks == null || feedbacks.isEmpty()) {
+                System.err.println("Nenhum feedback encontrado para o usuário " + userId);
+                throw new NoSuchFieldException("Nenhum feedback encontrado");
+            }
+            return feedbacks;
+        } catch (Exception e) {
+            // Tratar exceções específicas
+            if (e instanceof NoSuchFieldException) {
+                System.err.println("Erro: " + e.getMessage());
+                return null;
+            } else {
+                System.err.println("Erro inesperado: " + e.getMessage());
+                return null;
+            }
+        }
+    }
+
 }

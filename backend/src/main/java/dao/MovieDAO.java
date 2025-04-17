@@ -92,4 +92,32 @@ public class MovieDAO extends DAO {
         return movie;
     }
 
+    /**
+     * Atualiza um filme existente no banco de dados
+     * 
+     * @param movie O filme com os dados atualizados
+     * @return true se a atualização foi bem-sucedida, false caso contrário
+     */
+    public boolean update(Movie movie) {
+        boolean status = false;
+        try {
+            String sql = "UPDATE movies SET title = ?, release_date = ?, original_language = ?, popularity = ?, adult = ? WHERE id = ?";
+            PreparedStatement st = conexao.prepareStatement(sql);
+            st.setString(1, movie.getTitle());
+            st.setString(2, movie.getReleaseDate());
+            st.setString(3, movie.getOriginalLanguage());
+            st.setDouble(4, movie.getPopularity());
+            st.setBoolean(5, movie.getAdult());
+            st.setInt(6, movie.getId());
+            
+            int rowsAffected = st.executeUpdate();
+            status = rowsAffected > 0;
+            
+            st.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao atualizar filme: " + e.getMessage(), e);
+        }
+        return status;
+    }
+
 }

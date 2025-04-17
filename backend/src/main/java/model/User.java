@@ -7,7 +7,6 @@ public class User {
     private String email;
     private String password;
     private char gender;
-    private boolean contentFilter;
 
     public User() {
         this.id = -1;
@@ -16,7 +15,6 @@ public class User {
         this.email = "";
         this.password = "";
         this.gender = '*';
-        this.contentFilter = false;
     }
 
     public User(int id, String firstName, String lastName, String email, String password, char gender) {
@@ -26,7 +24,6 @@ public class User {
         this.email = email;
         this.password = password;
         this.gender = gender;
-        this.contentFilter = false;
     }
 
     public int getId() {
@@ -77,17 +74,15 @@ public class User {
         this.gender = gender;
     }
 
-    public boolean getContentFilter() {
-        return contentFilter;
-    }
-
-    public void setContentFilter(boolean contentFilter) {
-        this.contentFilter = contentFilter;
-    }
-
     @Override
     public String toString() {
-        return "User [ID = " + id + ", First Name = " + firstName + ", Last Name = " + lastName + 
-               ", Email = " + email + ", Password = " + password + ", Gender = " + gender + "]";
+        return "User{" +
+                "id=" + id +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", gender='" + gender + '\'' +
+                '}';
     }
 }

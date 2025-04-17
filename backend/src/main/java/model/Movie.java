@@ -1,16 +1,14 @@
 package model;
 
-import java.util.ArrayList;
-
-public class Movie {
+import interfaces.IMovie;
+public class Movie implements IMovie {
     private int id;
     private String title;
     private String release_date;
     private String original_language;
     private double popularity;
-    private Boolean adult;
-    private ArrayList<Integer> genreIds;
-
+    private boolean adult;
+    
     public Movie() {
         this.id = 0;
         this.title = "";
@@ -18,85 +16,77 @@ public class Movie {
         this.original_language = "";
         this.popularity = 0.0;
         this.adult = false;
-        this.genreIds = new ArrayList<>();
     }
     
-    public Movie(int id, String title, String release_date, String original_language, double popularity, Boolean adult) {
+    public Movie(int id, String title, String release_date, String original_language, double popularity, boolean adult) {
         this.id = id;
-        this.title = title; 
+        this.title = title;
         this.release_date = release_date;
         this.original_language = original_language;
         this.popularity = popularity;
         this.adult = adult;
     }
-
-    public Movie(int id, String title, String release_date, String original_language, double popularity, Boolean adult, ArrayList<Integer> genreIds) {
-        this.id = id;
-        this.title = title; 
-        this.release_date = release_date;
-        this.original_language = original_language;
-        this.popularity = popularity;
-        this.adult = adult;
-        this.genreIds = genreIds;
-    }
-
-
+    
+    @Override
     public int getId() {
         return id;
     }
-
+    
+    @Override
     public void setId(int id) {
         this.id = id;
     }
-
+    
+    @Override
     public String getTitle() {
         return title;
     }
-
+    
+    @Override
     public void setTitle(String title) {
         this.title = title;
     }
-
+    
+    @Override
     public String getReleaseDate() {
         return release_date;
     }
-
+    
+    @Override
     public void setReleaseDate(String release_date) {
         this.release_date = release_date;
     }
-
+    
+    @Override
     public String getOriginalLanguage() {
         return original_language;
     }
-
+    
+    @Override
     public void setOriginalLanguage(String original_language) {
         this.original_language = original_language;
     }
-
+    
+    @Override
     public double getPopularity() {
         return popularity;
     }
-
+    
+    @Override
     public void setPopularity(double popularity) {
         this.popularity = popularity;
     }
-
-    public Boolean getAdult() {
+    
+    @Override
+    public boolean getAdult() {
         return adult;
     }
-
-    public void setAdult(Boolean adult) {
+    
+    @Override
+    public void setAdult(boolean adult) {
         this.adult = adult;
     }
-
-    public ArrayList<Integer> getGenreIds() {
-        return genreIds;
-    }
-
-    public void setGenreIds(ArrayList<Integer> genreIds) {
-        this.genreIds = genreIds;
-    }
-
+    
     @Override
     public String toString() {
         return "Movie{" +

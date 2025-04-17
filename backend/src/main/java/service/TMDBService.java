@@ -63,19 +63,9 @@ public class TMDBService {
             double popularity = movieJson.get("popularity").getAsDouble();
             boolean adult = movieJson.get("adult").getAsBoolean();
             
-            // Extrai os IDs de gênero usando ArrayList para compatibilidade com o método existente
-            ArrayList<Integer> genreIds = new ArrayList<>();
-            if (movieJson.has("genre_ids") && movieJson.get("genre_ids").isJsonArray()) {
-                JsonArray genreIdsJson = movieJson.getAsJsonArray("genre_ids");
-                for (int i = 0; i < genreIdsJson.size(); i++) {
-                    genreIds.add(genreIdsJson.get(i).getAsInt());
-                }
-            } else {
-                System.out.println("Aviso: Filme sem informações de gênero: " + id);
-            }
-    
+           
             // Cria e retorna o objeto Movie
-            return new Movie(id, title, releaseDate, originalLanguage, popularity, adult, genreIds);
+            return new Movie(id, title, releaseDate, originalLanguage, popularity, adult);
         } catch (Exception e) {
             System.err.println("Erro ao buscar filme similar para ID " + movieId + ": " + e.getMessage());
             e.printStackTrace();
@@ -83,30 +73,17 @@ public class TMDBService {
         }
     }
 
-    public Movie getMovieDetails(int movieId) {
+    public JsonObject getMovieDetails(int movieId) {
         try {
-            // Fetch movie data from API
-            String url = String.format("%s%d?api_key=%s&language=pt-BR", BASE_URL, movieId, API_KEY);
+            String urlStr = String.format("%s%d?api_key=%s&language=pt-BR", BASE_URL, movieId, API_KEY);
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
+                    .uri(URI.create(urlStr))
                     .GET()
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            JsonObject movieJson = JsonParser.parseString(response.body()).getAsJsonObject();
-    
-            // Extract basic movie details
-            int id = movieJson.get("id").getAsInt();
-            String title = movieJson.get("title").getAsString();
-            String releaseDate = getJsonStringOrDefault(movieJson, "release_date", "");
-            String originalLanguage = movieJson.get("original_language").getAsString();
-            double popularity = movieJson.get("popularity").getAsDouble();
-            boolean adult = movieJson.get("adult").getAsBoolean();
             
-            // Extract genre IDs
-            ArrayList<Integer> genreIds = extractGenreIds(movieJson, movieId);
-            
-            // Create and return movie object
-            return new Movie(id, title, releaseDate, originalLanguage, popularity, adult, genreIds);
+            // Apenas retorna o JsonObject bruto da API
+            return JsonParser.parseString(response.body()).getAsJsonObject();
         } catch (Exception e) {
             System.err.println("Error fetching movie details for ID " + movieId + ": " + e.getMessage());
             e.printStackTrace();
