@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import dao.FeedbackDAO;
+import dao.GenreDAO;
 import dao.MovieDAO;
 import dao.MovieGenreDAO;
 import dao.UserDAO;
@@ -32,6 +33,7 @@ import model.Movie;
 import model.User;
 import service.AIService;
 import service.FeedbackService;
+import service.GenreService;
 import service.MovieGenreService;
 import service.MovieService;
 import service.RecommendationService;
@@ -112,16 +114,18 @@ public class Application {
         MovieGenreDAO movieGenreDAO = new MovieGenreDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
         UserDAO userDAO = new UserDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
         UserGenreDAO userGenreDAO = new UserGenreDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
+        GenreDAO genreDAO = new GenreDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
 
         // Services
         TMDBService tmdb = new TMDBService(tmdbApiKey);
         AIService ai = new AIService(azureOpenAIEndpoint, azureOpenAIKey, azureOpenAIDeploymentName, tmdb);
-        RecommendationService recommendationService = new RecommendationService(tmdb);
         MovieGenreService movieGenreService = new MovieGenreService(movieGenreDAO);
+        RecommendationService recommendationService = new RecommendationService(tmdb);
         MovieService movieService = new MovieService(movieDAO, movieGenreService, tmdb);
         FeedbackService feedbackService = new FeedbackService(feedbackDAO, movieService);
         UserGenreService userGenreService = new UserGenreService(userGenreDAO);
         UserService userService = new UserService(userDAO);
+        GenreService genreService = new GenreService(genreDAO);
 
         // JWT Util
         JWTUtil jwt = new JWTUtil(jwtSecret);
@@ -215,7 +219,8 @@ public class Application {
             user.setEmail(requestBody.get("email").getAsString());
             user.setPassword(requestBody.get("password").getAsString());
             user.setGender(requestBody.get("gender").getAsString().charAt(0));
-
+            user.setAdult(requestBody.get("isUserAdult").getAsBoolean());
+            
             // Extrair o array de gêneros favoritos
             JsonArray favoriteGenresArray = requestBody.getAsJsonArray("favoriteGenres");
             List<Integer> favoriteGenres = new ArrayList<>();
@@ -392,7 +397,6 @@ public class Application {
         });
 
         post("/api/recommendation", (req, res) -> {
-            JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
             int userId = req.attribute("userId");
 
             List<Feedback> interacoes = feedbackService.getFeedbacksByUserId(userId);
@@ -419,19 +423,46 @@ public class Application {
             }
 
             // Obter filmes candidatos para recomendação
-            List<Movie> candidateMovies = recommendationService.getCandidateMovies(interacoes);
+            JsonArray candidateMoviesJson = recommendationService.getCandidateMoviesJSON(interacoes);
+
+            if (candidateMoviesJson == null || candidateMoviesJson.size() == 0) {
+                // Se nao houver filmes candidatos, buscar 10 aleatórios
+
+            }
 
             // Adicionar filmes candidatos ao helper
-            for (Movie movie : candidateMovies) {
-                // Adicionar à lista de candidatos
-                helper.addCandidateMovieId(movie.getId());
+            for (int i = 0; i < candidateMoviesJson.size(); i++) {
+                JsonObject movieJson = candidateMoviesJson.get(i).getAsJsonObject();
 
-                // Se o filme ainda não foi adicionado ao helper (durante o processamento das
-                // interações)
-                if (!helper.hasMovie(movie.getId())) {
-                    List<Genre> generos = movieGenreService.buscarGenerosDoFilme(movie.getId());
-                    helper.addMovieWithGenres(movie, generos);
+                // Extrair os dados básicos do filme a partir do JSON
+                int movieId = movieJson.get("id").getAsInt();
+                String title = movieJson.get("title").getAsString();
+                String releaseDate = movieJson.has("release_date") ? movieJson.get("release_date").getAsString() : "";
+                String originalLanguage = movieJson.get("original_language").getAsString();
+                double popularity = movieJson.get("popularity").getAsDouble();
+                boolean adult = movieJson.get("adult").getAsBoolean();
+                // Adicionar à lista de candidatos
+
+                Movie movie = new Movie(movieId, title, releaseDate, originalLanguage, popularity, adult);
+
+                helper.addCandidateMovieId(movieId);
+
+                // Processar gêneros do JSON
+                List<Genre> genres = new ArrayList<>();
+                if (movieJson.has("genre_ids") && movieJson.get("genre_ids").isJsonArray()) {
+                    JsonArray genreIdsJson = movieJson.getAsJsonArray("genre_ids");
+                    for (int j = 0; j < genreIdsJson.size(); j++) {
+                        int genreId = genreIdsJson.get(j).getAsInt();
+                        // Buscar detalhes do gênero pelo ID
+                        Genre genre = genreService.getGenreById(genreId);
+                        if (genre != null) {
+                            genres.add(genre);
+                        }
+                    }
                 }
+
+                // Adicionar o filme com seus gêneros ao helper
+                helper.addMovieWithGenres(movie, genres);
             }
 
             // Verificar se temos dados suficientes para gerar recomendação

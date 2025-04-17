@@ -17,8 +17,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import model.Movie;
-
 public class TMDBService {
     private String API_KEY;
     private final HttpClient client = HttpClient.newHttpClient();
@@ -28,44 +26,94 @@ public class TMDBService {
         this.API_KEY = apiKey;
     }
 
-    public Movie getRandomSimilarMovie(int movieId) throws IOException, InterruptedException {
-        try {
-            // Constrói a URL para buscar filmes similares
-            String url = String.format("https://api.themoviedb.org/3/movie/%d/similar?api_key=%s&language=pt-BR&page=1",
-                    movieId, API_KEY);
-            
-            // Configura e envia a requisição HTTP
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .GET()
-                    .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-    
-            // Processa a resposta JSON
-            JsonObject jsonResponse = JsonParser.parseString(response.body()).getAsJsonObject();
-            JsonArray results = jsonResponse.getAsJsonArray("results");
-    
-            // Verifica se há resultados
-            if (results.size() == 0) {
-                return null; // Sem filmes similares
+    /**
+     * Versão sobrecarregada que usa popularidade mínima padrão de 1.5
+     */
+    public JsonObject getRandomSimilarMovie(int movieId) throws IOException, InterruptedException {
+        return getRandomSimilarMovie(movieId, 1.5);
+    }
+
+    /**
+     * Busca filmes similares a um filme específico
+     * 
+     * @param movieId ID do filme
+     * @return JsonArray com filmes similares ou null em caso de erro
+     */
+    private JsonArray fetchSimilarMovies(int movieId) throws IOException, InterruptedException {
+        // Constrói a URL para buscar filmes similares
+        String url = String.format("https://api.themoviedb.org/3/movie/%d/similar?api_key=%s&language=pt-BR&page=1",
+                movieId, API_KEY);
+
+        // Configura e envia a requisição HTTP
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // Processa a resposta JSON
+        JsonObject jsonResponse = JsonParser.parseString(response.body()).getAsJsonObject();
+
+        if (!jsonResponse.has("results") || !jsonResponse.get("results").isJsonArray()) {
+            System.err.println("Resposta da API não contém resultados válidos para filmes similares ao ID " + movieId);
+            return null;
+        }
+
+        return jsonResponse.getAsJsonArray("results");
+    }
+
+    /**
+     * Converte um JsonArray para uma lista de JsonObjects
+     */
+    private List<JsonObject> convertJsonArrayToList(JsonArray jsonArray) {
+        List<JsonObject> list = new ArrayList<>();
+        for (int i = 0; i < jsonArray.size(); i++) {
+            if (jsonArray.get(i).isJsonObject()) {
+                JsonObject movie = jsonArray.get(i).getAsJsonObject();
+                if (isValidMovie(movie)) {
+                    list.add(movie);
+                }
             }
-    
-            // Escolhe um filme aleatório da lista de resultados
-            Random random = new Random();
-            int randomIndex = random.nextInt(results.size());
-            JsonObject movieJson = results.get(randomIndex).getAsJsonObject();
-    
-            // Extrai os detalhes básicos do filme
-            int id = movieJson.get("id").getAsInt();
-            String title = movieJson.get("title").getAsString();
-            String releaseDate = getJsonStringOrDefault(movieJson, "release_date", "");
-            String originalLanguage = movieJson.get("original_language").getAsString();
-            double popularity = movieJson.get("popularity").getAsDouble();
-            boolean adult = movieJson.get("adult").getAsBoolean();
-            
-           
-            // Cria e retorna o objeto Movie
-            return new Movie(id, title, releaseDate, originalLanguage, popularity, adult);
+        }
+        return list;
+    }
+
+    /**
+     * Retorna um filme similar aleatório com popularidade mínima
+     * 
+     * @param movieId       ID do filme para buscar similares
+     * @param minPopularity Popularidade mínima (padrão 50.0)
+     * @return JsonObject do filme similar ou null se não encontrar
+     */
+    public JsonObject getRandomSimilarMovie(int movieId, double minPopularity)
+            throws IOException, InterruptedException {
+        try {
+            // Buscar filmes similares
+            JsonArray similarMovies = fetchSimilarMovies(movieId);
+
+            if (similarMovies == null || similarMovies.size() == 0) {
+                System.out.println("Nenhum filme similar encontrado para o ID " + movieId);
+                return null;
+            }
+
+            // Filtrar por popularidade
+            List<JsonObject> popularSimilarMovies = filterMoviesByPopularity(similarMovies, minPopularity);
+
+            // Se encontrar filmes populares, selecionar um aleatoriamente
+            if (!popularSimilarMovies.isEmpty()) {
+                JsonObject selectedMovie = selectRandomMovie(popularSimilarMovies);
+                logSelectedMovie(selectedMovie, "similar com popularidade > " + minPopularity);
+                return selectedMovie;
+            }
+
+            // Se não encontrar filmes com a popularidade mínima, selecionar qualquer filme
+            // similar
+            System.out.println("Nenhum filme similar com popularidade > " + minPopularity +
+                    " encontrado. Selecionando qualquer filme similar.");
+            JsonObject anyMovie = selectRandomMovie(convertJsonArrayToList(similarMovies));
+            logSelectedMovie(anyMovie, "similar (sem filtro de popularidade)");
+            return anyMovie;
+
         } catch (Exception e) {
             System.err.println("Erro ao buscar filme similar para ID " + movieId + ": " + e.getMessage());
             e.printStackTrace();
@@ -81,7 +129,7 @@ public class TMDBService {
                     .GET()
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            
+
             // Apenas retorna o JsonObject bruto da API
             return JsonParser.parseString(response.body()).getAsJsonObject();
         } catch (Exception e) {
@@ -90,18 +138,19 @@ public class TMDBService {
             return null;
         }
     }
-    
+
     private String getJsonStringOrDefault(JsonObject json, String key, String defaultValue) {
         return json.has(key) && !json.get(key).isJsonNull() ? json.get(key).getAsString() : defaultValue;
     }
-    
+
     private ArrayList<Integer> extractGenreIds(JsonObject movieJson, int movieId) {
         ArrayList<Integer> genreIds = new ArrayList<>();
-        
+
         if (!movieJson.has("genres") || !movieJson.get("genres").isJsonArray()) {
-            throw new IllegalArgumentException("Invalid genre format: 'genres' is missing or not an array for movie ID " + movieId);
+            throw new IllegalArgumentException(
+                    "Invalid genre format: 'genres' is missing or not an array for movie ID " + movieId);
         }
-        
+
         JsonArray genres = movieJson.getAsJsonArray("genres");
         for (int i = 0; i < genres.size(); i++) {
             JsonObject genre = genres.get(i).getAsJsonObject();
@@ -110,8 +159,206 @@ public class TMDBService {
             }
             genreIds.add(genre.get("id").getAsInt());
         }
-        
+
         return genreIds;
+    }
+
+    /**
+     * Verifica se um filme é válido (possui campos obrigatórios)
+     * 
+     * @param movieJson JsonObject do filme
+     * @return true se o filme é válido
+     */
+    private boolean isValidMovie(JsonObject movieJson) {
+        return movieJson.has("id") && movieJson.has("title") && movieJson.has("popularity");
+    }
+
+    /**
+     * Verifica se um filme tem popularidade maior que o limiar
+     * 
+     * @param movieJson JsonObject do filme
+     * @param threshold Limiar de popularidade
+     * @return true se a popularidade for maior que o limiar
+     */
+    private boolean hasHighPopularity(JsonObject movieJson, double threshold) {
+        return movieJson.get("popularity").getAsDouble() > threshold;
+    }
+
+    /**
+     * Seleciona um filme aleatório de uma lista
+     * 
+     * @param movies Lista de filmes
+     * @return JsonObject do filme selecionado
+     */
+    private JsonObject selectRandomMovie(List<JsonObject> movies) {
+        Random random = new Random();
+        int randomIndex = random.nextInt(movies.size());
+        return movies.get(randomIndex);
+    }
+
+    /**
+     * Registra informações sobre o filme selecionado
+     * 
+     * @param movie         JsonObject do filme
+     * @param selectionType Tipo de seleção (ex: "alta popularidade", "fallback")
+     */
+    private void logSelectedMovie(JsonObject movie, String selectionType) {
+        System.out.println("Filme selecionado (" + selectionType + "): " +
+                movie.get("title").getAsString() +
+                ", Popularidade: " + movie.get("popularity").getAsDouble());
+    }
+
+    /**
+     * Busca um filme popular como fallback quando não encontra filmes com alta
+     * popularidade
+     * 
+     * @return JsonObject do filme ou null em caso de erro
+     */
+    private JsonObject getFallbackPopularMovie() throws IOException, InterruptedException {
+        System.out.println("Buscando um filme popular sem restrição de popularidade.");
+
+        // Buscar na primeira página de filmes populares (maior chance de encontrar
+        // populares)
+        String url = String.format("https://api.themoviedb.org/3/movie/popular?api_key=%s&language=pt-BR&page=1",
+                API_KEY);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        JsonObject jsonResponse = JsonParser.parseString(response.body()).getAsJsonObject();
+
+        if (!jsonResponse.has("results") || !jsonResponse.get("results").isJsonArray()) {
+            System.err.println("Resposta da API não contém resultados válidos para fallback");
+            return null;
+        }
+
+        JsonArray results = jsonResponse.getAsJsonArray("results");
+
+        if (results.size() > 0) {
+            // Pegar o filme mais popular (geralmente o primeiro da lista)
+            JsonObject movieJson = results.get(0).getAsJsonObject();
+            logSelectedMovie(movieJson, "fallback");
+            return movieJson;
+        }
+
+        System.err.println("Não foi possível encontrar nenhum filme popular.");
+        return null;
+    }
+
+    /**
+     * Filtra uma lista de filmes com base em um limiar de popularidade
+     * 
+     * @param movies              JsonArray de filmes a serem filtrados
+     * @param popularityThreshold Limiar mínimo de popularidade
+     * @return Lista de filmes que atendem ao critério
+     */
+    private List<JsonObject> filterMoviesByPopularity(JsonArray movies, double popularityThreshold) {
+        List<JsonObject> filteredMovies = new ArrayList<>();
+
+        for (int i = 0; i < movies.size(); i++) {
+            JsonObject movieJson = movies.get(i).getAsJsonObject();
+
+            if (isValidMovie(movieJson) && hasHighPopularity(movieJson, popularityThreshold)) {
+                filteredMovies.add(movieJson);
+            }
+        }
+
+        return filteredMovies;
+    }
+
+    /**
+     * Busca filmes populares em uma página aleatória
+     * 
+     * @param maxPage Número máximo de páginas para escolha aleatória
+     * @return JsonArray com os resultados ou null em caso de erro
+     */
+    private JsonArray fetchMoviesFromRandomPage(int maxPage) throws IOException, InterruptedException {
+        // Gerar um número de página aleatório
+        Random random = new Random();
+        int randomPage = random.nextInt(maxPage) + 1;
+
+        // Construir a URL para buscar filmes populares na página aleatória
+        String url = String.format("https://api.themoviedb.org/3/movie/popular?api_key=%s&language=pt-BR&page=%d",
+                API_KEY, randomPage);
+
+        // Configurar e enviar a requisição HTTP
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // Processar a resposta JSON
+        JsonObject jsonResponse = JsonParser.parseString(response.body()).getAsJsonObject();
+
+        // Verificar se a resposta contém resultados
+        if (!jsonResponse.has("results") || !jsonResponse.get("results").isJsonArray()) {
+            System.err.println("Resposta da API não contém resultados válidos para página " + randomPage);
+            return null;
+        }
+
+        return jsonResponse.getAsJsonArray("results");
+    }
+
+    /**
+     * Tenta encontrar um filme com popularidade maior que o limiar especificado
+     * 
+     * @param popularityThreshold Limiar mínimo de popularidade
+     * @param maxAttempts         Número máximo de tentativas
+     * @return JsonObject do filme ou null se não encontrar
+     */
+    private JsonObject findHighPopularityMovie(double popularityThreshold, int maxAttempts)
+            throws IOException, InterruptedException {
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+            // Buscar filmes populares em uma página aleatória
+            JsonArray moviesFromRandomPage = fetchMoviesFromRandomPage(20);
+
+            if (moviesFromRandomPage == null || moviesFromRandomPage.size() == 0) {
+                continue; // Tentar novamente
+            }
+
+            // Filtrar filmes com alta popularidade
+            List<JsonObject> highPopularityMovies = filterMoviesByPopularity(moviesFromRandomPage, popularityThreshold);
+
+            // Se encontramos filmes com alta popularidade, escolher um aleatoriamente
+            if (!highPopularityMovies.isEmpty()) {
+                JsonObject selectedMovie = selectRandomMovie(highPopularityMovies);
+                logSelectedMovie(selectedMovie, "alta popularidade");
+                return selectedMovie;
+            } else {
+                System.out.println("Nenhum filme com popularidade > " + popularityThreshold +
+                        " encontrado. Tentativa " + (attempt + 1) + " de " + maxAttempts);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Retorna um filme aleatório da API do TMDB com popularidade maior que 200
+     * 
+     * @return JsonObject com os detalhes do filme aleatório ou null em caso de erro
+     */
+    public JsonObject getARandomMovie() {
+        try {
+            // Tenta encontrar filme com alta popularidade
+            JsonObject highPopularityMovie = findHighPopularityMovie(1.5, 5);
+
+            // Se encontrou um filme com alta popularidade, retorna-o
+            if (highPopularityMovie != null) {
+                return highPopularityMovie;
+            }
+
+            // Caso não tenha encontrado, busca um filme popular como fallback
+            return getFallbackPopularMovie();
+        } catch (Exception e) {
+            System.err.println("Erro ao buscar filme aleatório: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public List<String> getRandomMovies() {
