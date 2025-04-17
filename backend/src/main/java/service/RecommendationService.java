@@ -1,11 +1,13 @@
 package service;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import model.Feedback;
-import model.Movie;
-import service.TMDBService;
 
 public class RecommendationService {
 
@@ -15,24 +17,47 @@ public class RecommendationService {
         this.tmdbService = tmdbService;
     }
 
-    public List<Movie> getCandidateMovies(List<Feedback> interacoes) {
-        List<Movie> candidatos = new ArrayList<>();
-    
+    public JsonArray getCandidateMoviesJSON(List<Feedback> interacoes) {
+        JsonArray candidateMovies = new JsonArray();
+        Set<Integer> addedMovieIds = new HashSet<>();
+
+        // Para cada interação positiva, tentamos buscar um filme similar
         for (Feedback interacao : interacoes) {
             try {
-                // Pega o primeiro similar
-                Movie similar = tmdbService.getRandomSimilarMovie(interacao.getMovieId());
-    
-                if (similar != null) {
-                    candidatos.add(similar);
+                // Apenas considerar filmes que o usuário gostou para buscar similares
+                if (interacao.getFeedback()) {
+                    JsonObject similar = tmdbService.getRandomSimilarMovie(interacao.getMovieId());
+
+                    if (similar != null && similar.has("id")) {
+                        int movieId = similar.get("id").getAsInt();
+
+                        // Verificar se já adicionamos este filme
+                        if (!addedMovieIds.contains(movieId)) {
+                            candidateMovies.add(similar);
+                            addedMovieIds.add(movieId);
+                        }
+                    }
+                } else {
+                    // Se a interação foi negativa, buscar um filme alternativo
+                    JsonObject alternative = tmdbService.getARandomMovie();
+                    if (alternative != null && alternative.has("id")) {
+                        int movieId = alternative.get("id").getAsInt();
+
+                        // Verificar se já adicionamos este filme
+                        if (!addedMovieIds.contains(movieId)) {
+                            candidateMovies.add(alternative);
+                            addedMovieIds.add(movieId);
+                        }
+                    }
+
                 }
-    
+
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.println("Erro ao buscar similares para o filme ID: " + interacao.getMovieId());
             }
         }
-    
-        return candidatos;
+
+        return candidateMovies;
     }
 }
