@@ -1,73 +1,70 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/contexts/AuthContext';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function LoginClient() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
 
-  useEffect(() => {
-    return () => {
-      setEmail({
-        email: '',
-      });
-      setPassword({
-        password: '',
-      });
+    useEffect(() => {
+        return () => {
+            setEmail("");
+            setPassword("");
+        };
+    }, []);
+
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const { login } = useAuth();
+
+    useEffect(() => {
+        if (searchParams.get("registered") === "true") {
+            setSuccessMessage(
+                "Conta criada com sucesso! Faça login para continuar."
+            );
+        }
+    }, [searchParams]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError("");
+
+        try {
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/api/login`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ email, password }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Credenciais inválidas");
+            }
+
+            // Usar o contexto de autenticação para login
+            login(data.user, data.token);
+
+            // Redirecionar para a página inicial após login
+            router.push("/");
+        } catch (err) {
+            setError(err.message || "Falha ao fazer login");
+        } finally {
+            setIsLoading(false);
+        }
     };
-  }, []);
-
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { login } = useAuth();
-
-  useEffect(() => {
-    if (searchParams.get('registered') === 'true') {
-      setSuccessMessage('Conta criada com sucesso! Faça login para continuar.');
-    }
-  }, [searchParams]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-      
-      console.log(data);
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Credenciais inválidas');
-      }
-
-      // Usar o contexto de autenticação para login
-      login(data.user, data.token);
-      
-      // Redirecionar para a página inicial após login
-      router.push('/');
-    } catch (err) {
-      setError(err.message || 'Falha ao fazer login');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-white">
@@ -99,7 +96,12 @@ export default function LoginClient() {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4" key="login-form" autoComplete="off">
+                <form
+                    onSubmit={handleSubmit}
+                    className="space-y-4"
+                    key="login-form"
+                    autoComplete="off"
+                >
                     <div>
                         <input
                             type="email"
