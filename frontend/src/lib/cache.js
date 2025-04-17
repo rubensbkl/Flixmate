@@ -4,22 +4,22 @@ export const movieCache = {
   data: {},
   timestamp: {},
 
-  isValid(userId) {
-    return this.data[userId] &&
-      Date.now() - this.timestamp[userId] < SESSION_DURATION;
+  isValid(key) {
+    return this.data[key] &&
+      Date.now() - this.timestamp[key] < SESSION_DURATION;
   },
 
-  store(userId, movies) {
-    this.data[userId] = [...movies];
-    this.timestamp[userId] = Date.now();
+  store(key, movies) {
+    this.data[key] = [...movies];
+    this.timestamp[key] = Date.now();
   },
 
-  get(userId) {
-    return this.isValid(userId) ? [...this.data[userId]] : null;
+  get(key) {
+    return this.isValid(key) ? [...this.data[key]] : null;
   },
 
-  clear(userId) {
-    delete this.data[userId];
-    delete this.timestamp[userId];
+  clear(key) {
+    delete this.data[key];
+    delete this.timestamp[key];
   }
 };

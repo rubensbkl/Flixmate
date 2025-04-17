@@ -9,13 +9,15 @@ import {
     SparklesIcon,
     XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import TinderCard from "react-tinder-card";
 
-import { loadSession, saveSession, clearSession } from "@/lib/session";
-import { fetchMovies, sendFeedback, gerarRecomendacao } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchMovies, gerarRecomendacao, sendFeedback } from "@/lib/api";
 import { movieCache } from "@/lib/cache";
+import { clearSession, loadSession, saveSession } from "@/lib/session";
+
 
 export default function Home() {
     const [movies, setMovies] = useState([]);
@@ -26,19 +28,14 @@ export default function Home() {
     const [swipeDirection, setSwipeDirection] = useState(null);
     const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(false);
     
-    const userId = useRef(1);
+    const { user } = useAuth();
     const currentPage = useRef(1);
     const currentMovieRef = useRef(null);
 
     const canSwipe = currentIndex >= 0 && !isAnimating && !loading && !isLoadingRecommendation;
-
-    useEffect(() => {
-        const user = JSON.parse(localStorage.getItem("user"));
-        userId.current = user?.id || 1;
-    }, []);
     
     const loadMovies = useCallback(async () => {
-        const session = loadSession(userId.current);
+        const session = loadSession();
         if (session) {
             console.log("🔄 Restaurando sessão");
             setMovies(session.movies);
@@ -51,14 +48,14 @@ export default function Home() {
     
         setLoading(true);
         try {
-            const fetchedMovies = await fetchMovies(userId.current, currentPage.current);
+            const fetchedMovies = await fetchMovies(currentPage.current);
             const reversed = [...fetchedMovies].reverse();
             const startIdx = reversed.length - 1;
         
             setMovies(reversed);
             setCurrentIndex(startIdx);
             setFeedbackCount(0);
-            saveSession(userId.current, {
+            saveSession({
                 movies: reversed,
                 currentIndex: startIdx,
                 feedbackCount: 0,
@@ -72,7 +69,9 @@ export default function Home() {
         }
     }, []);
     
-    useEffect(() => { if (userId.current) loadMovies(); }, [loadMovies]);
+    useEffect(() => { 
+        if (user) loadMovies(); 
+    }, [loadMovies, user]);
     
     const swiped = async (direction, index) => {
         if (!canSwipe) return;
@@ -84,11 +83,11 @@ export default function Home() {
         setIsAnimating(true);
         setSwipeDirection(direction);
     
-        await sendFeedback(userId.current, movie.id, liked);
+        await sendFeedback(movie.id, liked);
     
         const newCount = feedbackCount + 1;
         setFeedbackCount(newCount);
-        saveSession(userId.current, {
+        saveSession({
             movies,
             currentIndex: index - 1,
             feedbackCount: newCount,
@@ -97,12 +96,12 @@ export default function Home() {
     
         if (newCount >= 10) {
             setIsLoadingRecommendation(true);
-            await gerarRecomendacao(userId.current);
+            await gerarRecomendacao();
             setIsLoadingRecommendation(false);
             setFeedbackCount(0);
 
             setCurrentIndex(index - 1);
-            saveSession(userId.current, {
+            saveSession({
                 movies,
                 currentIndex: index - 1,
                 feedbackCount: 0,
@@ -137,9 +136,9 @@ export default function Home() {
     
     const resetMatches = async () => {
         setFeedbackCount(0);
-        clearSession(userId.current);
+        clearSession();
         currentPage.current = 1;
-        movieCache.clear(userId.current);
+        movieCache.clear(localStorage.getItem('token'));
         await loadMovies();
     };
     
@@ -233,8 +232,8 @@ export default function Home() {
                                         <button
                                             onClick={() => {
                                                 currentPage.current += 1;
-                                                clearSession(userId.current);
-                                                movieCache.clear(userId.current);
+                                                clearSession();
+                                                movieCache.clear(localStorage.getItem('token'));
                                                 loadMovies();
                                             }}
                                             className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900"
