@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.List;
 
 import model.Genre;
 import model.MovieGenre;
@@ -42,27 +41,6 @@ public class MovieGenreDAO extends DAO {
             System.err.println("Erro ao inserir relação filme-gênero: " + e.getMessage());
         }
         return status;
-    }
-
-    /**
-     * Insere múltiplas associações de gêneros para um filme
-     * 
-     * @param movieId O ID do filme
-     * @param genreIds Lista de IDs de gêneros
-     * @return true se todas as inserções foram bem-sucedidas, false caso contrário
-     */
-    public boolean insertMovieGenres(int movieId, List<Integer> genreIds) {
-        boolean allSuccessful = true;
-        
-        for (Integer genreId : genreIds) {
-            MovieGenre movieGenre = new MovieGenre(movieId, genreId);
-            boolean status = insert(movieGenre);
-            if (!status) {
-                allSuccessful = false;
-            }
-        }
-        
-        return allSuccessful;
     }
 
     /**

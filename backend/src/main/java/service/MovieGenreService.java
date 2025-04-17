@@ -3,6 +3,8 @@ package service;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonObject;
+
 import dao.MovieGenreDAO;
 import model.Genre;
 import model.MovieGenre;
@@ -17,13 +19,18 @@ public class MovieGenreService {
     /**
      * Registra múltiplos gêneros para um filme
      * 
-     * @param movieId O ID do filme
+     * @param movieId  O ID do filme
      * @param genreIds Lista de IDs dos gêneros
      * @return true se todos foram registrados com sucesso, false caso contrário
      */
-    public boolean registrarGenerosDoFilme(int movieId, List<Integer> genreIds) {
+    public boolean storeMovieGenres(JsonObject movieObj) {
+        int movieId = movieObj.get("id").getAsInt();
+        List<Integer> genreIds = new ArrayList<>();
+        for (int i = 0; i < movieObj.get("genres").getAsJsonArray().size(); i++) {
+            genreIds.add(movieObj.get("genres").getAsJsonArray().get(i).getAsJsonObject().get("id").getAsInt());
+        }
         boolean todosComSucesso = true;
-        
+
         for (int genreId : genreIds) {
             MovieGenre movieGenre = new MovieGenre(movieId, genreId);
             boolean sucesso = movieGenreDAO.insert(movieGenre);
@@ -32,7 +39,7 @@ public class MovieGenreService {
                 todosComSucesso = false;
             }
         }
-        
+
         return todosComSucesso;
     }
 
@@ -45,35 +52,14 @@ public class MovieGenreService {
     public List<Integer> getGenreIdsForMovie(int movieId) {
         List<Integer> genreIds = new ArrayList<>();
         ArrayList<Genre> genres = movieGenreDAO.getGenresByMovieId(movieId);
-        
+
         for (Genre genre : genres) {
             genreIds.add(genre.getId());
         }
-        
+
         return genreIds;
     }
-    
-    /**
-     * Atualiza os gêneros de um filme
-     * 
-     * @param movieId O ID do filme
-     * @param genreIds Nova lista de IDs dos gêneros
-     * @return true se a atualização foi bem-sucedida, false caso contrário
-     */
-    public boolean atualizarGenerosDoFilme(int movieId, List<Integer> genreIds) {
-        try {
-            // Primeiro remove as relações existentes
-            movieGenreDAO.deleteByMovieId(movieId);
-            
-            // Depois adiciona as novas
-            return registrarGenerosDoFilme(movieId, genreIds);
-        } catch (Exception e) {
-            System.err.println("Erro ao atualizar gêneros do filme: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
-    
+
     /**
      * Remove todos os gêneros associados a um filme
      * 
@@ -92,6 +78,27 @@ public class MovieGenreService {
      */
     public ArrayList<Genre> buscarGenerosDoFilme(int movieId) {
         return movieGenreDAO.getGenresByMovieId(movieId);
+    }
+
+    /**
+     * Insere múltiplas associações de gêneros para um filme
+     * 
+     * @param movieId O ID do filme
+     * @param genreIds Lista de IDs de gêneros
+     * @return true se todas as inserções foram bem-sucedidas, false caso contrário
+     */
+    public boolean insertMovieGenres(int movieId, List<Integer> genreIds) {
+        boolean allSuccessful = true;
+        
+        for (Integer genreId : genreIds) {
+            MovieGenre movieGenre = new MovieGenre(movieId, genreId);
+            boolean status = movieGenreDAO.insert(movieGenre);
+            if (!status) {
+                allSuccessful = false;
+            }
+        }
+        
+        return allSuccessful;
     }
 
 }
