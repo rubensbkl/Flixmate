@@ -35,11 +35,8 @@ public class UserDAO extends DAO {
             st.setString(1, user.getFirstName());
             st.setString(2, user.getLastName());
             st.setString(3, user.getEmail());
-            
-            // Criptografar a senha antes de salvar
             String hashedPassword = PasswordUtil.hashPassword(user.getPassword());
             st.setString(4, hashedPassword);
-            
             st.setString(5, String.valueOf(user.getGender()));
 
             ResultSet rs = st.executeQuery();

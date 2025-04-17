@@ -39,6 +39,7 @@ import service.TMDBService;
 import service.UserGenreService;
 import service.UserService;
 import util.JWTUtil;
+import util.RecommendationHelper;
 
 public class Application {
 
@@ -359,22 +360,24 @@ public class Application {
 
         post("/api/feedback", (req, res) -> {
             try {
-
-                // Obter ID do usuário do atributo da requisição
                 int userId = req.attribute("userId");
-
-                // Parse do corpo da requisição
                 JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
+                int movieId = bodyObj.get("movieId").getAsInt();
+                boolean feedbackValue = bodyObj.get("feedback").getAsBoolean();
 
-                // Criar objeto Feedback
-                Feedback feedback = new Feedback();
-                feedback.setUserId(userId);
-                feedback.setMovieId(bodyObj.get("movieId").getAsInt());
-                feedback.setFeedback(bodyObj.get("feedback").getAsBoolean());
+                JsonObject movieObj = tmdb.getMovieDetails(movieId);
+                if (movieObj == null) {
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "Filme não encontrado na API TMDB"));
+                }
 
-                boolean sucesso = feedbackService.registrarFeedback(feedback);
+                boolean storedMovie = movieService.storeMovie(movieObj);
+                boolean storedGenres = movieGenreService.storeMovieGenres(movieObj);
+                boolean storedFeedback = feedbackService.storeFeedback(userId, movieId, feedbackValue);
 
-                if (sucesso) {
+                boolean success = storedMovie && storedGenres && storedFeedback;
+
+                if (success) {
                     res.status(201);
                     return gson.toJson(Map.of("status", "Interação registrada com sucesso"));
                 } else {
@@ -384,64 +387,62 @@ public class Application {
             } catch (Exception e) {
                 e.printStackTrace();
                 res.status(500);
-                return gson.toJson(Map.of("error", "Erro no servidor"));
+                return gson.toJson(Map.of("error", "Erro no servidor: " + e.getMessage()));
             }
         });
 
         post("/api/recommendation", (req, res) -> {
-            System.out.println("Recebida requisição para /api/recommendation");
-
-            JsonObject body = JsonParser.parseString(req.body()).getAsJsonObject();
-            System.out.println("Corpo da requisição: " + body);
-
-            // Obter ID do usuário do atributo da requisição
+            JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
             int userId = req.attribute("userId");
-            System.out.println("ID do usuário obtido do token: " + userId);
 
-            List<Feedback> interacoes = feedbackDAO.getFeedbacksByUserId(userId);
+            List<Feedback> interacoes = feedbackService.getFeedbacksByUserId(userId);
             // Verifica se o usuário tem interações
             if (interacoes.isEmpty()) {
                 res.status(400);
                 return gson.toJson(Map.of("error", "Usuário não possui interações"));
             }
 
-            // Enriquecer as interações com detalhes dos filmes
-            System.out.println("Enriquecendo interações do usuário com detalhes dos filmes:");
+            // Inicializar o helper de recomendações
+            RecommendationHelper helper = new RecommendationHelper();
+            // Buscar gêneros favoritos do usuário
+            List<Genre> generosFavoritos = userGenreService.getPreferredGenres(userId);
+
+            // Processar interações - armazenar detalhes dos filmes no helper
+            System.out.println("Processando interações do usuário:");
             for (Feedback feedback : interacoes) {
-                Movie movie = movieService.buscarFilmePorId(feedback.getMovieId());
-                ArrayList<Genre> generos = movieGenreService.buscarGenerosDoFilme(feedback.getMovieId());
+                int movieId = feedback.getMovieId();
+                Movie movie = movieService.buscarFilmePorId(movieId);
+                List<Genre> generos = movieGenreService.buscarGenerosDoFilme(movieId);
 
-                // Formatar os gêneros como string
-                StringBuilder genresStr = new StringBuilder();
-                for (int i = 0; i < generos.size(); i++) {
-                    if (i > 0)
-                        genresStr.append(", ");
-                    genresStr.append(generos.get(i).getName()).append(" (ID: ").append(generos.get(i).getId())
-                            .append(")");
-                }
-
-                // Adicionar detalhes do filme ao feedback
-                feedback.setMovieTitle(movie.getTitle());
-                feedback.setMovieGenres(genresStr.toString());
-                feedback.setReleaseDate(movie.getReleaseDate());
-                feedback.setPopularity(movie.getPopularity());
-                feedback.setAdult(movie.getAdult());
-                feedback.setOriginalLanguage(movie.getOriginalLanguage());
-
-                // Adicionar gêneros ao filme original
-                ArrayList<Integer> generosIds = new ArrayList<>();
-                for (Genre g : generos) {
-                    generosIds.add(g.getId());
-                }
-                movie.setGenreIds(generosIds);
+                // Adicionar filme com seus gêneros ao helper
+                helper.addMovieWithGenres(movie, generos);
             }
 
-            List<Genre> generosFavoritos = userGenreDAO.getPreferredGenres(userId);
+            // Obter filmes candidatos para recomendação
             List<Movie> candidateMovies = recommendationService.getCandidateMovies(interacoes);
+
+            // Adicionar filmes candidatos ao helper
+            for (Movie movie : candidateMovies) {
+                // Adicionar à lista de candidatos
+                helper.addCandidateMovieId(movie.getId());
+
+                // Se o filme ainda não foi adicionado ao helper (durante o processamento das
+                // interações)
+                if (!helper.hasMovie(movie.getId())) {
+                    List<Genre> generos = movieGenreService.buscarGenerosDoFilme(movie.getId());
+                    helper.addMovieWithGenres(movie, generos);
+                }
+            }
+
+            // Verificar se temos dados suficientes para gerar recomendação
+            if (!helper.hasEnoughDataForRecommendation()) {
+                res.status(400);
+                return gson.toJson(Map.of("error", "Dados insuficientes para gerar recomendação"));
+            }
 
             try {
                 System.out.println("Chamando IA para gerar recomendação...");
-                int recommendedMovieId = ai.gerarRecomendacao(interacoes, generosFavoritos, candidateMovies);
+                int recommendedMovieId = ai.gerarRecomendacao(interacoes, generosFavoritos, helper);
                 System.out.println("ID do filme recomendado: " + recommendedMovieId);
 
                 System.out.println("Limpando interações do usuário...");
@@ -453,6 +454,9 @@ public class Application {
                     return gson.toJson(Map.of("error", "Erro ao limpar interações"));
                 }
 
+                // Limpar o helper depois de usar
+                helper.clear();
+
                 return gson.toJson(Map.of("status", "ok", "recomendacao", recommendedMovieId));
             } catch (Exception e) {
                 System.out.println("Erro ao gerar recomendação:");
@@ -460,6 +464,7 @@ public class Application {
                 res.status(500);
                 return gson.toJson(Map.of("error", "Erro ao gerar recomendação"));
             }
+
         });
 
         post("/api/movies", (req, res) -> {
