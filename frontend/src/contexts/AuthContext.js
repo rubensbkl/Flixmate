@@ -10,7 +10,7 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    // ✅ Verifica o token e atualiza o estado apenas se for necessário
+    // Verifica o token e atualiza o estado
     const verifyToken = async (token) => {
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/verify`, {
@@ -26,48 +26,38 @@ export function AuthProvider({ children }) {
                 setUser(data.user);
                 return true;
             } else {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                setUser(null);
+                logout();
                 return false;
             }
         } catch (error) {
             console.error('Erro ao verificar token:', error);
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            setUser(null);
+            logout();
             return false;
         }
     };
 
     useEffect(() => {
         const checkAuth = async () => {
-            const savedUser = localStorage.getItem('user');
             const token = localStorage.getItem('token');
 
-            if (savedUser) {
-                setUser(JSON.parse(savedUser));
-            }
-
             if (token) {
-                await verifyToken(token); // <- só faz isso uma vez
+                await verifyToken(token);
             }
 
             setLoading(false);
         };
 
-        checkAuth(); // <- não depende de nenhum estado, roda só uma vez
+        checkAuth();
     }, []);
 
     const login = (userData, token) => {
         localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
     };
 
     const logout = () => {
         localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        localStorage.removeItem('session_data');
         setUser(null);
         router.push('/login');
     };

@@ -1,6 +1,8 @@
 package dao;
 
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -116,7 +118,62 @@ public class UserGenreDAO extends DAO {
         }
         return genres;
     }
+    
+    
+    /**
+     * Obtém um gênero pelo seu ID
+     * @param genreId ID do gênero
+     * @return Objeto Genre com os detalhes do gênero
+     */
+    public Genre getGenreById(int genreId) {
+        Genre genre = null;
+        try {
+            String sql = "SELECT * FROM genres WHERE id = ?";
+            PreparedStatement st = conexao.prepareStatement(sql);
+            st.setInt(1, genreId);
+            
+            ResultSet rs = st.executeQuery();
+            if (rs.next()) {
+                genre = new Genre(
+                    rs.getInt("id"),
+                    rs.getString("name")
+                );
+            }
+            
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar gênero por ID: " + e.getMessage());
+        }
+        return genre;
+    }
 
+    /**
+     * Verifica se o gênero existe na tabela de gêneros
+     * @param genreId ID do gênero
+     * @return true se o gênero existe, false caso contrário
+     */
+    public boolean genreExists(int genreId) {
+        boolean exists = false;
+        try {
+            String sql = "SELECT COUNT(*) FROM genres WHERE id = ?";
+            PreparedStatement st = conexao.prepareStatement(sql);
+            st.setInt(1, genreId);
+            
+            ResultSet rs = st.executeQuery();
+            if (rs.next()) {
+                exists = (rs.getInt(1) > 0);
+            }
+            
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            System.err.println("Erro ao verificar existência do gênero: " + e.getMessage());
+        }
+        return exists;
+    }
+
+    
 
 
 }

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import model.User;
+import util.PasswordUtil;
 
 public class UserDAO extends DAO {
 
@@ -34,7 +35,11 @@ public class UserDAO extends DAO {
             st.setString(1, user.getFirstName());
             st.setString(2, user.getLastName());
             st.setString(3, user.getEmail());
-            st.setString(4, user.getPassword());
+            
+            // Criptografar a senha antes de salvar
+            String hashedPassword = PasswordUtil.hashPassword(user.getPassword());
+            st.setString(4, hashedPassword);
+            
             st.setString(5, String.valueOf(user.getGender()));
 
             ResultSet rs = st.executeQuery();
@@ -120,12 +125,24 @@ public class UserDAO extends DAO {
     public boolean update(User user) {
         boolean status = false;
         try {
+            // Buscar o usuário atual para verificar se a senha foi alterada
+            User currentUser = getById(user.getId());
+            String passwordToSave;
+            
+            // Se a senha no objeto é diferente da senha no banco, criptografar a nova senha
+            if (!user.getPassword().equals(currentUser.getPassword())) {
+                passwordToSave = PasswordUtil.hashPassword(user.getPassword());
+            } else {
+                // Se a senha não mudou, manter a mesma
+                passwordToSave = user.getPassword();
+            }
+            
             String sql = "UPDATE users SET first_name = ?, last_name = ?, email = ?, password = ?, gender = ? WHERE id = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setString(1, user.getFirstName());
             st.setString(2, user.getLastName());
             st.setString(3, user.getEmail());
-            st.setString(4, user.getPassword());
+            st.setString(4, passwordToSave);
             st.setString(5, String.valueOf(user.getGender()));
             st.setInt(6, user.getId());
 
@@ -169,13 +186,16 @@ public class UserDAO extends DAO {
     public boolean auth(String email, String password) {
         boolean resp = false;
         try {
-            String sql = "SELECT * FROM users WHERE email = ? AND password = ?";
+            String sql = "SELECT password FROM users WHERE email = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setString(1, email);
-            st.setString(2, password);
 
             ResultSet rs = st.executeQuery();
-            resp = rs.next(); // Se encontrou um registro, autenticação bem-sucedida
+            if (rs.next()) {
+                String hashedPassword = rs.getString("password");
+                // Verificar a senha usando BCrypt
+                resp = PasswordUtil.checkPassword(password, hashedPassword);
+            }
 
             rs.close();
             st.close();
@@ -240,6 +260,12 @@ public class UserDAO extends DAO {
         return user;
     }
 
+    /**
+     * Obtém a configuração de filtro de conteúdo de um usuário
+     * 
+     * @param userId O ID do usuário
+     * @return true se o filtro de conteúdo estiver ativado, false caso contrário
+     */
     public boolean getContentFilter(int userId) {
         boolean contentFilter = false;
         try {
@@ -263,4 +289,30 @@ public class UserDAO extends DAO {
         return contentFilter;
     }
     
+    /**
+     * Atualiza a senha de um usuário
+     * 
+     * @param userId O ID do usuário
+     * @param newPassword A nova senha (em texto puro)
+     * @return true se a atualização foi bem-sucedida, false caso contrário
+     */
+    public boolean updatePassword(int userId, String newPassword) {
+        boolean status = false;
+        try {
+            String sql = "UPDATE users SET password = ? WHERE id = ?";
+            PreparedStatement st = conexao.prepareStatement(sql);
+            
+            // Criptografar a nova senha
+            String hashedPassword = PasswordUtil.hashPassword(newPassword);
+            st.setString(1, hashedPassword);
+            st.setInt(2, userId);
+            
+            int affectedRows = st.executeUpdate();
+            status = (affectedRows > 0);
+            st.close();
+        } catch (SQLException e) {
+            System.err.println("Erro ao atualizar senha: " + e.getMessage());
+        }
+        return status;
+    }
 }

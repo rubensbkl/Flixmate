@@ -1,8 +1,16 @@
 import { movieCache } from "./cache";
 
-export const fetchMovies = async (userId, page) => {
+// Função auxiliar para obter o token
+const getToken = () => {
+    return localStorage.getItem('token');
+};
+
+export const fetchMovies = async (page = 1) => {
+    const token = getToken();
+    
+    // Usamos o token como chave do cache em vez do ID
     if (page === 1) {
-        const cached = movieCache.get(userId);
+        const cached = movieCache.get(token);
         if (cached) {
             console.log("🔄 Usando cache");
             return cached;
@@ -13,8 +21,11 @@ export const fetchMovies = async (userId, page) => {
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, page }),
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ page }),
     });
 
     if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
@@ -32,29 +43,38 @@ export const fetchMovies = async (userId, page) => {
         adult: movie.adult,
     }));
 
-    if (page === 1) movieCache.store(userId, processed);
+    if (page === 1) movieCache.store(token, processed);
 
     return processed;
 };
 
-export const sendFeedback = async (userId, movieId, liked) => {
+export const sendFeedback = async (movieId, liked) => {
+    const token = getToken();
+    
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
-            userId: userId,
             movieId: movieId,
             feedback: liked,
         }),
     });
 };
 
-export const gerarRecomendacao = async (userId) => {
+export const gerarRecomendacao = async () => {
+    const token = getToken();
+    
     console.log("🔁 Gerando recomendação...");
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/recommendation`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({}),
     });
 
     if (!res.ok) throw new Error("Erro ao gerar recomendação");

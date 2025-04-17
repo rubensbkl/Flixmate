@@ -37,6 +37,7 @@ import service.MovieService;
 import service.RecommendationService;
 import service.TMDBService;
 import service.UserGenreService;
+import service.UserService;
 import util.JWTUtil;
 
 public class Application {
@@ -115,10 +116,11 @@ public class Application {
         TMDBService tmdb = new TMDBService(tmdbApiKey);
         AIService ai = new AIService(azureOpenAIEndpoint, azureOpenAIKey, azureOpenAIDeploymentName, tmdb);
         RecommendationService recommendationService = new RecommendationService(tmdb);
-        UserGenreService userGenreService = new UserGenreService();
         MovieGenreService movieGenreService = new MovieGenreService(movieGenreDAO);
         MovieService movieService = new MovieService(movieDAO, movieGenreService, tmdb);
         FeedbackService feedbackService = new FeedbackService(feedbackDAO, movieService);
+        UserGenreService userGenreService = new UserGenreService(userGenreDAO);
+        UserService userService = new UserService(userDAO);
 
         // JWT Util
         JWTUtil jwt = new JWTUtil(jwtSecret);
@@ -131,85 +133,67 @@ public class Application {
         staticFiles.externalLocation("webjars");
 
         // CORS - Cross-Origin Resource Sharing
-        if (env.equals("dev")) {
-            Set<String> allowedOrigins = new HashSet<>(List.of(
-                    "http://localhost:3000",
-                    "https://3bd4-187-86-247-172.ngrok-free.app",
-                    "https://flixmate.com.br"));
+        Set<String> allowedOrigins = new HashSet<>(List.of(
+                "http://localhost:3000",
+                "https://3bd4-187-86-247-172.ngrok-free.app",
+                "https://flixmate.com.br"));
 
-            options("/*", (req, res) -> {
-                String acrh = req.headers("Access-Control-Request-Headers");
-                if (acrh != null)
-                    res.header("Access-Control-Allow-Headers", acrh);
+        // Habilitar CORS para requisições preflight OPTIONS
+        options("/*", (req, res) -> {
+            String origin = req.headers("Origin");
+            if (origin != null && allowedOrigins.contains(origin)) {
+                res.header("Access-Control-Allow-Origin", origin);
+            }
 
-                String acrm = req.headers("Access-Control-Request-Method");
-                if (acrm != null)
-                    res.header("Access-Control-Allow-Methods", acrm);
+            String acrh = req.headers("Access-Control-Request-Headers");
+            if (acrh != null) {
+                res.header("Access-Control-Allow-Headers", acrh);
+            }
 
-                res.header("Access-Control-Allow-Credentials", "true");
+            String acrm = req.headers("Access-Control-Request-Method");
+            if (acrm != null) {
+                res.header("Access-Control-Allow-Methods", acrm);
+            }
 
-                return "OK";
-            });
+            res.header("Access-Control-Allow-Credentials", "true");
+            res.header("Access-Control-Max-Age", "86400"); // 24 horas - ajuda a reduzir preflight requests
 
-            before((req, res) -> {
-                String origin = req.headers("Origin");
-                if (origin != null && allowedOrigins.contains(origin)) {
-                    res.header("Access-Control-Allow-Origin", origin);
-                }
+            res.status(200);
+            return "OK";
+        });
 
-                res.header("Access-Control-Allow-Credentials", "true");
-                res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-                res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
-                res.type("application/json");
-            });
+        // CORS para todas as outras requisições
+        before((req, res) -> {
+            // Ignorar esta parte para requisições OPTIONS, já tratadas acima
+            if (req.requestMethod().equals("OPTIONS")) {
+                return;
+            }
 
-        } else if (env.equals("production")) {
-            Set<String> allowedOrigins = new HashSet<>(List.of(
-                    "http://localhost:3000",
-                    "https://flixmate.com.br"));
+            String origin = req.headers("Origin");
+            if (origin != null && allowedOrigins.contains(origin)) {
+                res.header("Access-Control-Allow-Origin", origin);
+            }
 
-            options("/*", (req, res) -> {
-                String acrh = req.headers("Access-Control-Request-Headers");
-                if (acrh != null)
-                    res.header("Access-Control-Allow-Headers", acrh);
-
-                String acrm = req.headers("Access-Control-Request-Method");
-                if (acrm != null)
-                    res.header("Access-Control-Allow-Methods", acrm);
-
-                res.header("Access-Control-Allow-Credentials", "true");
-
-                return "OK";
-            });
-
-            before((req, res) -> {
-                String origin = req.headers("Origin");
-                if (origin != null && allowedOrigins.contains(origin)) {
-                    res.header("Access-Control-Allow-Origin", origin);
-                }
-
-                res.header("Access-Control-Allow-Credentials", "true");
-                res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-                res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
-                res.type("application/json");
-            });
-        }
+            res.header("Access-Control-Allow-Credentials", "true");
+            res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
+            res.type("application/json");
+        });
 
         // Endpoints
         post("/api/login", (req, res) -> {
             User user = gson.fromJson(req.body(), User.class);
-            if (userDAO.auth(user.getEmail(), user.getPassword())) {
+            if (userService.authenticateUser(user.getEmail(), user.getPassword())) {
                 // Buscar os dados completos do usuário
-                User fullUser = userDAO.getByEmail(user.getEmail());
+                User fullUser = userService.getUserByEmail(user.getEmail());
 
                 // Gerar token JWT
-                String token = jwt.generateToken(user.getEmail());
+                String token = jwt.generateToken(user.getEmail(), fullUser.getId());
 
                 // Criar resposta com token e dados básicos do usuário (sem senha)
                 Map<String, Object> response = new HashMap<>();
                 response.put("token", token);
                 response.put("user", Map.of(
-                        "id", fullUser.getId(),
                         "firstName", fullUser.getFirstName(),
                         "lastName", fullUser.getLastName(),
                         "email", fullUser.getEmail()));
@@ -221,7 +205,25 @@ public class Application {
         });
 
         post("/api/register", (req, res) -> {
-            User user = gson.fromJson(req.body(), User.class);
+            JsonObject requestBody = JsonParser.parseString(req.body()).getAsJsonObject();
+
+            // Extrair os dados do usuário
+            User user = new User();
+            user.setFirstName(requestBody.get("firstName").getAsString());
+            user.setLastName(requestBody.get("lastName").getAsString());
+            user.setEmail(requestBody.get("email").getAsString());
+            user.setPassword(requestBody.get("password").getAsString());
+            user.setGender(requestBody.get("gender").getAsString().charAt(0));
+
+            // Extrair o array de gêneros favoritos
+            JsonArray favoriteGenresArray = requestBody.getAsJsonArray("favoriteGenres");
+            List<Integer> favoriteGenres = new ArrayList<>();
+            for (int i = 0; i < favoriteGenresArray.size(); i++) {
+                favoriteGenres.add(favoriteGenresArray.get(i).getAsInt());
+            }
+
+            System.out.println("Usuário recebido: " + user);
+            System.out.println("Gêneros favoritos: " + favoriteGenres);
 
             // Verificações básicas
             if (user.getEmail() == null || user.getPassword() == null ||
@@ -232,29 +234,57 @@ public class Application {
             }
 
             // Verificar se o email já existe
-            if (userDAO.getByEmail(user.getEmail()) != null) {
+            if (userService.getUserByEmail(user.getEmail()) != null) {
                 res.status(400);
                 return gson.toJson(Map.of("error", "Email já cadastrado"));
             }
 
-            // Inserir no banco
-            if (userDAO.insert(user)) {
-                // Gerar token
-                User fullUser = userDAO.getByEmail(user.getEmail());
-                String token = jwt.generateToken(fullUser.getEmail());
+            // Verificar se foram selecionados gêneros favoritos
+            if (favoriteGenres.isEmpty()) {
+                res.status(400);
+                return gson.toJson(Map.of("error", "Selecione pelo menos um gênero favorito"));
+            }
 
+            // Inserir usuário no banco
+            if (userService.insertUser(user)) {
+                // Buscar o usuário recém-inserido para obter o ID
+                User fullUser = userService.getUserByEmail(user.getEmail());
+
+                // Inserir os gêneros favoritos
+                boolean allGenresInserted = true;
+                for (Integer genreId : favoriteGenres) {
+                    if (!userGenreService.addPreferredGenre(fullUser.getId(), genreId)) {
+                        allGenresInserted = false;
+                        System.err.println(
+                                "Erro ao inserir gênero favorito: " + genreId + " para o usuário: " + fullUser.getId());
+                    }
+                }
+
+                // Gerar token JWT
+                String token = jwt.generateToken(fullUser.getEmail(), fullUser.getId());
+
+                // Criar resposta
                 Map<String, Object> userData = Map.of(
-                        "id", fullUser.getId(),
                         "firstName", fullUser.getFirstName(),
                         "lastName", fullUser.getLastName(),
                         "email", fullUser.getEmail(),
                         "gender", fullUser.getGender());
 
                 res.status(201);
-                return gson.toJson(Map.of(
-                        "status", "success",
-                        "token", token,
-                        "user", userData));
+
+                if (!allGenresInserted) {
+                    // Se algum gênero não foi inserido, ainda retornamos sucesso mas com aviso
+                    return gson.toJson(Map.of(
+                            "status", "success",
+                            "token", token,
+                            "user", userData,
+                            "warning", "Alguns gêneros favoritos podem não ter sido salvos"));
+                } else {
+                    return gson.toJson(Map.of(
+                            "status", "success",
+                            "token", token,
+                            "user", userData));
+                }
             }
 
             res.status(500);
@@ -271,10 +301,10 @@ public class Application {
             try {
                 String token = authHeader.substring(7);
                 var decoded = jwt.verifyToken(token);
-                String userEmail = decoded.getSubject();
+                int userId = decoded.getClaim("userId").asInt();
 
                 // Buscar informações do usuário
-                User user = userDAO.getByEmail(userEmail);
+                User user = userService.getUserById(userId);
                 if (user == null) {
                     res.status(401);
                     return gson.toJson(Map.of("valid", false, "error", "Usuário não encontrado"));
@@ -294,18 +324,34 @@ public class Application {
         });
 
         // Middleware de autenticação para rotas protegidas
-        before("/api/protected/*", (req, res) -> {
+        before("/api/*", (req, res) -> {
+            // Ignorar verificação para requisições OPTIONS
+            if (req.requestMethod().equals("OPTIONS")) {
+                return;
+            }
+
+            // Excluir rotas públicas
+            String path = req.pathInfo();
+            if (path.equals("/api/login") || path.equals("/api/register") || path.equals("/api/verify")
+                    || path.equals("/api/ping")) {
+                return; // Ignorar verificação para rotas públicas
+            }
+
             String authHeader = req.headers("Authorization");
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                halt(401, "{\"error\":\"Token não enviado\"}");
+                halt(401, gson.toJson(Map.of("error", "Token não fornecido")));
             }
 
             try {
                 String token = authHeader.substring(7);
                 var decoded = jwt.verifyToken(token);
+
+                // Adicionar atributos úteis à requisição
                 req.attribute("userEmail", decoded.getSubject());
+                req.attribute("userId", decoded.getClaim("userId").asInt());
             } catch (Exception e) {
-                halt(403, "{\"error\":\"Token inválido\"}");
+                e.printStackTrace();
+                halt(403, gson.toJson(Map.of("error", "Token inválido")));
             }
         });
 
@@ -313,10 +359,21 @@ public class Application {
 
         post("/api/feedback", (req, res) -> {
             try {
-                Feedback feedback = gson.fromJson(req.body(), Feedback.class);
+
+                // Obter ID do usuário do atributo da requisição
+                int userId = req.attribute("userId");
+
+                // Parse do corpo da requisição
+                JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
+
+                // Criar objeto Feedback
+                Feedback feedback = new Feedback();
+                feedback.setUserId(userId);
+                feedback.setMovieId(bodyObj.get("movieId").getAsInt());
+                feedback.setFeedback(bodyObj.get("feedback").getAsBoolean());
 
                 boolean sucesso = feedbackService.registrarFeedback(feedback);
-        
+
                 if (sucesso) {
                     res.status(201);
                     return gson.toJson(Map.of("status", "Interação registrada com sucesso"));
@@ -337,8 +394,9 @@ public class Application {
             JsonObject body = JsonParser.parseString(req.body()).getAsJsonObject();
             System.out.println("Corpo da requisição: " + body);
 
-            int userId = body.get("userId").getAsInt();
-            System.out.println("ID do usuário: " + userId);
+            // Obter ID do usuário do atributo da requisição
+            int userId = req.attribute("userId");
+            System.out.println("ID do usuário obtido do token: " + userId);
 
             List<Feedback> interacoes = feedbackDAO.getFeedbacksByUserId(userId);
             // Verifica se o usuário tem interações
@@ -352,14 +410,16 @@ public class Application {
             for (Feedback feedback : interacoes) {
                 Movie movie = movieService.buscarFilmePorId(feedback.getMovieId());
                 ArrayList<Genre> generos = movieGenreService.buscarGenerosDoFilme(feedback.getMovieId());
-                
+
                 // Formatar os gêneros como string
                 StringBuilder genresStr = new StringBuilder();
                 for (int i = 0; i < generos.size(); i++) {
-                    if (i > 0) genresStr.append(", ");
-                    genresStr.append(generos.get(i).getName()).append(" (ID: ").append(generos.get(i).getId()).append(")");
+                    if (i > 0)
+                        genresStr.append(", ");
+                    genresStr.append(generos.get(i).getName()).append(" (ID: ").append(generos.get(i).getId())
+                            .append(")");
                 }
-                
+
                 // Adicionar detalhes do filme ao feedback
                 feedback.setMovieTitle(movie.getTitle());
                 feedback.setMovieGenres(genresStr.toString());
@@ -367,7 +427,7 @@ public class Application {
                 feedback.setPopularity(movie.getPopularity());
                 feedback.setAdult(movie.getAdult());
                 feedback.setOriginalLanguage(movie.getOriginalLanguage());
-                
+
                 // Adicionar gêneros ao filme original
                 ArrayList<Integer> generosIds = new ArrayList<>();
                 for (Genre g : generos) {
@@ -375,10 +435,9 @@ public class Application {
                 }
                 movie.setGenreIds(generosIds);
             }
-            
+
             List<Genre> generosFavoritos = userGenreDAO.getPreferredGenres(userId);
             List<Movie> candidateMovies = recommendationService.getCandidateMovies(interacoes);
-            
 
             try {
                 System.out.println("Chamando IA para gerar recomendação...");
@@ -404,29 +463,32 @@ public class Application {
         });
 
         post("/api/movies", (req, res) -> {
+
+            // Extrair ID do usuário do token
+            int userId = req.attribute("userId");
+
             JsonObject requestBody = gson.fromJson(req.body(), JsonObject.class);
-            int userId = requestBody.get("userId").getAsInt();
             int page = requestBody.has("page") ? requestBody.get("page").getAsInt() : 1;
             System.out.println("Page: " + page);
             try {
                 // Pega a flag do filtro adulto do usuário
-                boolean contentFilter = userDAO.getContentFilter(userId);
+                boolean contentFilter = userService.getContentFilter(userId);
                 System.out.println("Content Filter: " + contentFilter);
                 // DAO de preferências
                 List<Genre> preferredGenresList = userGenreDAO.getPreferredGenres(userId);
                 List<Integer> preferredGenres = preferredGenresList.stream()
-                    .map(Genre::getId)
-                    .toList();
-                    
+                        .map(Genre::getId)
+                        .toList();
+
                 // Pega filmes de várias listas
                 JsonArray trendingMovies = tmdb.getTrendingMovies(page);
                 JsonArray popularMovies = tmdb.getPopularMovies(page);
                 JsonArray topRatedMovies = tmdb.getTopRatedMovies(page);
                 JsonArray upcomingMovies = tmdb.getUpcomingMovies(page);
-                
+
                 // Usamos um Set para evitar duplicatas por ID
                 Map<Integer, JsonObject> uniqueMoviesMap = new HashMap<>();
-                
+
                 // Função para processar cada array e adicionar ao mapa de filmes únicos
                 Consumer<JsonArray> processMovies = (moviesArray) -> {
                     if (moviesArray != null) {
@@ -440,7 +502,8 @@ public class Application {
                                     boolean isAdult = movie.has("adult") && movie.get("adult").getAsBoolean();
                                     if (contentFilter && isAdult) {
                                         // Pula o filme se for adulto e o usuário não quiser ver
-                                        System.out.println("Filme " + movieId + " é adulto e o filtro está ativado. Pulando...");
+                                        System.out.println(
+                                                "Filme " + movieId + " é adulto e o filtro está ativado. Pulando...");
                                         return;
                                     }
                                     // Só adiciona se ainda não existe no mapa
@@ -452,34 +515,34 @@ public class Application {
                         });
                     }
                 };
-                
+
                 // Processa todas as listas
                 processMovies.accept(trendingMovies);
                 processMovies.accept(popularMovies);
                 processMovies.accept(topRatedMovies);
                 processMovies.accept(upcomingMovies);
-                
+
                 // Converte o mapa para uma lista
                 List<JsonObject> allMovies = new ArrayList<>(uniqueMoviesMap.values());
-                
+
                 // Ordena pela compatibilidade com os gêneros preferidos
                 allMovies.sort((m1, m2) -> {
                     int score1 = userGenreService.calculateGenreScore(m1, preferredGenres);
                     int score2 = userGenreService.calculateGenreScore(m2, preferredGenres);
                     return Integer.compare(score2, score1); // Ordem decrescente
                 });
-                
+
                 int totalMovies = allMovies.size();
                 int moviesToReturn = (totalMovies / 10) * 10; // maior múltiplo de 10 menor ou igual
                 if (moviesToReturn == 0 && totalMovies > 0) {
                     moviesToReturn = Math.min(10, totalMovies);
                 }
                 List<JsonObject> topMovies = allMovies.stream().limit(moviesToReturn).toList();
-                
+
                 // Log para debug
                 System.out.println("Total de filmes após remover duplicatas e aplicar filtros: " + totalMovies);
                 System.out.println("Enviando " + moviesToReturn + " filmes para o cliente");
-                
+
                 return gson.toJson(Map.of("status", "ok", "movies", topMovies));
             } catch (Exception e) {
                 e.printStackTrace();
