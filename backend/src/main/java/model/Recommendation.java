@@ -1,33 +1,23 @@
 package model;
 
 public class Recommendation {
-    private int id;
     private int userId;
     private int movieId;
     private boolean watched;
     private boolean favorite;
 
     public Recommendation() {
-        this.id = -1;
         this.userId = -1;
         this.movieId = -1;
         this.watched = false;
         this.favorite = false;
     }
 
-    public Recommendation(int userId, int movieId, boolean watched, boolean favorite) {
+    public Recommendation(int userId, int movieId) {
         this.userId = userId;
         this.movieId = movieId;
-        this.watched = watched;
-        this.favorite = favorite;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
+        this.watched = false;
+        this.favorite = false;
     }
 
     public int getUserId() {
@@ -48,12 +38,29 @@ public class Recommendation {
         return movieId;
     }
 
+    public boolean isWatched() {
+        return watched;
+    }
+    
+    public void setWatched(boolean watched) {
+        this.watched = watched;
+    }
+    
+    public boolean isFavorite() {
+        return favorite;
+    }
+    
+    public void setFavorite(boolean favorite) {
+        this.favorite = favorite;
+    }
+
     @Override
     public String toString() {
         return "Recommendation{" +
-                "id=" + id +
-                ", userId=" + userId +
+                "userId=" + userId +
                 ", movieId=" + movieId +
+                ", watched=" + watched +
+                ", favorite=" + favorite +
                 '}';
     }
 

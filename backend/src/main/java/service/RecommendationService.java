@@ -7,13 +7,16 @@ import java.util.Set;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import dao.RecommendationDAO;
 import model.Feedback;
+import model.Recommendation;
 
 public class RecommendationService {
-
+    private RecommendationDAO recommendationDAO;
     private TMDBService tmdbService;
 
-    public RecommendationService(TMDBService tmdbService) {
+    public RecommendationService(RecommendationDAO recommendationDAO, TMDBService tmdbService) {
+        this.recommendationDAO = recommendationDAO;
         this.tmdbService = tmdbService;
     }
 
@@ -60,4 +63,11 @@ public class RecommendationService {
 
         return candidateMovies;
     }
+
+    public boolean storeRecommendation(int userId, int movieId) {
+        Recommendation rec = new Recommendation(userId, movieId);
+        return recommendationDAO.insert(rec);
+    }
+
+    // Store Recommendations
 }

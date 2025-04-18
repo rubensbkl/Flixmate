@@ -17,6 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fetchMovies, gerarRecomendacao, sendFeedback } from "@/lib/api";
 import { movieCache } from "@/lib/cache";
 import { clearSession, loadSession, saveSession } from "@/lib/session";
+import MovieMatchModal from "@/components/MovieMatchModal";
 
 
 export default function Home() {
@@ -27,13 +28,18 @@ export default function Home() {
     const [isAnimating, setIsAnimating] = useState(false);
     const [swipeDirection, setSwipeDirection] = useState(null);
     const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(false);
-    
+
+
+    const [showMatchModal, setShowMatchModal] = useState(false);
+    const [recommendedMovie, setRecommendedMovie] = useState(null);
+
+
     const { user } = useAuth();
     const currentPage = useRef(1);
     const currentMovieRef = useRef(null);
 
     const canSwipe = currentIndex >= 0 && !isAnimating && !loading && !isLoadingRecommendation;
-    
+
     const loadMovies = useCallback(async () => {
         const session = loadSession();
         if (session) {
@@ -45,13 +51,13 @@ export default function Home() {
             setLoading(false);
             return;
         }
-    
+
         setLoading(true);
         try {
             const fetchedMovies = await fetchMovies(currentPage.current);
             const reversed = [...fetchedMovies].reverse();
             const startIdx = reversed.length - 1;
-        
+
             setMovies(reversed);
             setCurrentIndex(startIdx);
             setFeedbackCount(0);
@@ -61,30 +67,30 @@ export default function Home() {
                 feedbackCount: 0,
                 currentPage: currentPage.current
             });
-        
+
         } catch (err) {
             console.error("Erro ao carregar filmes:", err);
         } finally {
             setLoading(false);
         }
     }, []);
-    
-    useEffect(() => { 
-        if (user) loadMovies(); 
+
+    useEffect(() => {
+        if (user) loadMovies();
     }, [loadMovies, user]);
-    
+
     const swiped = async (direction, index) => {
         if (!canSwipe) return;
-    
+
         const liked = direction === "right";
         const movie = movies[index];
         console.log(`${liked ? "Curtiu" : "Descartou"}: ${movie.title}`);
-    
+
         setIsAnimating(true);
         setSwipeDirection(direction);
-    
+
         await sendFeedback(movie.id, liked);
-    
+
         const newCount = feedbackCount + 1;
         setFeedbackCount(newCount);
         saveSession({
@@ -93,47 +99,65 @@ export default function Home() {
             feedbackCount: newCount,
             currentPage: currentPage.current
         });
-    
+
         if (newCount >= 10) {
-            setIsLoadingRecommendation(true);
-            await gerarRecomendacao();
-            setIsLoadingRecommendation(false);
-            setFeedbackCount(0);
+            try {
+                setIsLoadingRecommendation(true);
+                // Get recommendation and show match modal
+                const recommendationData = await gerarRecomendacao();
+                setRecommendedMovie(recommendationData);
 
-            setCurrentIndex(index - 1);
-            saveSession({
-                movies,
-                currentIndex: index - 1,
-                feedbackCount: 0,
-                currentPage: currentPage.current
-            });
+                // Reset feedback count
+                setFeedbackCount(0);
+                saveSession({
+                    movies,
+                    currentIndex: index - 1,
+                    feedbackCount: 0,
+                    currentPage: currentPage.current
+                });
 
-            // Libera a animação e reseta direção depois
+                // Show match modal after loading finishes
+                setTimeout(() => {
+                    setIsLoadingRecommendation(false);
+                    setShowMatchModal(true);
+                }, 300);
+            } catch (err) {
+                console.error("Erro ao gerar recomendação:", err);
+                setIsLoadingRecommendation(false);
+            }
+
+            // Release animation and reset direction
             setTimeout(() => {
                 setIsAnimating(false);
                 setSwipeDirection(null);
             }, 300);
 
-            return; // <-- pra evitar o setTimeout abaixo
+            setCurrentIndex(index - 1);
+            return;
         }
-    
-        // Só decrementa aqui se não teve recomendação
+
+        // Only decrement here if no recommendation was generated
         setTimeout(() => {
             setCurrentIndex(prev => prev - 1);
             setIsAnimating(false);
             setSwipeDirection(null);
         }, 300);
     };
-    
+
     const swipe = (dir) => {
         if (canSwipe && currentMovieRef.current) {
             setSwipeDirection(dir);
             currentMovieRef.current.swipe(dir);
         }
     };
-    
+
+    const handleCloseModal = () => {
+        setShowMatchModal(false);
+    };
+
+
     const outOfFrame = (idx) => console.log(`${movies[idx]?.title} saiu da tela.`);
-    
+
     const resetMatches = async () => {
         setFeedbackCount(0);
         clearSession();
@@ -141,7 +165,7 @@ export default function Home() {
         movieCache.clear(localStorage.getItem('token'));
         await loadMovies();
     };
-    
+
     const handlers = useSwipeable({
         onSwipedLeft: () => swipe("left"),
         onSwipedRight: () => swipe("right"),
@@ -190,7 +214,7 @@ export default function Home() {
                                     movies.map((movie, index) => {
                                         const isTop = index === currentIndex;
                                         const isNext = index === currentIndex - 1;
-                                        
+
                                         // Só renderizar o cartão atual e o próximo
                                         if (!isTop && !isNext) return null;
 
@@ -204,11 +228,10 @@ export default function Home() {
                                                 className="absolute inset-0 flex items-center justify-center"
                                             >
                                                 <div
-                                                    className={`w-[90vw] max-w-md ${
-                                                        isNext
-                                                            ? "scale-90 translate-y-4 transition-all duration-300"
-                                                            : ""
-                                                    }`}
+                                                    className={`w-[90vw] max-w-md ${isNext
+                                                        ? "scale-90 translate-y-4 transition-all duration-300"
+                                                        : ""
+                                                        }`}
                                                 >
                                                     <ImprovedMovieCard
                                                         movie={movie}
@@ -282,12 +305,18 @@ export default function Home() {
                         </div>
                     </div>
 
-                    <div className={`fixed inset-0 bg-gray-100 flex flex-col items-center justify-center transition-opacity duration-500 ${
-                        isLoadingRecommendation  ? "opacity-100" : "opacity-0 pointer-events-none"
-                    }`}>
+                    <div className={`fixed inset-0 bg-gray-100 flex flex-col items-center justify-center transition-opacity duration-500 ${isLoadingRecommendation ? "opacity-100" : "opacity-0 pointer-events-none"
+                        }`}>
                         <div className="text-xl font-semibold">Gerando recomendação...</div>
                         <div className="mt-4 w-16 h-16 border-t-4 border-yellow-500 border-solid rounded-full animate-spin"></div>
                     </div>
+
+                    {/* Movie match modal */}
+                    <MovieMatchModal
+                        isOpen={showMatchModal}
+                        onClose={handleCloseModal}
+                        movie={recommendedMovie}
+                    />
                 </main>
             </div>
 

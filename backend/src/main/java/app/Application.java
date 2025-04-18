@@ -25,6 +25,7 @@ import dao.FeedbackDAO;
 import dao.GenreDAO;
 import dao.MovieDAO;
 import dao.MovieGenreDAO;
+import dao.RecommendationDAO;
 import dao.UserDAO;
 import dao.UserGenreDAO;
 import model.Feedback;
@@ -112,6 +113,7 @@ public class Application {
         FeedbackDAO feedbackDAO = new FeedbackDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
         MovieDAO movieDAO = new MovieDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
         MovieGenreDAO movieGenreDAO = new MovieGenreDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
+        RecommendationDAO recommendationDAO = new RecommendationDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
         UserDAO userDAO = new UserDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
         UserGenreDAO userGenreDAO = new UserGenreDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
         GenreDAO genreDAO = new GenreDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
@@ -120,7 +122,7 @@ public class Application {
         TMDBService tmdb = new TMDBService(tmdbApiKey);
         AIService ai = new AIService(azureOpenAIEndpoint, azureOpenAIKey, azureOpenAIDeploymentName, tmdb);
         MovieGenreService movieGenreService = new MovieGenreService(movieGenreDAO);
-        RecommendationService recommendationService = new RecommendationService(tmdb);
+        RecommendationService recommendationService = new RecommendationService(recommendationDAO, tmdb);
         MovieService movieService = new MovieService(movieDAO, movieGenreService, tmdb);
         FeedbackService feedbackService = new FeedbackService(feedbackDAO, movieService);
         UserGenreService userGenreService = new UserGenreService(userGenreDAO);
@@ -488,7 +490,15 @@ public class Application {
                 // Limpar o helper depois de usar
                 helper.clear();
 
-                return gson.toJson(Map.of("status", "ok", "recomendacao", recommendedMovieId));
+                JsonObject movieObj = tmdb.getMovieDetails(recommendedMovieId);
+                boolean storedRecomendation = movieService.storeMovie(movieObj);
+                System.out.println("Filme armazenado: " + storedRecomendation);
+                boolean storedRecommendation = recommendationService.storeRecommendation(userId, recommendedMovieId);
+                System.out.println("Recomendação armazenada: " + storedRecommendation);
+
+                Movie movie = movieService.jsonObjectToMovie(movieObj);
+                System.out.println("Filme convertido: " + movie);
+                return gson.toJson(Map.of("status", "ok", "recomendacao", movieObj));
             } catch (Exception e) {
                 System.out.println("Erro ao gerar recomendação:");
                 e.printStackTrace();
