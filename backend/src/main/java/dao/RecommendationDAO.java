@@ -3,6 +3,7 @@ package dao;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 
 import model.Recommendation;
 
@@ -41,34 +42,35 @@ public class RecommendationDAO extends DAO {
         return status;
     }
     
-    // /**
-    //  * Obtém todas as recomendações para um usuário específico
-    //  * @param userId O ID do usuário
-    //  * @return Lista de recomendações do usuário
-    //  */
-    // public List<Recommendation> getRecommendationsByUserId(int userId) {
-    //     List<Recommendation> recommendations = new ArrayList<>();
-    //     try {
-    //         String sql = "SELECT * FROM recommendations WHERE user_id = ? ORDER BY id DESC";
-    //         PreparedStatement st = conexao.prepareStatement(sql);
-    //         st.setInt(1, userId);
-    //         ResultSet rs = st.executeQuery();
-
-    //         while (rs.next()) {
-    //             Recommendation rec = new Recommendation(
-    //                 rs.getInt("user_id"),
-    //                 rs.getInt("movie_id")
-    //             );
-    //             rec.setId(rs.getInt("id"));
-    //             recommendations.add(rec);
-    //         }
-    //         rs.close();
-    //         st.close();
-    //     } catch (SQLException e) {
-    //         System.err.println("Erro ao buscar recomendações do usuário: " + e.getMessage());
-    //     }
-    //     return recommendations;
-    // }
+    /**
+     * Obtém todas as recomendações para um usuário específico
+     * @param userId O ID do usuário
+     * @return Lista de recomendações do usuário
+     */
+    public ArrayList<Recommendation> getRecommendationsByUserId(int userId) {
+        ArrayList<Recommendation> recommendations = new ArrayList<>();
+        try {
+            String sql = "SELECT * FROM recommendations WHERE user_id = ?";
+            PreparedStatement st = conexao.prepareStatement(sql);
+            st.setInt(1, userId);
+            
+            ResultSet rs = st.executeQuery();
+            while (rs.next()) {
+                int movieId = rs.getInt("movie_id");
+                boolean watched = rs.getBoolean("watched");
+                boolean favorite = rs.getBoolean("favorite");
+                
+                Recommendation recommendation = new Recommendation(userId, movieId, watched, favorite);
+                recommendations.add(recommendation);
+            }
+            
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            System.err.println("Erro ao obter recomendações: " + e.getMessage());
+        }
+        return recommendations;
+    }
     
     /**
      * Remove uma recomendação específica pelo ID
