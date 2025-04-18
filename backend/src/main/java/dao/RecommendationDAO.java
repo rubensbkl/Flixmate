@@ -25,17 +25,15 @@ public class RecommendationDAO extends DAO {
     public boolean insert(Recommendation recommendation) {
         boolean status = false;
         try {
-            String sql = "INSERT INTO recommendations (user_id, movie_id) VALUES (?, ?) RETURNING id";
+            String sql = "INSERT INTO recommendations (user_id, movie_id, watched, favorite) VALUES (?, ?, ?, ?)";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setInt(1, recommendation.getUserId());
             st.setInt(2, recommendation.getMovieId());
+            st.setBoolean(3, recommendation.isWatched());
+            st.setBoolean(4, recommendation.isFavorite());
             
-            ResultSet rs = st.executeQuery();
-            if (rs.next()) {
-                recommendation.setId(rs.getInt(1)); // Define o ID gerado no objeto de recomendação
-                status = true;
-            }
-            rs.close();
+            int rowsAffected = st.executeUpdate();
+            status = (rowsAffected > 0);
             st.close();
         } catch (SQLException e) {
             System.err.println("Erro ao inserir recomendação: " + e.getMessage());
