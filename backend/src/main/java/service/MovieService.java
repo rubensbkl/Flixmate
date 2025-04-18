@@ -27,18 +27,20 @@ public class MovieService {
         try {
             int movieId = movieObj.get("id").getAsInt();
             String title = movieObj.get("title").getAsString();
+            String overview = movieObj.has("overview") ? movieObj.get("overview").getAsString() : null;
+            double rating = movieObj.has("vote_average") ? movieObj.get("vote_average").getAsDouble() : 0.0;
             String releaseDate = movieObj.has("release_date") ? movieObj.get("release_date").getAsString() : null;
             String originalLanguage = movieObj.has("original_language") ? movieObj.get("original_language").getAsString() : null;
             double popularity = movieObj.has("popularity") ? movieObj.get("popularity").getAsDouble() : 0.0;
             boolean adult = movieObj.has("adult") && movieObj.get("adult").getAsBoolean();
+            String posterPath = movieObj.has("poster_path") ? movieObj.get("poster_path").getAsString() : null;
             
             if (movieDAO.exists(movieId)) {
                 System.out.println("Filme já existe no banco: " + movieId + " - " + title);
                 return true;
             }
 
-            Movie movie = new Movie(movieId, title, releaseDate, originalLanguage, popularity, adult);
-            
+            Movie movie = new Movie(movieId, title, overview, rating, releaseDate, originalLanguage, popularity, adult, posterPath);
             if (!movieDAO.insert(movie)) {
                 System.err.println("Falha ao inserir filme no banco: " + movieId + " - " + title);
                 return false;
@@ -79,4 +81,5 @@ public class MovieService {
     public JsonObject getMovieDetails(int movieId) {
         return tmdbService.getMovieDetails(movieId);
     }
+
 }

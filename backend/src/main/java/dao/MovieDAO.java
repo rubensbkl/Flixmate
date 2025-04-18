@@ -27,14 +27,17 @@ public class MovieDAO extends DAO {
         System.out.println("Inserting movie: " + movie.toString());
         boolean status = false;
         try {
-            String sql = "INSERT INTO movies (id, title, release_date, original_language, popularity, adult) VALUES (?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO movies (id, title, overview, rating, release_date, original_language, popularity, adult, poster_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setInt(1, movie.getId());
             st.setString(2, movie.getTitle());
-            st.setString(3, movie.getReleaseDate());
-            st.setString(4, movie.getOriginalLanguage());
-            st.setDouble(5, movie.getPopularity());
-            st.setBoolean(6, movie.getAdult());
+            st.setString(3, movie.getOverview());
+            st.setDouble(4, movie.getRating());
+            st.setString(5, movie.getReleaseDate());
+            st.setString(6, movie.getOriginalLanguage());
+            st.setDouble(7, movie.getPopularity());
+            st.setBoolean(8, movie.getAdult());
+            st.setString(9, movie.getPosterPath());
             
             int rowsAffected = st.executeUpdate();
             status = rowsAffected > 0;
@@ -79,10 +82,13 @@ public class MovieDAO extends DAO {
                 movie = new Movie();
                 movie.setId(rs.getInt("id"));
                 movie.setTitle(rs.getString("title"));
+                movie.setOverview(rs.getString("overview"));
+                movie.setRating(rs.getDouble("rating"));
                 movie.setReleaseDate(rs.getString("release_date"));
                 movie.setOriginalLanguage(rs.getString("original_language"));
                 movie.setPopularity(rs.getDouble("popularity"));
                 movie.setAdult(rs.getBoolean("adult"));
+                movie.setPosterPath(rs.getString("poster_path"));
             }
             rs.close();
             st.close();

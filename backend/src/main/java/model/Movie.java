@@ -1,90 +1,121 @@
 package model;
-
-import interfaces.IMovie;
-public class Movie implements IMovie {
+public class Movie {
     private int id;
     private String title;
-    private String release_date;
-    private String original_language;
+    private String overview;
+    private double rating;
+    private String releaseDate;
+    private String originalLanguage;
     private double popularity;
     private boolean adult;
+    private String poster_path;
     
     public Movie() {
         this.id = 0;
         this.title = "";
-        this.release_date = "";
-        this.original_language = "";
+        this.overview = "";
+        this.rating = 0.0;
+        this.releaseDate = "";
+        this.originalLanguage = "";
         this.popularity = 0.0;
         this.adult = false;
+        this.poster_path = "";
     }
-    
-    public Movie(int id, String title, String release_date, String original_language, double popularity, boolean adult) {
+
+    public Movie(int id, String title, String releaseDate, String originalLanguage, double popularity, boolean adult) {
         this.id = id;
         this.title = title;
-        this.release_date = release_date;
-        this.original_language = original_language;
+        this.overview = "";
+        this.rating = 0.0;
+        this.releaseDate = releaseDate;
+        this.originalLanguage = originalLanguage;
         this.popularity = popularity;
         this.adult = adult;
+        this.poster_path = "";
     }
     
-    @Override
+    public Movie(int id, String title, String overview, double rating, String releaseDate, String originalLanguage, double popularity, boolean adult, String poster_path) {
+        this.id = id;
+        this.title = title;
+        this.overview = overview;
+        this.rating = rating;
+        this.releaseDate = releaseDate;
+        this.originalLanguage = originalLanguage;
+        this.popularity = popularity;
+        this.adult = adult;
+        this.poster_path = poster_path;
+    }
+    
     public int getId() {
         return id;
     }
     
-    @Override
     public void setId(int id) {
         this.id = id;
     }
     
-    @Override
     public String getTitle() {
         return title;
     }
     
-    @Override
     public void setTitle(String title) {
         this.title = title;
     }
+
+    public String getOverview() {
+        return overview;
+    }
+
+    public void setOverview(String overview) {
+        this.overview = overview;
+    }
+
+    public double getRating() {
+        return rating;
+    }
+
+    public void setRating(double rating) {
+        this.rating = rating;
+    }
     
-    @Override
     public String getReleaseDate() {
-        return release_date;
+        return releaseDate;
     }
     
-    @Override
-    public void setReleaseDate(String release_date) {
-        this.release_date = release_date;
+    public void setReleaseDate(String releaseDate) {
+        this.releaseDate = releaseDate;
     }
     
-    @Override
     public String getOriginalLanguage() {
-        return original_language;
+        return originalLanguage;
     }
     
-    @Override
-    public void setOriginalLanguage(String original_language) {
-        this.original_language = original_language;
+    public void setOriginalLanguage(String originalLanguage) {
+        this.originalLanguage = originalLanguage;
     }
     
-    @Override
     public double getPopularity() {
         return popularity;
     }
     
-    @Override
     public void setPopularity(double popularity) {
         this.popularity = popularity;
     }
     
-    @Override
     public boolean getAdult() {
         return adult;
     }
     
-    @Override
     public void setAdult(boolean adult) {
         this.adult = adult;
+    }
+
+    public String getPosterPath() {
+        return poster_path;
+    }
+
+    public void setPosterPath(String poster_path) {
+        this.poster_path = poster_path;
     }
     
     @Override
@@ -92,10 +123,14 @@ public class Movie implements IMovie {
         return "Movie{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
-                ", release_date='" + release_date + '\'' +
-                ", original_language='" + original_language + '\'' +
+                ", overview='" + overview + '\'' +
+                ", rating=" + rating +
+                ", releaseDate='" + releaseDate + '\'' +
+                ", originalLanguage='" + originalLanguage + '\'' +
                 ", popularity=" + popularity +
                 ", adult=" + adult +
+                ", poster_path='" + poster_path + '\'' +
                 '}';
     }
+
 }

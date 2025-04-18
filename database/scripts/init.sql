@@ -16,10 +16,13 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS movies (
     id INTEGER PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
+    overview TEXT,
+    rating DOUBLE PRECISION DEFAULT 0,
     release_date VARCHAR(15) NOT NULL,
     original_language VARCHAR(10) NOT NULL,
     popularity DOUBLE PRECISION DEFAULT 0,
-    adult BOOLEAN DEFAULT FALSE
+    adult BOOLEAN DEFAULT FALSE,
+    poster_path VARCHAR(255)
 );
 
 -- Criar tabela de gêneros (do TMDB)
