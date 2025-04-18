@@ -20,6 +20,13 @@ public class Recommendation {
         this.favorite = false;
     }
 
+    public Recommendation(int userId, int movieId, boolean watched, boolean favorite) {
+        this.userId = userId;
+        this.movieId = movieId;
+        this.watched = watched;
+        this.favorite = favorite;
+    }
+
     public int getUserId() {
         return userId;
     }
