@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -618,5 +619,104 @@ public class Application {
                 return gson.toJson(Map.of("error", "Erro ao buscar recomendações de filmes: " + e.getMessage()));
             }
         });
+
+        // Endpoint para listar todos os usuários
+        get("/api/users", (req, res) -> {
+            try {
+                int currentUserId = req.attribute("userId");
+
+                List<User> allUsers = userDAO.getAll();
+                
+                List<Map<String, Object>> usersData = new ArrayList<>();
+                for (User user : allUsers) {
+                    
+                    Map<String, Object> userData = Map.of(
+                        "id", user.getId(),
+                        "firstName", user.getFirstName(),
+                        "lastName", user.getLastName(),
+                        "email", user.getEmail()
+                    );
+                    usersData.add(userData);
+                }
+                
+                return gson.toJson(Map.of(
+                    "status", "ok",
+                    "users", usersData
+                ));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao buscar usuários: " + e.getMessage()));
+            }
+        });
+
+        get("/api/profile/:userId/", (req, res) -> {
+            try {
+                int targetUserId = Integer.parseInt(req.params("userId"));
+                
+                // Buscar o usuário pelo ID
+                User user = userService.getUserById(targetUserId);
+                
+                if (user == null) {
+                    res.status(404);
+                    return gson.toJson(Map.of("error", "Usuário não encontrado"));
+                }
+                
+                // Apenas informações básicas do usuário
+                Map<String, Object> userData = Map.of(
+                    "id", user.getId(),
+                    "firstName", user.getFirstName(),
+                    "lastName", user.getLastName(),
+                    "email", user.getEmail(),
+                    "gender", String.valueOf(user.getGender())
+                );
+                
+                return gson.toJson(Map.of("status", "ok", "user", userData));
+            } catch (NumberFormatException e) {
+                res.status(400);
+                return gson.toJson(Map.of("error", "ID de usuário inválido"));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao buscar informações do usuário: " + e.getMessage()));
+            }
+        });
+
+        get("/api/users/:userId/recommended", (req, res) -> {
+            try {
+                int targetUserId = Integer.parseInt(req.params("userId"));
+                
+                // Buscar IDs de filmes recomendados
+                ArrayList<Recommendation> recommendations = recommendationService.getRecommendationsByUserId(targetUserId);
+                List<Map<String, Object>> moviesData = new ArrayList<>();
+                
+                // Buscar cada filme no banco de dados e converter para mapa
+                for (Recommendation recommendation : recommendations) {
+                    int movieId = recommendation.getMovieId();
+                    Movie movie = movieService.buscarFilmePorId(movieId);
+                    if (movie != null) {
+                        Map<String, Object> movieData = Map.of(
+                            "id", movie.getId(),
+                            "title", movie.getTitle(),
+                            "release_date", movie.getReleaseDate(),
+                            "original_language", movie.getOriginalLanguage(),
+                            "popularity", movie.getPopularity(),
+                            "adult", movie.getAdult(),
+                            "poster_path", movie.getPosterPath()
+                        );
+                        moviesData.add(movieData);
+                    }
+                }
+                
+                return gson.toJson(Map.of("status", "ok", "movies", moviesData));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao buscar filmes recomendados: " + e.getMessage()));
+            }
+        });
+
     }
+
+
 }

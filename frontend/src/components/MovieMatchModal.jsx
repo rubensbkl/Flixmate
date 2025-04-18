@@ -5,25 +5,17 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HeartIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import Image from "next/image";
-import { useRouter } from 'next/navigation';
-
-
 
 
 const MovieMatchModal = ({ isOpen, onClose, movie }) => {
   const [animationComplete, setAnimationComplete] = useState(false);
   const [posterUrl, setPosterUrl] = useState('');
-  const router = useRouter();
-
-  const navigateToRecommendations = () => {
-    router.push('/recommendations');
-};
 
   useEffect(() => {
     if (isOpen && movie) {
       // Reset animation state when modal opens
       setAnimationComplete(false);
-      
+
       // Handle poster path - check different possible property names
       if (movie.posterPath) {
         setPosterUrl(`https://image.tmdb.org/t/p/w500${movie.posterPath}`);
@@ -32,12 +24,12 @@ const MovieMatchModal = ({ isOpen, onClose, movie }) => {
       } else {
         setPosterUrl('');
       }
-      
+
       // Auto-transition to movie details after animation
       const timer = setTimeout(() => {
         setAnimationComplete(true);
       }, 2000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [isOpen, movie]);
@@ -83,7 +75,7 @@ const MovieMatchModal = ({ isOpen, onClose, movie }) => {
                   >
                     <HeartIcon className="w-24 h-24 text-pink-500" />
                   </motion.div>
-                  
+
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -105,10 +97,10 @@ const MovieMatchModal = ({ isOpen, onClose, movie }) => {
                   {/* Movie poster */}
                   <div className="relative w-full h-72">
                     {posterUrl ? (
-                      <div 
+                      <div
                         className="w-full h-full bg-cover bg-center"
-                        style={{ 
-                          backgroundImage: `url(${posterUrl})` 
+                        style={{
+                          backgroundImage: `url(${posterUrl})`
                         }}
                       >
                         <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
@@ -120,17 +112,17 @@ const MovieMatchModal = ({ isOpen, onClose, movie }) => {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Movie info */}
                   <div className="p-6 bg-black text-white">
                     <h2 className="text-2xl font-bold mb-2">{movie.title || movie.name || 'Filme Recomendado'}</h2>
-                    
+
                     <div className="flex items-center mb-4">
                       <div className="mr-4 flex items-center">
                         <span className="text-yellow-400 mr-1">★</span>
                         <span>{
-                          (movie.voteAverage || movie.vote_average) 
-                            ? Number(movie.voteAverage || movie.vote_average).toFixed(1) 
+                          (movie.voteAverage || movie.vote_average)
+                            ? Number(movie.voteAverage || movie.vote_average).toFixed(1)
                             : "N/A"
                         }</span>
                       </div>
@@ -140,14 +132,14 @@ const MovieMatchModal = ({ isOpen, onClose, movie }) => {
                           : "N/A"
                       }</div>
                     </div>
-                    
+
                     <p className="text-gray-300 mb-4 line-clamp-3">
                       {movie.overview || movie.sinopse || movie.description || 'Sem descrição disponível.'}
                     </p>
-                    
+
                     <div className="flex items-center justify-between mt-4">
                       <button
-                        onClick={navigateToRecommendations}
+                        onClick={onClose}
                         className="w-full py-3 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-lg transition"
                       >
                         Ir para as recomendações

@@ -163,5 +163,55 @@ public class RecommendationDAO extends DAO {
         }
         return count;
     }
+
+    public ArrayList<Recommendation> getFavoritesByUserId(int userId) {
+        ArrayList<Recommendation> recommendations = new ArrayList<>();
+        try {
+            String sql = "SELECT * FROM recommendations WHERE user_id = ? AND favorite = true";
+            PreparedStatement st = conexao.prepareStatement(sql);
+            st.setInt(1, userId);
+            
+            ResultSet rs = st.executeQuery();
+            while (rs.next()) {
+                int movieId = rs.getInt("movie_id");
+                boolean watched = rs.getBoolean("watched");
+                boolean favorite = rs.getBoolean("favorite");
+                
+                Recommendation recommendation = new Recommendation(userId, movieId, watched, favorite);
+                recommendations.add(recommendation);
+            }
+            
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            System.err.println("Erro ao obter recomendações: " + e.getMessage());
+        }
+        return recommendations;
+    }
+
+    public ArrayList<Recommendation> getWatchedByUserId(int userId) {
+        ArrayList<Recommendation> recommendations = new ArrayList<>();
+        try {
+            String sql = "SELECT * FROM recommendations WHERE user_id = ? AND watched = true";
+            PreparedStatement st = conexao.prepareStatement(sql);
+            st.setInt(1, userId);
+            
+            ResultSet rs = st.executeQuery();
+            while (rs.next()) {
+                int movieId = rs.getInt("movie_id");
+                boolean watched = rs.getBoolean("watched");
+                boolean favorite = rs.getBoolean("favorite");
+                
+                Recommendation recommendation = new Recommendation(userId, movieId, watched, favorite);
+                recommendations.add(recommendation);
+            }
+            
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            System.err.println("Erro ao obter recomendações: " + e.getMessage());
+        }
+        return recommendations;
+    }
     
 }
