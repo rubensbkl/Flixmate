@@ -3,6 +3,7 @@ package service;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.ArrayList;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -67,6 +68,11 @@ public class RecommendationService {
     public boolean storeRecommendation(int userId, int movieId) {
         Recommendation rec = new Recommendation(userId, movieId);
         return recommendationDAO.insert(rec);
+    }
+
+    public ArrayList<Recommendation> getRecommendationsByUserId(int userId) {
+        ArrayList<Recommendation> recommendations = recommendationDAO.getRecommendationsByUserId(userId);
+        return recommendations;
     }
 
     // Store Recommendations

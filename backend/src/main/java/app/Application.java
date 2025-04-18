@@ -31,6 +31,7 @@ import dao.UserGenreDAO;
 import model.Feedback;
 import model.Genre;
 import model.Movie;
+import model.Recommendation;
 import model.User;
 import service.AIService;
 import service.FeedbackService;
@@ -222,7 +223,7 @@ public class Application {
             user.setPassword(requestBody.get("password").getAsString());
             user.setGender(requestBody.get("gender").getAsString().charAt(0));
             user.setAdult(requestBody.get("isUserAdult").getAsBoolean());
-            
+
             // Extrair o array de gêneros favoritos
             JsonArray favoriteGenresArray = requestBody.getAsJsonArray("favoriteGenres");
             List<Integer> favoriteGenres = new ArrayList<>();
@@ -505,6 +506,27 @@ public class Application {
                 res.status(500);
                 return gson.toJson(Map.of("error", "Erro ao gerar recomendação"));
             }
+
+        });
+
+        post("/api/recommendations", (req, res) -> {
+            int userId = req.attribute("userId");
+            ArrayList<Recommendation> recommendations = recommendationService.getRecommendationsByUserId(userId);
+            if (recommendations.isEmpty()) {
+                res.status(404);
+                return gson.toJson(Map.of("error", "Nenhuma recomendação encontrada"));
+            }
+            List<JsonObject> recommendationsJson = new ArrayList<>();
+            for (Recommendation recommendation : recommendations) {
+                JsonObject movieObj = tmdb.getMovieDetails(recommendation.getMovieId());
+                if (movieObj != null) {
+                    recommendationsJson.add(movieObj);
+                } else {
+                    System.out.println("Filme não encontrado: " + recommendation.getMovieId());
+                }
+            }
+
+            return gson.toJson(Map.of("status", "ok", "recommendations", recommendationsJson));
 
         });
 

@@ -87,4 +87,36 @@ export const gerarRecomendacao = async () => {
       console.error("Erro ao buscar recomendação:", error);
       throw error;
     }
+};
+
+
+export const fetchRecommendations = async () => {
+    const token = getToken();
+    console.log("📡 Buscando histórico de recomendações");
+    
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/recommendations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({}),
+      });
+      
+      if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+      
+      const data = await res.json();
+      
+      if (data.status === "ok" && Array.isArray(data.recommendations)) {
+        console.log(`🔍 ${data.recommendations.length} recomendações encontradas`);
+        return data.recommendations;
+      } else {
+        console.log("⚠️ Formato de resposta inesperado:", data);
+        return [];
+      }
+    } catch (error) {
+      console.error("❌ Erro ao buscar recomendações:", error);
+      throw error;
+    }
   };
