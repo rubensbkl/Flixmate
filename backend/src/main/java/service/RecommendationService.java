@@ -1,9 +1,9 @@
 package service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.ArrayList;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -72,6 +72,16 @@ public class RecommendationService {
 
     public ArrayList<Recommendation> getRecommendationsByUserId(int userId) {
         ArrayList<Recommendation> recommendations = recommendationDAO.getRecommendationsByUserId(userId);
+        return recommendations;
+    }
+
+    public ArrayList<Recommendation> getFavoritesByUserId(int movieId) {
+        ArrayList<Recommendation> recommendations = recommendationDAO.getFavoritesByUserId(movieId);
+        return recommendations;
+    }
+
+    public ArrayList<Recommendation> getWatchedByUserId(int movieId) {
+        ArrayList<Recommendation> recommendations = recommendationDAO.getWatchedByUserId(movieId);
         return recommendations;
     }
 

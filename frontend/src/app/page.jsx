@@ -18,6 +18,7 @@ import { fetchMovies, gerarRecomendacao, sendFeedback } from "@/lib/api";
 import { movieCache } from "@/lib/cache";
 import { clearSession, loadSession, saveSession } from "@/lib/session";
 import MovieMatchModal from "@/components/MovieMatchModal";
+import { useRouter } from 'next/navigation';
 
 
 export default function Home() {
@@ -28,7 +29,7 @@ export default function Home() {
     const [isAnimating, setIsAnimating] = useState(false);
     const [swipeDirection, setSwipeDirection] = useState(null);
     const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(false);
-
+    const router = useRouter();
 
     const [showMatchModal, setShowMatchModal] = useState(false);
     const [recommendedMovie, setRecommendedMovie] = useState(null);
@@ -39,6 +40,11 @@ export default function Home() {
     const currentMovieRef = useRef(null);
 
     const canSwipe = currentIndex >= 0 && !isAnimating && !loading && !isLoadingRecommendation;
+
+
+    const navigateToRecommendations = () => {
+        router.push('/recommendations');
+    };
 
     const loadMovies = useCallback(async () => {
         const session = loadSession();
@@ -177,11 +183,12 @@ export default function Home() {
     if (loading && movies.length === 0) {
         return (
             <ProtectedRoute>
-                <div className="bg-gray-100 md:flex">
+                <div className="bg-gray-100 md:flex h-screen"> {/* Garante altura total */}
                     <Navbar />
-                    <main className="flex-1 overflow-hidden flex flex-col h-[calc(100vh-4rem)] items-center justify-center">
-                        <div className="text-xl font-semibold">Carregando filmes...</div>
-                        <div className="mt-4 w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
+                    {/* Centraliza o conteúdo de loading */}
+                    <main className="flex-1 flex flex-col items-center justify-center h-full"> {/* Garante altura total e centraliza */}
+                        <div className="text-xl font-semibold mb-4">Carregando filmes...</div> {/* Adiciona margem inferior */}
+                        <div className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
                     </main>
                 </div>
             </ProtectedRoute>
