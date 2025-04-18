@@ -54,6 +54,17 @@ public class MovieService {
         }
     }
 
+    public Movie jsonObjectToMovie(JsonObject movieObj) {
+        int movieId = movieObj.get("id").getAsInt();
+        String title = movieObj.get("title").getAsString();
+        String releaseDate = movieObj.has("release_date") ? movieObj.get("release_date").getAsString() : null;
+        String originalLanguage = movieObj.has("original_language") ? movieObj.get("original_language").getAsString() : null;
+        double popularity = movieObj.has("popularity") ? movieObj.get("popularity").getAsDouble() : 0.0;
+        boolean adult = movieObj.has("adult") && movieObj.get("adult").getAsBoolean();
+
+        return new Movie(movieId, title, releaseDate, originalLanguage, popularity, adult);
+    }
+
     /**
      * Busca um filme pelo ID
      * 
@@ -62,5 +73,10 @@ public class MovieService {
      */
     public Movie buscarFilmePorId(int movieId) {
         return movieDAO.getMovieById(movieId);
+    }
+
+    // getMovieDetails
+    public JsonObject getMovieDetails(int movieId) {
+        return tmdbService.getMovieDetails(movieId);
     }
 }

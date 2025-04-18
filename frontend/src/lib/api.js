@@ -66,19 +66,25 @@ export const sendFeedback = async (movieId, liked) => {
 
 export const gerarRecomendacao = async () => {
     const token = getToken();
-    
     console.log("🔁 Gerando recomendação...");
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/recommendation`, {
+    
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/recommendation`, {
         method: "POST",
-        headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({}),
-    });
-
-    if (!res.ok) throw new Error("Erro ao gerar recomendação");
-
-    const { recomendacao } = await res.json();
-    alert(`📢 Nova recomendação: ${recomendacao}`);
-};
+      });
+      
+      if (!res.ok) throw new Error("Erro ao gerar recomendação");
+      
+      const data = await res.json();
+      console.log("📬 Recomendação recebida:", data.recomendacao);
+      return data.recomendacao; // Return the recommendation object instead of showing an alert
+    } catch (error) {
+      console.error("Erro ao buscar recomendação:", error);
+      throw error;
+    }
+  };

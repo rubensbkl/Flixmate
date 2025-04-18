@@ -124,9 +124,9 @@ export default function SignUpPage() {
                 return;
             }
 
-            // Password strength validation
+            // Password strength validation 
             const passwordRegex =
-                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{6,}$/;
+                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
             if (!passwordRegex.test(formData.password)) {
                 setError(
                     "A senha deve conter letras maiúsculas, minúsculas e números"
