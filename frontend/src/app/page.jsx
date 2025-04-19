@@ -1,6 +1,6 @@
 "use client";
 
-import ErrorModal from "@/components/ErrorModal"; // Make sure this is imported
+import ErrorModal from "@/components/ErrorModal";
 import ImprovedMovieCard from "@/components/ImprovedMovieCard";
 import Navbar from "@/components/Navbar";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -25,6 +25,7 @@ import {
 } from "@/lib/api";
 import { movieCache } from "@/lib/cache";
 import { clearSession, loadSession, saveSession } from "@/lib/session";
+import "@/styles/home.css";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
@@ -36,6 +37,7 @@ export default function Home() {
     const [swipeDirection, setSwipeDirection] = useState(null);
     const [isLoadingRecommendation, setIsLoadingRecommendation] =
         useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const router = useRouter();
 
     const [showMatchModal, setShowMatchModal] = useState(false);
@@ -53,13 +55,27 @@ export default function Home() {
         !loading &&
         !isLoadingRecommendation;
 
+    // Detect mobile device
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        // Check on initial load
+        checkMobile();
+
+        // Add event listener for window resize
+        window.addEventListener("resize", checkMobile);
+
+        // Cleanup
+        return () => window.removeEventListener("resize", checkMobile);
+    }, []);
+
     const navigateToRecommendations = () => {
-        // Show loading spinner
         router.push("/recommendations");
     };
 
-     // Add handler to close the error modal
-     const handleCloseErrorModal = () => {
+    const handleCloseErrorModal = () => {
         setShowErrorModal(false);
         setErrorMessage("");
     };
@@ -182,10 +198,10 @@ export default function Home() {
         console.log(`${movies[idx]?.title} saiu da tela.`);
 
     const resetMatches = async () => {
-        if (feedbackCount <= 1) {
-            console.log("Tentativa de resetar com menos de 2 feedbacks.");
+        if (feedbackCount < 1) {
+            console.log("Tentativa de resetar com menos de 1 feedbacks.");
             setErrorMessage(
-                "Você precisa avaliar pelo menos 2 filmes para poder reiniciar."
+                "Você precisa avaliar pelo menos 1 filmes para poder reiniciar."
             );
             setShowErrorModal(true);
             return; // Impede a execução do resto da função
@@ -198,39 +214,27 @@ export default function Home() {
         try {
             const data = await resetFeedbacks(); // Await the async call
 
-            if (data.status === "ok") {
-                console.log("Feedbacks resetados com sucesso no backend.");
+            console.log("Feedbacks resetados:", data);
+            if (data == "ok") {
+                console.log("Feedbacks resetados com sucesso.");
             } else {
-                // Handle potential errors from resetFeedbacks API call itself
-                // (e.g., server error, though 'no feedbacks' is now handled by the count check)
-                console.error("Erro ao resetar feedbacks no backend:", data);
+                console.log("Erro ao resetar feedbacks:", data);
                 setErrorMessage(
-                    data.message ||
-                        "Ocorreu um erro ao reiniciar suas avaliações no servidor."
+                    "Erro ao reiniciar feedbacks. Tente novamente mais tarde."
                 );
                 setShowErrorModal(true);
-                // Decide if you want to stop here or still try to reload movies locally
-                // return; // Option: Stop if backend reset failed
             }
 
-            // Reset local state and load new movies regardless of backend success?
-            // Or only if backend was 'ok'? Let's assume we reset locally anyway.
             setFeedbackCount(0); // Reset local count
             currentPage.current = 1;
             movieCache.clear(localStorage.getItem("token"));
             await loadMovies(); // Reload movies
         } catch (error) {
-            // Handle errors during the API call itself (network error, etc.)
             console.error("Falha na chamada para resetar feedbacks:", error);
             setErrorMessage(
                 "Não foi possível conectar ao servidor para reiniciar as avaliações."
             );
             setShowErrorModal(true);
-            // Reset local state even if API call failed? Optional.
-            // setFeedbackCount(0);
-            // currentPage.current = 1;
-            // movieCache.clear(localStorage.getItem('token'));
-            // await loadMovies();
         }
     };
 
@@ -256,18 +260,19 @@ export default function Home() {
     if (loading && movies.length === 0) {
         return (
             <ProtectedRoute>
-                <div className="bg-gray-100 md:flex h-screen">
-                    {" "}
-                    {/* Garante altura total */}
-                    <Navbar />
-                    {/* Centraliza o conteúdo de loading */}
-                    <main className="flex-1 flex flex-col items-center justify-center h-full">
-                        {" "}
-                        {/* Garante altura total e centraliza */}
+                <div className="bg-gray-100 flex flex-col md:flex-row h-screen">
+                    <div
+                        className={`${
+                            isMobile ? "h-16" : "md:w-64 md:min-h-screen"
+                        }`}
+                    >
+                        <Navbar />
+                    </div>
+
+                    <main className="flex-1 flex flex-col items-center justify-center">
                         <div className="text-xl font-semibold mb-4">
                             Carregando filmes...
-                        </div>{" "}
-                        {/* Adiciona margem inferior */}
+                        </div>
                         <div className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
                     </main>
                 </div>
@@ -277,13 +282,19 @@ export default function Home() {
 
     return (
         <ProtectedRoute>
-            <div className="bg-gray-100 md:flex">
-                {/* Navbar */}
-                <Navbar />
+            <div className="bg-gray-100 flex flex-col md:flex-row h-screen overflow-hidden">
+                {/* Navbar - Fixed height for mobile, fixed width for desktop */}
+                <div
+                    className={`${
+                        isMobile ? "h-16" : "md:w-64 md:min-h-screen"
+                    }`}
+                >
+                    <Navbar />
+                </div>
 
                 {/* Conteúdo principal */}
-                <main className="flex-1 overflow-hidden flex flex-col h-[calc(100vh-4rem)] md:h-screen">
-                    <div className="flex-1 flex flex-col overflow-hidden pb-16 md:pb-0">
+                <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] md:h-screen overflow-hidden">
+                    <div className="flex-1 flex flex-col overflow-hidden">
                         {/* Barra de progresso */}
                         <div className="relative h-1 w-full bg-gray-200">
                             <div
@@ -294,8 +305,9 @@ export default function Home() {
                             ></div>
                         </div>
 
+                        {/* Área de cards de filmes */}
                         <div
-                            className="h-[80vh] flex items-center justify-center relative"
+                            className="flex-1 flex items-center justify-center relative touch-manipulation"
                             {...handlers}
                         >
                             <div className="relative flex items-center justify-center w-full h-full">
@@ -378,8 +390,8 @@ export default function Home() {
                             </div>
                         </div>
 
-                        {/* Botões de interação */}
-                        <div className="flex space-x-4 py-2 justify-center">
+                        {/* Botões de interação - Posicionados no fundo da tela com padding para evitar sobreposição da navbar mobile */}
+                        <div className="flex space-x-4 py-4 md:py-2 justify-center mb-20 md:mb-4">
                             <button
                                 onClick={resetMatches}
                                 disabled={loading}
@@ -415,10 +427,11 @@ export default function Home() {
                         </div>
                     </div>
 
+                    {/* Overlay de carregamento */}
                     <div
                         className={`fixed inset-0 bg-gray-100 flex flex-col items-center justify-center transition-opacity duration-500 ${
                             isLoadingRecommendation
-                                ? "opacity-100"
+                                ? "opacity-100 z-50"
                                 : "opacity-0 pointer-events-none"
                         }`}
                     >
