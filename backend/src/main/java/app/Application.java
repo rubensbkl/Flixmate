@@ -15,13 +15,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import controller.Controller;
 import dao.FeedbackDAO;
 import dao.GenreDAO;
 import dao.MovieDAO;
@@ -44,7 +44,6 @@ import service.TMDBService;
 import service.UserGenreService;
 import service.UserService;
 import util.JWTUtil;
-import util.RecommendationHelper;
 
 public class Application {
 
@@ -122,7 +121,7 @@ public class Application {
 
         // Services
         TMDBService tmdb = new TMDBService(tmdbApiKey);
-        AIService ai = new AIService(azureOpenAIEndpoint, azureOpenAIKey, azureOpenAIDeploymentName, tmdb);
+        AIService ai = new AIService(azureOpenAIEndpoint, azureOpenAIKey, azureOpenAIDeploymentName);
         MovieGenreService movieGenreService = new MovieGenreService(movieGenreDAO);
         RecommendationService recommendationService = new RecommendationService(recommendationDAO, tmdb);
         MovieService movieService = new MovieService(movieDAO, movieGenreService, tmdb);
@@ -130,6 +129,9 @@ public class Application {
         UserGenreService userGenreService = new UserGenreService(userGenreDAO);
         UserService userService = new UserService(userDAO);
         GenreService genreService = new GenreService(genreDAO);
+
+        Controller controller = new Controller(tmdb, movieService, movieGenreService, recommendationService, ai,
+                genreService, feedbackService);
 
         // JWT Util
         JWTUtil jwt = new JWTUtil(jwtSecret);
@@ -144,7 +146,8 @@ public class Application {
         // CORS - Cross-Origin Resource Sharing
         Set<String> allowedOrigins = new HashSet<>(List.of(
                 "http://localhost:3000",
-                "https://3bd4-187-86-247-172.ngrok-free.app",
+                "127.0.0.1:3000",
+                "https://442d-2804-6e7c-116-6100-e44f-6d36-62b3-c8ff.ngrok-free.app/",
                 "https://flixmate.com.br"));
 
         // Habilitar CORS para requisições preflight OPTIONS
@@ -403,132 +406,319 @@ public class Application {
         post("/api/recommendation", (req, res) -> {
             int userId = req.attribute("userId");
 
+            // Buscar interações do usuário
             List<Feedback> interacoes = feedbackService.getFeedbacksByUserId(userId);
-            // Verifica se o usuário tem interações
-            if (interacoes.isEmpty()) {
-                res.status(400);
-                return gson.toJson(Map.of("error", "Usuário não possui interações"));
-            }
-
-            // Inicializar o helper de recomendações
-            RecommendationHelper helper = new RecommendationHelper();
+            System.out.println("Interações do usuário: " + interacoes);
             // Buscar gêneros favoritos do usuário
             List<Genre> generosFavoritos = userGenreService.getPreferredGenres(userId);
 
-            // Processar interações - armazenar detalhes dos filmes no helper
-            System.out.println("Processando interações do usuário:");
-            for (Feedback feedback : interacoes) {
-                int movieId = feedback.getMovieId();
-                Movie movie = movieService.buscarFilmePorId(movieId);
-                List<Genre> generos = movieGenreService.buscarGenerosDoFilme(movieId);
+            System.out.println("Interações do usuário: " + interacoes);
+            System.out.println("Gêneros favoritos do usuário: " + generosFavoritos);
 
-                // Adicionar filme com seus gêneros ao helper
-                helper.addMovieWithGenres(movie, generos);
-            }
-
-            // Obter filmes candidatos para recomendação
-            JsonArray candidateMoviesJson = recommendationService.getCandidateMoviesJSON(interacoes);
-
-            if (candidateMoviesJson == null || candidateMoviesJson.size() == 0) {
-                // Se nao houver filmes candidatos, buscar 10 aleatórios
-
-            }
-
-            // Adicionar filmes candidatos ao helper
-            for (int i = 0; i < candidateMoviesJson.size(); i++) {
-                JsonObject movieJson = candidateMoviesJson.get(i).getAsJsonObject();
-
-                // Extrair os dados básicos do filme a partir do JSON
-                int movieId = movieJson.get("id").getAsInt();
-                String title = movieJson.get("title").getAsString();
-                String releaseDate = movieJson.has("release_date") ? movieJson.get("release_date").getAsString() : "";
-                String originalLanguage = movieJson.get("original_language").getAsString();
-                double popularity = movieJson.get("popularity").getAsDouble();
-                boolean adult = movieJson.get("adult").getAsBoolean();
-                // Adicionar à lista de candidatos
-
-                Movie movie = new Movie(movieId, title, releaseDate, originalLanguage, popularity, adult);
-
-                helper.addCandidateMovieId(movieId);
-
-                // Processar gêneros do JSON
-                List<Genre> genres = new ArrayList<>();
-                if (movieJson.has("genre_ids") && movieJson.get("genre_ids").isJsonArray()) {
-                    JsonArray genreIdsJson = movieJson.getAsJsonArray("genre_ids");
-                    for (int j = 0; j < genreIdsJson.size(); j++) {
-                        int genreId = genreIdsJson.get(j).getAsInt();
-                        // Buscar detalhes do gênero pelo ID
-                        Genre genre = genreService.getGenreById(genreId);
-                        if (genre != null) {
-                            genres.add(genre);
-                        }
-                    }
-                }
-
-                // Adicionar o filme com seus gêneros ao helper
-                helper.addMovieWithGenres(movie, genres);
-            }
-
-            // Verificar se temos dados suficientes para gerar recomendação
-            if (!helper.hasEnoughDataForRecommendation()) {
+            // Verificar se o usuário tem interações
+            if (interacoes == null || interacoes.isEmpty()) {
                 res.status(400);
-                return gson.toJson(Map.of("error", "Dados insuficientes para gerar recomendação"));
+                return gson.toJson(Map.of("error", "Usuário sem interações"));
             }
 
-            try {
-                System.out.println("Chamando IA para gerar recomendação...");
-                int recommendedMovieId = ai.gerarRecomendacao(interacoes, generosFavoritos, helper);
-                System.out.println("ID do filme recomendado: " + recommendedMovieId);
+            // Verificar se o usuário tem gêneros favoritos
+            if (generosFavoritos == null || generosFavoritos.isEmpty()) {
+                res.status(400);
+                return gson.toJson(Map.of("error", "Usuário sem gêneros favoritos"));
+            }
 
-                System.out.println("Limpando interações do usuário...");
-                boolean clearFeedback = feedbackDAO.clear(userId);
-                System.out.println("Resultado da limpeza: " + clearFeedback);
+            // chamar controller para gerar recomendação
+            System.out.println("Gerando recomendação...");
+            JsonObject recomendacao = controller.gerarRecomendacaoPersonalizada(userId, interacoes, generosFavoritos, res);
 
-                if (!clearFeedback) {
-                    res.status(500);
-                    return gson.toJson(Map.of("error", "Erro ao limpar interações"));
-                }
-
-                // Limpar o helper depois de usar
-                helper.clear();
-
-                JsonObject movieObj = tmdb.getMovieDetails(recommendedMovieId);
-                boolean storedRecomendation = movieService.storeMovie(movieObj);
-                System.out.println("Filme armazenado: " + storedRecomendation);
-                boolean storedRecommendation = recommendationService.storeRecommendation(userId, recommendedMovieId);
-                System.out.println("Recomendação armazenada: " + storedRecommendation);
-
-                Movie movie = movieService.jsonObjectToMovie(movieObj);
-                System.out.println("Filme convertido: " + movie);
-                return gson.toJson(Map.of("status", "ok", "recomendacao", movieObj));
-            } catch (Exception e) {
-                System.out.println("Erro ao gerar recomendação:");
-                e.printStackTrace();
+            if (recomendacao == null) {
                 res.status(500);
                 return gson.toJson(Map.of("error", "Erro ao gerar recomendação"));
             }
 
+            if (recomendacao.has("error")) {
+                res.status(400);
+                return gson.toJson(Map.of("error", recomendacao.get("error").getAsString()));
+            }
+
+            // ENviar a recomendação
+            res.status(200);
+            return gson.toJson(Map.of("status", "ok", "recomendacao", recomendacao));
+
         });
 
-        post("/api/recommendations", (req, res) -> {
+        // Endpoint para suprise
+        post("/api/recommendation/surprise", (req, res) -> {
             int userId = req.attribute("userId");
-            ArrayList<Recommendation> recommendations = recommendationService.getRecommendationsByUserId(userId);
-            if (recommendations.isEmpty()) {
-                res.status(404);
-                return gson.toJson(Map.of("error", "Nenhuma recomendação encontrada"));
-            }
-            List<JsonObject> recommendationsJson = new ArrayList<>();
-            for (Recommendation recommendation : recommendations) {
-                JsonObject movieObj = tmdb.getMovieDetails(recommendation.getMovieId());
-                if (movieObj != null) {
-                    recommendationsJson.add(movieObj);
+
+            System.out.println("Gerando recomendação surpresa...");
+            // Buscar gêneros favoritos do usuário
+            List<Genre> generosFavoritos = userGenreService.getPreferredGenres(userId);
+
+            System.out.println("Gêneros favoritos do usuário: " + generosFavoritos);
+
+            // Gerar recomendação aleatória
+            return controller.gerarRecomendacaoAleatoria(userId, generosFavoritos, res);
+        });
+
+        // post("/api/recommendation", (req, res) -> {
+        // int userId = req.attribute("userId");
+
+        // List<Feedback> interacoes = feedbackService.getFeedbacksByUserId(userId);
+        // // Verifica se o usuário tem interações
+        // if (interacoes != null) {
+        // RecommendationHelper helper = new RecommendationHelper();
+        // for (Feedback feedback : interacoes) {
+        // int movieId = feedback.getMovieId();
+        // Movie movie = movieService.buscarFilmePorId(movieId);
+        // List<Genre> generos = movieGenreService.buscarGenerosDoFilme(movieId);
+
+        // helper.addMovieWithGenres(movie, generos);
+        // }
+
+        // }
+
+        // // Buscar gêneros favoritos do usuário
+        // List<Genre> generosFavoritos = userGenreService.getPreferredGenres(userId);
+
+        // // Obter filmes candidatos para recomendação
+        // JsonArray candidateMoviesJson =
+        // recommendationService.getCandidateMoviesJSON(interacoes);
+
+        // if (candidateMoviesJson == null || candidateMoviesJson.size() == 0) {
+        // // Se nao houver filmes candidatos, buscar 10 aleatórios
+
+        // }
+
+        // // Adicionar filmes candidatos ao helper
+        // for (int i = 0; i < candidateMoviesJson.size(); i++) {
+        // JsonObject movieJson = candidateMoviesJson.get(i).getAsJsonObject();
+
+        // // Extrair os dados básicos do filme a partir do JSON
+        // int movieId = movieJson.get("id").getAsInt();
+        // String title = movieJson.get("title").getAsString();
+        // String releaseDate = movieJson.has("release_date") ?
+        // movieJson.get("release_date").getAsString() : "";
+        // String originalLanguage = movieJson.get("original_language").getAsString();
+        // double popularity = movieJson.get("popularity").getAsDouble();
+        // boolean adult = movieJson.get("adult").getAsBoolean();
+        // // Adicionar à lista de candidatos
+
+        // Movie movie = new Movie(movieId, title, releaseDate, originalLanguage,
+        // popularity, adult);
+
+        // helper.addCandidateMovieId(movieId);
+
+        // // Processar gêneros do JSON
+        // List<Genre> genres = new ArrayList<>();
+        // if (movieJson.has("genre_ids") && movieJson.get("genre_ids").isJsonArray()) {
+        // JsonArray genreIdsJson = movieJson.getAsJsonArray("genre_ids");
+        // for (int j = 0; j < genreIdsJson.size(); j++) {
+        // int genreId = genreIdsJson.get(j).getAsInt();
+        // // Buscar detalhes do gênero pelo ID
+        // Genre genre = genreService.getGenreById(genreId);
+        // if (genre != null) {
+        // genres.add(genre);
+        // }
+        // }
+        // }
+
+        // // Adicionar o filme com seus gêneros ao helper
+        // helper.addMovieWithGenres(movie, genres);
+        // }
+
+        // // Verificar se temos dados suficientes para gerar recomendação
+        // if (!helper.hasEnoughDataForRecommendation()) {
+        // res.status(400);
+        // return gson.toJson(Map.of("error", "Dados insuficientes para gerar
+        // recomendação"));
+        // }
+
+        // try {
+        // System.out.println("Chamando IA para gerar recomendação...");
+        // int recommendedMovieId = ai.gerarRecomendacao(interacoes, generosFavoritos,
+        // helper);
+        // System.out.println("ID do filme recomendado: " + recommendedMovieId);
+
+        // System.out.println("Limpando interações do usuário...");
+        // boolean clearFeedback = feedbackService.clearAllById(userId);
+        // System.out.println("Resultado da limpeza: " + clearFeedback);
+
+        // if (!clearFeedback) {
+        // res.status(500);
+        // return gson.toJson(Map.of("error", "Erro ao limpar interações"));
+        // }
+
+        // // Limpar o helper depois de usar
+        // helper.clear();
+        // // Checar se o filme ja existe no banco de dados
+        // Movie existingMovie = movieService.buscarFilmePorId(recommendedMovieId);
+        // JsonObject movieObj;
+        // if (existingMovie != null) {
+        // System.out.println("Filme já existe no banco de dados: " + existingMovie);
+        // return gson.toJson(Map.of("status", "ok", "recomendacao", existingMovie));
+        // } else {
+        // System.out.println("Filme não encontrado no banco de dados, buscando na
+        // API...");
+        // movieObj = tmdb.getMovieDetails(recommendedMovieId);
+        // // Armazenar o filme no banco de dados
+        // boolean storedRecomendation = movieService.storeMovie(movieObj);
+        // System.out.println("Filme armazenado: " + storedRecomendation);
+        // }
+        // boolean storedGenres = movieGenreService.storeMovieGenres(movieObj);
+
+        // // Armazenar a recomendação no banco de dados
+        // boolean storedRecommendation =
+        // recommendationService.storeRecommendation(userId, recommendedMovieId);
+
+        // System.out.println("Recomendação armazenada: " + storedRecommendation);
+
+        // return gson.toJson(Map.of("status", "ok", "recomendacao", movieObj));
+        // } catch (Exception e) {
+        // System.out.println("Erro ao gerar recomendação:");
+        // e.printStackTrace();
+        // res.status(500);
+        // return gson.toJson(Map.of("error", "Erro ao gerar recomendação"));
+        // }
+
+        // });
+
+        // Endpoint para classifcar filmes favoritos de recomendações
+        post("/api/recommendation/favorite", (req, res) -> {
+            try {
+                int userId = req.attribute("userId");
+                JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
+                int movieId = bodyObj.get("movieId").getAsInt();
+
+                // Pegar a recomendação do banco de dados
+                Recommendation recommendation = recommendationService.getRecommendationByUserIdAndMovieId(userId,
+                        movieId);
+
+                // Calcular o status de favorito
+                boolean favoriteValue = !recommendation.isFavorite();
+
+                // Atualizar o status de favorito no banco de dados
+                boolean updated = recommendationService.updateRecommendation(userId, movieId,
+                        recommendation.isWatched(), favoriteValue);
+                if (updated) {
+                    return gson.toJson(Map.of("status", "ok", "message", "Recomendação atualizada com sucesso"));
                 } else {
-                    System.out.println("Filme não encontrado: " + recommendation.getMovieId());
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "Erro ao atualizar recomendação"));
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao atualizar recomendação"));
             }
+        });
 
-            return gson.toJson(Map.of("status", "ok", "recommendations", recommendationsJson));
+        // Endpoint para classifcar filmes assistidos de recomendações
+        post("/api/recommendation/watched", (req, res) -> {
+            try {
+                int userId = req.attribute("userId");
+                JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
+                int movieId = bodyObj.get("movieId").getAsInt();
 
+                // Pegar a recomendação do banco de dados
+                Recommendation recommendation = recommendationService.getRecommendationByUserIdAndMovieId(userId,
+                        movieId);
+
+                // Calcular o status de assistido
+                boolean watchedValue = !recommendation.isWatched();
+
+                // Atualizar o status de assistido no banco de dados
+                boolean updated = recommendationService.updateRecommendation(userId, movieId, watchedValue,
+                        recommendation.isFavorite());
+                if (updated) {
+                    return gson.toJson(Map.of("status", "ok", "message", "Recomendação atualizada com sucesso"));
+                } else {
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "Erro ao atualizar recomendação"));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao atualizar recomendação"));
+            }
+        });
+
+        // Endpoint para deleter filmes recomendados
+        post("/api/recommendation/delete", (req, res) -> {
+            try {
+                int userId = req.attribute("userId");
+                JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
+                int movieId = bodyObj.get("movieId").getAsInt();
+
+                // Deletar a recomendação do banco de dados
+                boolean deleted = recommendationService.deleteRecommendation(userId, movieId);
+                if (deleted) {
+                    return gson.toJson(Map.of("status", "ok", "message", "Recomendação deletada com sucesso"));
+                } else {
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "Erro ao deletar recomendação"));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao deletar recomendação"));
+            }
+        });
+
+        // Endpoint para listar filmes recomendados
+
+        post("/api/recommendations", (req, res) -> {
+            try {
+                int currentUserId = req.attribute("userId");
+                ArrayList<Recommendation> recommendations = recommendationService
+                        .getRecommendationsByUserId(currentUserId);
+                if (recommendations.isEmpty()) {
+                    return gson.toJson(Map.of("error", "Nenhuma recomendação encontrada"));
+                }
+                List<Map<String, Object>> moviesData = new ArrayList<>();
+
+                // Buscar cada filme no banco de dados e converter para mapa
+                for (Recommendation recommendation : recommendations) {
+                    int movieId = recommendation.getMovieId();
+                    Movie movie = movieService.buscarFilmePorId(movieId);
+
+                    if (movie != null) {
+                        List<Integer> movieGenresIds = movieGenreService.getGenreIdsForMovie(movieId);
+                        System.out.println("Gêneros do filme: " + movieGenresIds);
+                        ArrayList<Genre> movieGenres = new ArrayList<>();
+                        for (Integer genreId : movieGenresIds) {
+                            Genre genre = genreService.getGenreById(genreId);
+                            System.out.println("Gênero: " + genre);
+                            if (genre != null) {
+                                movieGenres.add(genre);
+                            }
+                        }
+
+                        // Criar mapa com dados do filme incluindo gêneros
+                        Map<String, Object> movieData = new HashMap<>();
+                        movieData.put("id", movie.getId());
+                        movieData.put("title", movie.getTitle());
+                        movieData.put("poster_path", movie.getPosterPath());
+                        movieData.put("release_date", movie.getReleaseDate());
+                        movieData.put("genres", movieGenres.stream()
+                                .map(Genre::getName)
+                                .toList()); // Adiciona os nomes dos gêneros
+
+                        // Passar se o filme recomendado foi assistido ou favoritado
+                        movieData.put("watched", recommendation.isWatched());
+                        movieData.put("favorite", recommendation.isFavorite());
+
+                        System.out.println("Dados do filme: " + movieData);
+                        moviesData.add(movieData);
+                    }
+                }
+
+                return gson.toJson(Map.of("status", "ok", "movies", moviesData));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao receber recomendações"));
+            }
         });
 
         post("/api/movies", (req, res) -> {
@@ -625,24 +815,28 @@ public class Application {
             try {
                 int currentUserId = req.attribute("userId");
 
+                // Prevent SQL injection
+                if (currentUserId <= 0) {
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "ID de usuário inválido"));
+                }
+
                 List<User> allUsers = userDAO.getAll();
-                
+
                 List<Map<String, Object>> usersData = new ArrayList<>();
                 for (User user : allUsers) {
-                    
+
                     Map<String, Object> userData = Map.of(
-                        "id", user.getId(),
-                        "firstName", user.getFirstName(),
-                        "lastName", user.getLastName(),
-                        "email", user.getEmail()
-                    );
+                            "id", user.getId(),
+                            "firstName", user.getFirstName(),
+                            "lastName", user.getLastName(),
+                            "email", user.getEmail());
                     usersData.add(userData);
                 }
-                
+
                 return gson.toJson(Map.of(
-                    "status", "ok",
-                    "users", usersData
-                ));
+                        "status", "ok",
+                        "users", usersData));
             } catch (Exception e) {
                 e.printStackTrace();
                 res.status(500);
@@ -650,27 +844,146 @@ public class Application {
             }
         });
 
-        get("/api/profile/:userId/", (req, res) -> {
+        // Endpoint para pegar filmes recomendados marcados como assistidos por
+        // determinado usuário
+        get("/api/users/:userId/watched", (req, res) -> {
             try {
-                int targetUserId = Integer.parseInt(req.params("userId"));
-                
+                int targetUserId = req.attribute("userId");
+
+                // Prevent SQL injection
+                if (targetUserId <= 0) {
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "ID de usuário inválido"));
+                }
+
+                // Buscar IDs de filmes recomendados
+                ArrayList<Recommendation> recommendations = recommendationService
+                        .getRecommendationsByUserId(targetUserId);
+                List<Map<String, Object>> moviesData = new ArrayList<>();
+
+                // Buscar cada filme no banco de dados e converter para mapa
+                for (Recommendation recommendation : recommendations) {
+                    int movieId = recommendation.getMovieId();
+                    Movie movie = movieService.buscarFilmePorId(movieId);
+
+                    // Verifica se o filme foi assistido
+                    if (movie != null && recommendation.isWatched()) {
+                        // Adiciona o filme à lista de assistidos
+                        Map<String, Object> movieData = Map.of(
+                                "id", movie.getId(),
+                                "title", movie.getTitle(),
+                                "poster_path", movie.getPosterPath());
+                        moviesData.add(movieData);
+                    } else {
+                        // Se o filme não foi assistido, não adiciona à lista
+                        System.out.println("Filme " + movieId + " não foi assistido. Pulando...");
+                    }
+                }
+
+                return gson.toJson(Map.of("status", "ok", "movies", moviesData));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao buscar filmes assistidos: " + e.getMessage()));
+            }
+        });
+
+        // Endpoint para pegar filmes recomendados marcados como favoritos por
+        // determinado usuário
+        get("/api/users/:userId/favorites", (req, res) -> {
+            try {
+                int targetUserId = req.attribute("userId");
+
+                // Prevent SQL injection
+                if (targetUserId <= 0) {
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "ID de usuário inválido"));
+                }
+
+                // Buscar IDs de filmes recomendados
+                ArrayList<Recommendation> recommendations = recommendationService
+                        .getRecommendationsByUserId(targetUserId);
+                List<Map<String, Object>> moviesData = new ArrayList<>();
+
+                // Buscar cada filme no banco de dados e converter para mapa
+                for (Recommendation recommendation : recommendations) {
+                    int movieId = recommendation.getMovieId();
+                    Movie movie = movieService.buscarFilmePorId(movieId);
+
+                    // Verifica se o filme é favorito
+                    if (movie != null && recommendation.isFavorite()) {
+                        // Adiciona o filme à lista de favoritos
+                        Map<String, Object> movieData = Map.of(
+                                "id", movie.getId(),
+                                "title", movie.getTitle(),
+                                "poster_path", movie.getPosterPath());
+                        moviesData.add(movieData);
+                    } else {
+                        // Se o filme não é favorito, não adiciona à lista
+                        System.out.println("Filme " + movieId + " não é favorito. Pulando...");
+                    }
+
+                }
+
+                return gson.toJson(Map.of("status", "ok", "movies", moviesData));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao buscar filmes favoritos: " + e.getMessage()));
+            }
+        });
+
+        get("/api/myprofile", (req, res) -> {
+            try {
+                int targetUserId = req.attribute("userId");
+
                 // Buscar o usuário pelo ID
                 User user = userService.getUserById(targetUserId);
-                
+
                 if (user == null) {
                     res.status(404);
                     return gson.toJson(Map.of("error", "Usuário não encontrado"));
                 }
-                
+
                 // Apenas informações básicas do usuário
                 Map<String, Object> userData = Map.of(
-                    "id", user.getId(),
-                    "firstName", user.getFirstName(),
-                    "lastName", user.getLastName(),
-                    "email", user.getEmail(),
-                    "gender", String.valueOf(user.getGender())
-                );
-                
+                        "id", user.getId(),
+                        "firstName", user.getFirstName(),
+                        "lastName", user.getLastName(),
+                        "email", user.getEmail(),
+                        "gender", String.valueOf(user.getGender()));
+
+                return gson.toJson(Map.of("status", "ok", "user", userData));
+            } catch (NumberFormatException e) {
+                res.status(400);
+                return gson.toJson(Map.of("error", "ID de usuário inválido"));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao buscar informações do usuário: " + e.getMessage()));
+            }
+        });
+
+        get("/api/profile/:userId", (req, res) -> {
+            try {
+                int targetUserId = req.attribute("userId");
+
+                // Buscar o usuário pelo ID
+                User user = userService.getUserById(targetUserId);
+
+                if (user == null) {
+                    res.status(404);
+                    return gson.toJson(Map.of("error", "Usuário não encontrado"));
+                }
+
+                // Apenas informações básicas do usuário
+                Map<String, Object> userData = Map.of(
+                        "id", user.getId(),
+                        "firstName", user.getFirstName(),
+                        "lastName", user.getLastName(),
+                        "email", user.getEmail(),
+                        "gender", String.valueOf(user.getGender()));
+
                 return gson.toJson(Map.of("status", "ok", "user", userData));
             } catch (NumberFormatException e) {
                 res.status(400);
@@ -684,30 +997,32 @@ public class Application {
 
         get("/api/users/:userId/recommended", (req, res) -> {
             try {
-                int targetUserId = Integer.parseInt(req.params("userId"));
-                
+                int targetUserId = req.attribute("userId");
+
+                // Prevent SQL injection
+                if (targetUserId <= 0) {
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "ID de usuário inválido"));
+                }
+
                 // Buscar IDs de filmes recomendados
-                ArrayList<Recommendation> recommendations = recommendationService.getRecommendationsByUserId(targetUserId);
+                ArrayList<Recommendation> recommendations = recommendationService
+                        .getRecommendationsByUserId(targetUserId);
                 List<Map<String, Object>> moviesData = new ArrayList<>();
-                
+
                 // Buscar cada filme no banco de dados e converter para mapa
                 for (Recommendation recommendation : recommendations) {
                     int movieId = recommendation.getMovieId();
                     Movie movie = movieService.buscarFilmePorId(movieId);
                     if (movie != null) {
                         Map<String, Object> movieData = Map.of(
-                            "id", movie.getId(),
-                            "title", movie.getTitle(),
-                            "release_date", movie.getReleaseDate(),
-                            "original_language", movie.getOriginalLanguage(),
-                            "popularity", movie.getPopularity(),
-                            "adult", movie.getAdult(),
-                            "poster_path", movie.getPosterPath()
-                        );
+                                "id", movie.getId(),
+                                "title", movie.getTitle(),
+                                "poster_path", movie.getPosterPath());
                         moviesData.add(movieData);
                     }
                 }
-                
+
                 return gson.toJson(Map.of("status", "ok", "movies", moviesData));
             } catch (Exception e) {
                 e.printStackTrace();
@@ -716,7 +1031,36 @@ public class Application {
             }
         });
 
-    }
+        get("/api/feedbacks/reset", (req, res) -> {
+            try {
+                int userId = req.attribute("userId");
 
+                System.out.println("🗑️ Resetando todos os feedbacks do usuário: " + userId);
+
+                if (userId <= 0) {
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "ID de usuário inválido"));
+                }
+
+                boolean cleared = feedbackService.clearAllById(userId);
+
+
+                
+                if (cleared) {
+                    System.out.println("✅ Feedbacks do usuário " + userId + " resetados com sucesso");
+                    return gson.toJson(Map.of("status", "ok", "message", "Feedbacks resetados com sucesso"));
+                } else {
+                    System.out.println("❌ Erro ao resetar feedbacks do usuário " + userId);
+                    res.status(500);
+                    return gson.toJson(Map.of("error", "Erro ao resetar feedbacks"));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao processar solicitação: " + e.getMessage()));
+            }
+        });
+
+    }
 
 }

@@ -21,7 +21,7 @@ import {
 export default function Navbar() {
     const pathname = usePathname();
     const { logout, user } = useAuth();
-
+    
     const navItems = [
         {
             name: 'Home',

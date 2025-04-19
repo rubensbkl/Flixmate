@@ -1,3 +1,47 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Adicione isso ao seu arquivo global de CSS */
+
+/* Estilo para quando o usuário está arrastando */
+.active {
+    cursor: grabbing;
+}
+
+/* Cursor ao passar por cima das áreas de scroll */
+.drag-scroll {
+    cursor: grab;
+}
+
+/* Esconder scrollbar em todos navegadores */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Estilo para melhorar a aparência dos botões de navegação */
+.scroll-button {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.scroll-section:hover .scroll-button {
+    opacity: 1;
+}
+
+/* Melhorar a aparência da navbar */
+@media (min-width: 768px) {
+    .navbar-desktop {
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 16rem;
+        border-right: 1px solid #e5e7eb;
+    }
+}

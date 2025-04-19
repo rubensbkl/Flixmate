@@ -1,13 +1,11 @@
 // components/MovieMatchModal.jsx
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { HeartIcon, XMarkIcon } from "@heroicons/react/24/solid";
-import Image from "next/image";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
-
-const MovieMatchModal = ({ isOpen, onClose, movie }) => {
+const MovieMatchModal = ({ isOpen, onClose, movie, onNavigate }) => {
   const [animationComplete, setAnimationComplete] = useState(false);
   const [posterUrl, setPosterUrl] = useState('');
 
@@ -49,7 +47,7 @@ const MovieMatchModal = ({ isOpen, onClose, movie }) => {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
-            className="relative w-full max-w-md rounded-xl overflow-hidden bg-gradient-to-b from-gray-900 to-black"
+            className="relative w-full max-w-sm md:max-w-lg lg:max-w-xl rounded-xl overflow-hidden bg-black"
           >
             <button
               onClick={onClose}
@@ -66,14 +64,14 @@ const MovieMatchModal = ({ isOpen, onClose, movie }) => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="p-8 flex flex-col items-center justify-center h-[500px]"
+                  className="p-8 flex flex-col items-center justify-center h-[500px] md:h-[600px]"
                 >
                   <motion.div
                     initial={{ scale: 0.5, rotate: -10 }}
                     animate={{ scale: 1.2, rotate: 0, y: -20 }}
                     transition={{ duration: 0.5, type: "spring" }}
                   >
-                    <HeartIcon className="w-24 h-24 text-pink-500" />
+                    <HeartIcon className="w-24 h-24 text-yellow-400" />
                   </motion.div>
 
                   <motion.div
@@ -82,7 +80,7 @@ const MovieMatchModal = ({ isOpen, onClose, movie }) => {
                     transition={{ delay: 0.3 }}
                     className="text-center"
                   >
-                    <h2 className="text-pink-500 font-bold text-4xl mb-2 tracking-tight">IT'S A MATCH!</h2>
+                    <h2 className="text-yellow-400 font-bold text-4xl mb-2 tracking-tight">IT'S A MATCH!</h2>
                     <p className="text-white text-xl">We found the perfect movie for you!</p>
                   </motion.div>
                 </motion.div>
@@ -94,8 +92,8 @@ const MovieMatchModal = ({ isOpen, onClose, movie }) => {
                   animate={{ opacity: 1, x: 0 }}
                   className="flex flex-col"
                 >
-                  {/* Movie poster */}
-                  <div className="relative w-full h-72">
+                  {/* Movie poster - taller on desktop */}
+                  <div className="relative w-full h-72 md:h-96 lg:h-[450px]">
                     {posterUrl ? (
                       <div
                         className="w-full h-full bg-cover bg-center"
@@ -133,14 +131,14 @@ const MovieMatchModal = ({ isOpen, onClose, movie }) => {
                       }</div>
                     </div>
 
-                    <p className="text-gray-300 mb-4 line-clamp-3">
+                    <p className="text-gray-300 mb-4 md:text-base line-clamp-3 md:line-clamp-4">
                       {movie.overview || movie.sinopse || movie.description || 'Sem descrição disponível.'}
                     </p>
 
                     <div className="flex items-center justify-between mt-4">
                       <button
-                        onClick={onClose}
-                        className="w-full py-3 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-lg transition"
+                        onClick={onNavigate}
+                        className="w-full py-3 bg-black border border-yellow-400 text-white hover:bg-gray-900 font-bold rounded-lg transition"
                       >
                         Ir para as recomendações
                       </button>

@@ -85,5 +85,24 @@ public class RecommendationService {
         return recommendations;
     }
 
-    // Store Recommendations
+  
+    public boolean updateRecommendation(int userId, int movieId, boolean watched, boolean favorite) {
+        Recommendation rec = new Recommendation(userId, movieId, watched, favorite);
+        return recommendationDAO.update(rec);
+    }
+
+    // getRecommendationByUserIdAndMovieId
+    public Recommendation getRecommendationByUserIdAndMovieId(int userId, int movieId) {
+        return recommendationDAO.getRecommendationByUserIdAndMovieId(userId, movieId);
+    }
+
+    // deleteRecommendation
+    public boolean deleteRecommendation(int userId, int movieId) {
+        return recommendationDAO.deleteRecommendation(userId, movieId);
+    }
+
+    //checkIfMovieAlreadyRecommended
+    public boolean checkIfMovieAlreadyRecommended(int userId, int movieId) {
+        return recommendationDAO.isMovieRecommended(userId, movieId);
+    }
 }
