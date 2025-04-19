@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
     title: "Flixmate",
-    description: "A melhor plataforma de streaming",
+    description: " — filme certo, na hora certa.",
 };
 
 export default function RootLayout({ children }) {
