@@ -314,7 +314,7 @@ public class TMDBService {
             throws IOException, InterruptedException {
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
             // Buscar filmes populares em uma página aleatória
-            JsonArray moviesFromRandomPage = fetchMoviesFromRandomPage(20);
+            JsonArray moviesFromRandomPage = fetchMoviesFromRandomPage(500);
 
             if (moviesFromRandomPage == null || moviesFromRandomPage.size() == 0) {
                 continue; // Tentar novamente
@@ -345,7 +345,7 @@ public class TMDBService {
     public JsonObject getARandomMovie() {
         try {
             // Tenta encontrar filme com alta popularidade
-            JsonObject highPopularityMovie = findHighPopularityMovie(1.5, 5);
+            JsonObject highPopularityMovie = findHighPopularityMovie(5, 5);
 
             // Se encontrou um filme com alta popularidade, retorna-o
             if (highPopularityMovie != null) {
@@ -361,11 +361,67 @@ public class TMDBService {
         }
     }
 
+
+    // get Random Page
+    public int getRandomPage() {
+        Random random = new Random();
+        return random.nextInt(550) + 1; // Gera um número aleatório entre 1 e 20
+    }
+
+    /**
+     * Retorna uma lista de títulos de filmes aleatórios
+     * 
+     * @return Lista de títulos de filmes
+     */
+    public JsonArray getManyRandomMovies(int count) {
+        JsonArray movies = new JsonArray();
+        try {
+            // Get random page
+            int randomPage = getRandomPage();
+            // Constrói a URL para buscar filmes aleatórios
+            String urlStr = "https://api.themoviedb.org/3/discover/movie?api_key=" + API_KEY
+                    + "&sort_by=popularity.desc&language=pt-BR&page=" + randomPage;
+            URL url = new URI(urlStr).toURL(); // ✅ substituindo new URL(String)
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+
+            if (conn.getResponseCode() != 200) {
+                System.err.println("Erro ao buscar filmes aleatórios: " + conn.getResponseCode());
+                return movies;
+            }
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            StringBuilder response = new StringBuilder();
+            String inputLine;
+
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+            conn.disconnect();
+
+            JsonObject jsonResponse = JsonParser.parseString(response.toString()).getAsJsonObject();
+            JsonArray results = jsonResponse.getAsJsonArray("results");
+
+            for (int i = 0; i < count && i < results.size(); i++) {
+                JsonObject movie = results.get(i).getAsJsonObject();
+                movies.add(movie);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return movies;
+    }
+
     public List<String> getRandomMovies() {
         List<String> movieTitles = new ArrayList<>();
         try {
             String urlStr = "https://api.themoviedb.org/3/discover/movie?api_key=" + API_KEY
-                    + "&sort_by=popularity.desc&page=1&language=pt-BR";
+                    + "&page=1&language=pt-BR";
             URL url = new URI(urlStr).toURL(); // ✅ substituindo new URL(String)
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
