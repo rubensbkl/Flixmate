@@ -147,7 +147,7 @@ public class Application {
         Set<String> allowedOrigins = new HashSet<>(List.of(
                 "http://localhost:3000",
                 "127.0.0.1:3000",
-                "https://442d-2804-6e7c-116-6100-e44f-6d36-62b3-c8ff.ngrok-free.app/",
+                "https://fccb-2804-6e7c-116-6100-bd8d-f1da-c8ac-600a.ngrok-free.app",
                 "https://flixmate.com.br"));
 
         // Habilitar CORS para requisições preflight OPTIONS
@@ -359,6 +359,11 @@ public class Application {
                 String token = authHeader.substring(7);
                 var decoded = jwt.verifyToken(token);
 
+                // Verificar se o token é válido
+                if (decoded == null) {
+                    halt(401, gson.toJson(Map.of("error", "Token inválido")));
+                }
+
                 // Adicionar atributos úteis à requisição
                 req.attribute("userEmail", decoded.getSubject());
                 req.attribute("userId", decoded.getClaim("userId").asInt());
@@ -405,43 +410,45 @@ public class Application {
 
         get("/api/recommendation", (req, res) -> {
             int userId = req.attribute("userId");
-        
+
             // Buscar interações do usuário
             ArrayList<Feedback> interacoes = feedbackService.getFeedbacksByUserId(userId);
             // Buscar gêneros favoritos do usuário
             ArrayList<Genre> generosFavoritos = userGenreService.getPreferredGenres(userId);
-        
+
             System.out.println("Interações do usuário: " + interacoes);
             System.out.println("Gêneros favoritos do usuário: " + generosFavoritos);
-        
+
             // Se o usuário não tiver interações, retornamos um erro mais amigável
             if (interacoes == null || interacoes.isEmpty()) {
-                // Alteração: em vez de retornar erro, gerar recomendação baseada apenas em gêneros
+                // Alteração: em vez de retornar erro, gerar recomendação baseada apenas em
+                // gêneros
                 System.out.println("Usuário sem interações, usando apenas gêneros favoritos");
                 // Podemos usar a recomendação surpresa neste caso
                 return controller.gerarRecomendacaoAleatoria(userId, generosFavoritos, res);
             }
-        
+
             // Verificar se o usuário tem gêneros favoritos
             if (generosFavoritos == null || generosFavoritos.isEmpty()) {
                 res.status(400);
                 return gson.toJson(Map.of("error", "Usuário sem gêneros favoritos"));
             }
-        
+
             // chamar controller para gerar recomendação
             System.out.println("Gerando recomendação...");
-            JsonObject recomendacao = controller.gerarRecomendacaoPersonalizada(userId, interacoes, generosFavoritos, res);
-        
+            JsonObject recomendacao = controller.gerarRecomendacaoPersonalizada(userId, interacoes, generosFavoritos,
+                    res);
+
             if (recomendacao == null) {
                 res.status(500);
                 return gson.toJson(Map.of("error", "Erro ao gerar recomendação"));
             }
-        
+
             if (recomendacao.has("error")) {
                 res.status(400);
                 return gson.toJson(Map.of("error", recomendacao.get("error").getAsString()));
             }
-        
+
             // Enviar a recomendação
             res.status(200);
             return gson.toJson(Map.of("status", "ok", "recomendacao", recomendacao));
@@ -460,7 +467,6 @@ public class Application {
             // Gerar recomendação aleatória
             return controller.gerarRecomendacaoAleatoria(userId, generosFavoritos, res);
         });
-
 
         // Endpoint para classifcar filmes favoritos de recomendações
         post("/api/recommendation/favorite", (req, res) -> {
@@ -740,8 +746,7 @@ public class Application {
                         "firstName", user.getFirstName(),
                         "lastName", user.getLastName(),
                         "email", user.getEmail(),
-                        "gender", String.valueOf(user.getGender())
-                );
+                        "gender", String.valueOf(user.getGender()));
 
                 return gson.toJson(Map.of("status", "ok", "user", userData));
             } catch (NumberFormatException e) {
@@ -766,17 +771,30 @@ public class Application {
                     return gson.toJson(Map.of("error", "Usuário não encontrado"));
                 }
 
+                // Precisamos enviar os generos favoritos do usuário
+                List<Genre> preferredGenres = userGenreService.getPreferredGenres(targetUserId);
+                List<Map<String, Object>> genresData = new ArrayList<>();
+                for (Genre genre : preferredGenres) {
+                    Map<String, Object> genreData = Map.of(
+                            "id", genre.getId(),
+                            "name", genre.getName());
+                    genresData.add(genreData);
+                }
+
                 // Apenas informações básicas do usuário
+                //
                 Map<String, Object> userData = Map.of(
                         "id", user.getId(),
                         "firstName", user.getFirstName(),
                         "lastName", user.getLastName(),
                         "email", user.getEmail(),
                         "gender", String.valueOf(user.getGender()),
-                        "contentFilter", user.isAdult() ? "Sim" : "Não"
-                );
+                        "contentFilter", user.isAdult() ? true : false
 
-                return gson.toJson(Map.of("status", "ok", "user", userData));
+                );
+                // Adiciona os gêneros favoritos do usuário
+
+                return gson.toJson(Map.of("status", "ok", "user", userData, "preferredGenres", genresData));
             } catch (NumberFormatException e) {
                 res.status(400);
                 return gson.toJson(Map.of("error", "ID de usuário inválido"));
@@ -786,7 +804,6 @@ public class Application {
                 return gson.toJson(Map.of("error", "Erro ao buscar informações do usuário: " + e.getMessage()));
             }
         });
-
 
         get("/api/profile/:userId", (req, res) -> {
             try {
@@ -951,10 +968,16 @@ public class Application {
                     return gson.toJson(Map.of("error", "ID de usuário inválido"));
                 }
 
+                // Verificar se o temos feedbacks para serem resetados
+                ArrayList<Feedback> feedbacks = feedbackService.getFeedbacksByUserId(userId);
+                if (feedbacks.isEmpty()) {
+                    System.out.println("❌ Nenhum feedback encontrado para o usuário " + userId);
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "Nenhum feedback encontrado para o usuário"));
+                }
+
                 boolean cleared = feedbackService.clearAllById(userId);
 
-
-                
                 if (cleared) {
                     System.out.println("✅ Feedbacks do usuário " + userId + " resetados com sucesso");
                     return gson.toJson(Map.of("status", "ok", "message", "Feedbacks resetados com sucesso"));
@@ -970,6 +993,163 @@ public class Application {
             }
         });
 
+        // Endpoint para update do usuário
+        post("/api/profile/update", (req, res) -> {
+            try {
+                int userId = req.attribute("userId");
+                JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
+
+                // Extract basic user information
+                String firstName = bodyObj.has("firstName") ? bodyObj.get("firstName").getAsString() : null;
+                String lastName = bodyObj.has("lastName") ? bodyObj.get("lastName").getAsString() : null;
+                String email = bodyObj.has("email") ? bodyObj.get("email").getAsString() : null;
+                String gender = bodyObj.has("gender") ? bodyObj.get("gender").getAsString() : null;
+                Boolean contentFilter = bodyObj.has("contentFilter") ? bodyObj.get("contentFilter").getAsBoolean()
+                        : null;
+
+                // Extract genres if they exist in the request
+                List<Integer> genres = null;
+                if (bodyObj.has("genres") && bodyObj.get("genres").isJsonArray()) {
+                    JsonArray genresArray = bodyObj.get("genres").getAsJsonArray();
+                    genres = new ArrayList<>();
+                    for (int i = 0; i < genresArray.size(); i++) {
+                        genres.add(genresArray.get(i).getAsInt());
+                    }
+
+                    // VALIDAÇÃO: Verificar se pelo menos um gênero foi selecionado
+                    if (genres.isEmpty()) {
+                        res.status(400);
+                        return gson.toJson(Map.of("error", "É necessário selecionar pelo menos um gênero preferido"));
+                    }
+
+                    // VALIDAÇÃO: Limitar o número máximo de gêneros
+                    if (genres.size() > 5) {
+                        res.status(400);
+                        return gson.toJson(Map.of("error", "Você pode selecionar no máximo 5 gêneros preferidos"));
+                    }
+                } else if (bodyObj.has("genres")) {
+                    // VALIDAÇÃO: Se o campo genres foi fornecido mas não é um array válido
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "Formato inválido para gêneros preferidos"));
+                }
+
+                // Fetch current user data
+                User currentUser = userService.getUserById(userId);
+                if (currentUser == null) {
+                    res.status(404);
+                    return gson.toJson(Map.of("error", "Usuário não encontrado"));
+                }
+
+                // Update user object with new values or keep existing ones
+                if (firstName != null)
+                    currentUser.setFirstName(firstName);
+                if (lastName != null)
+                    currentUser.setLastName(lastName);
+                if (email != null)
+                    currentUser.setEmail(email);
+                if (gender != null && gender.length() > 0)
+                    currentUser.setGender(gender.charAt(0));
+                if (contentFilter != null)
+                    currentUser.setAdult(!contentFilter); // Note: contentFilter is inverted in DB
+
+                // Update user in database
+                boolean userUpdated = userDAO.update(currentUser);
+                if (!userUpdated) {
+                    res.status(500);
+                    return gson.toJson(Map.of("error", "Erro ao atualizar informações do usuário"));
+                }
+
+                // Se os gêneros não foram fornecidos na requisição, não mexer nos gêneros
+                // existentes
+                boolean genresUpdated = true;
+                if (genres != null) {
+                    // Obter gêneros atuais antes de remover (backup)
+                    List<Genre> currentGenres = userGenreService.getPreferredGenres(userId);
+
+                    // Remover gêneros existentes
+                    boolean genresRemoved = userGenreService.removeAllPreferredGenres(userId);
+
+                    if (!genresRemoved) {
+                        System.err.println("Erro ao remover gêneros existentes para o usuário " + userId);
+                        // Em caso de falha, não continuamos com a atualização dos gêneros
+                        res.status(500);
+                        return gson.toJson(Map.of("error", "Erro ao atualizar preferências de gêneros"));
+                    }
+
+                    // Adicionar novos gêneros
+                    boolean allGenresAdded = true;
+                    for (Integer genreId : genres) {
+                        if (!userGenreService.addPreferredGenre(userId, genreId)) {
+                            allGenresAdded = false;
+                            System.err.println("Erro ao adicionar gênero " + genreId + " para o usuário " + userId);
+                        }
+                    }
+
+                    // Se houve erro ao adicionar novos gêneros, restaurar os gêneros antigos
+                    if (!allGenresAdded) {
+                        System.err.println("Restaurando gêneros anteriores para o usuário " + userId);
+                        // Primeiro limpar novamente para evitar duplicatas
+                        userGenreService.removeAllPreferredGenres(userId);
+
+                        // Restaurar gêneros anteriores
+                        for (Genre genre : currentGenres) {
+                            userGenreService.addPreferredGenre(userId, genre.getId());
+                        }
+
+                        res.status(500);
+                        return gson.toJson(Map.of("error",
+                                "Erro ao atualizar alguns gêneros preferidos. As alterações foram revertidas."));
+                    }
+
+                    genresUpdated = allGenresAdded;
+                }
+
+                // Fetch updated user information including genres
+                User updatedUser = userService.getUserById(userId);
+                List<Genre> preferredGenres = userGenreService.getPreferredGenres(userId);
+
+                // Verificar se o usuário realmente tem gêneros após a atualização
+                if (preferredGenres == null || preferredGenres.isEmpty()) {
+                    System.err.println("AVISO: Usuário " + userId
+                            + " ficou sem gêneros após atualização. Isso não deveria acontecer.");
+                    // Aqui poderíamos adicionar um gênero padrão, mas para ser consistente com a
+                    // validação anterior,
+                    // vamos apenas retornar um erro
+                    res.status(500);
+                    return gson.toJson(Map.of("error", "Erro no servidor: usuário ficou sem gêneros preferidos"));
+                }
+
+                // Create response with user data and preferred genres
+                Map<String, Object> userData = Map.of(
+                        "id", updatedUser.getId(),
+                        "firstName", updatedUser.getFirstName(),
+                        "lastName", updatedUser.getLastName(),
+                        "email", updatedUser.getEmail(),
+                        "gender", String.valueOf(updatedUser.getGender()),
+                        "contentFilter", !updatedUser.isAdult() // Note: contentFilter is inverted from DB's isAdult
+                );
+
+                List<Map<String, Object>> genresData = new ArrayList<>();
+                for (Genre genre : preferredGenres) {
+                    Map<String, Object> genreData = Map.of(
+                            "id", genre.getId(),
+                            "name", genre.getName());
+                    genresData.add(genreData);
+                }
+
+                // Final response with success message and updated data
+                return gson.toJson(Map.of(
+                        "status", "ok",
+                        "message", "Perfil atualizado com sucesso",
+                        "user", userData,
+                        "preferredGenres", genresData));
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao atualizar perfil: " + e.getMessage()));
+            }
+        });
     }
 
 }

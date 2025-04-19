@@ -153,8 +153,10 @@ export default function UserProfilePage() {
     return (
         <ProtectedRoute>
             <div className="flex md:flex-row min-h-screen">
-                {/* Navbar fixa na lateral esquerda (igual às suas outras páginas) */}
-                <Navbar />
+                {/* Navbar fixa na lateral esquerda (desktop) ou topo (mobile) */}
+                <div className="md:w-64 md:min-h-screen">
+                    <Navbar />
+                </div>
 
                 {/* Conteúdo principal */}
                 <main className="flex-1 bg-white overflow-x-hidden">
@@ -185,7 +187,7 @@ export default function UserProfilePage() {
                         </div>
 
                         {/* Seções de filmes */}
-                        <div className="">
+                        <div className="overflow-hidden">
                             {/* Seção de filmes recentes */}
                             <ScrollSection
                                 title="Filmes Recentes"

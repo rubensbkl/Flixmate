@@ -79,4 +79,14 @@ public class UserGenreService {
 
     }
 
+    /**
+     * Removes all preferred genres for a user.
+     * 
+     * @param userId The ID of the user
+     * @return true if the operation was successful, false otherwise
+     */
+    public boolean removeAllPreferredGenres(int userId) {
+        return userGenreDAO.removeAllByUserId(userId);
+    }
+
 }
