@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Navbar from '@/components/Navbar';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Searchbar from '@/components/Searchbar';
 import { fetchUsers } from '@/lib/api'; // Importando a função que criamos
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function SearchPage() {
   const [users, setUsers] = useState([]);
@@ -59,7 +59,10 @@ export default function SearchPage() {
     <ProtectedRoute>
       <div className="bg-gray-100 md:flex">
         {/* Navbar */}
-        <Navbar />
+        <div className="md:w-64 md:min-h-screen">
+                    <Navbar />
+                </div>
+
 
         <main className="flex-1 overflow-auto flex flex-col h-[calc(100vh-4rem)] md:h-screen">
           <Header />

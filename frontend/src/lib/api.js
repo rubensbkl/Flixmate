@@ -81,7 +81,7 @@ export const gerarRecomendacao = async () => {
         );
 
         const data = await res.json();
-        
+
         // Mesmo se o status não for 200, verifique se há uma resposta com formato válido
         if (!res.ok) {
             console.error("Erro na resposta da API:", data);
@@ -169,16 +169,13 @@ export const fetchMe = async () => {
     console.log(`📡 Buscando informações básicas do usuário:`);
 
     try {
-        const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/me`,
-            {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            }
-        );
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        });
 
         if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
 
@@ -187,9 +184,7 @@ export const fetchMe = async () => {
         console.log("Dados recebidos:", data); // Adicionei este log para depuração
 
         if (data.status === "ok") {
-            console.log(
-                `🔍 Informações básicas do usuário ${data} carregadas`
-            );
+            console.log(`🔍 Informações básicas do usuário ${data} carregadas`);
             return data.user;
         } else {
             console.log("⚠️ Formato de resposta inesperado:", data);
@@ -204,9 +199,13 @@ export const fetchMe = async () => {
     }
 };
 
+/**
+ * Fetch user profile data
+ * @returns {Promise<Object>} User data
+ */
 export const fetchPrivate = async () => {
     const token = getToken();
-    console.log(`📡 Buscando informações básicas do usuário:`);
+    console.log(`📡 Buscando informações do usuário`);
 
     try {
         const res = await fetch(
@@ -220,47 +219,58 @@ export const fetchPrivate = async () => {
             }
         );
 
-        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+        if (!res.ok) {
+            throw new Error(`Erro na API: ${res.status}`);
+        }
 
         const data = await res.json();
 
-        console.log("Dados recebidos:", data); // Adicionei este log para depuração
-
         if (data.status === "ok") {
-            console.log(
-                `🔍 Informações básicas do usuário ${data} carregadas`
-            );
-            return data.user;
+            // Handle different API response formats
+            let userData = {};
+
+            // If user data is directly in the response
+            if (data.user) {
+                userData = { ...data.user };
+            }
+
+            // If we have preferred genres as objects, extract and add to userData
+            if (data.preferredGenres && Array.isArray(data.preferredGenres)) {
+                userData.genres = data.preferredGenres.map((genre) => genre.id);
+                userData.preferredGenres = data.preferredGenres;
+            }
+
+            console.log(`🔍 Informações do usuário carregadas`);
+            return userData;
         } else {
             console.log("⚠️ Formato de resposta inesperado:", data);
             throw new Error("Formato de resposta inválido do servidor");
         }
     } catch (error) {
-        console.error(
-            `❌ Erro ao buscar informações do usuário ${data}:`,
-            error
-        );
+        console.error(`❌ Erro ao buscar informações do usuário:`, error);
         throw error;
     }
 };
-
 export const updateMyProfile = async (profileData) => {
     const token = getToken();
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/myprofile`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(profileData),
-    });
-  
-    if (!res.ok) throw new Error("Erro ao atualizar perfil.");
-  
-    return await res.json();
-  };
-  
+    console.log(`📝 Atualizando perfil do usuário`)
+    console.log("Dados do perfil:", profileData); // Adicionei este log para depuração
+    const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/profile/update`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(profileData),
+        }
+    );
 
+    if (!res.ok) throw new Error("Erro ao atualizar perfil.");
+
+    return await res.json();
+};
 
 export const fetchUserProfile = async (userId) => {
     const token = getToken();
@@ -427,7 +437,7 @@ export const updateWatchlistMovie = async (movieId, watched) => {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ movieId, watched }), 
+                body: JSON.stringify({ movieId, watched }),
             }
         );
 
@@ -436,7 +446,9 @@ export const updateWatchlistMovie = async (movieId, watched) => {
         const data = await res.json();
 
         if (data.status === "ok") {
-            console.log(`🔍 Filme ${movieId} adicionado à watchlist com sucesso`);
+            console.log(
+                `🔍 Filme ${movieId} adicionado à watchlist com sucesso`
+            );
             return true;
         } else {
             console.log("⚠️ Formato de resposta inesperado:", data);
@@ -449,7 +461,7 @@ export const updateWatchlistMovie = async (movieId, watched) => {
         );
         return false;
     }
-}
+};
 
 export const updatefavoriteMovie = async (movieId, favorite) => {
     const token = getToken();
@@ -464,7 +476,7 @@ export const updatefavoriteMovie = async (movieId, favorite) => {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ movieId, favorite }), 
+                body: JSON.stringify({ movieId, favorite }),
             }
         );
 
@@ -517,7 +529,7 @@ export const deleteMovie = async (movieId) => {
         console.error(`❌ Erro ao deletar filme ${movieId}:`, error);
         return false;
     }
-}
+};
 
 export const resetFeedbacks = async () => {
     const token = getToken();
@@ -539,21 +551,23 @@ export const resetFeedbacks = async () => {
 
         const data = await res.json();
 
+        console.log("Dados recebidos:", data); // Adicionei este log para depuração
+
         if (data.status === "ok") {
             console.log("🔍 Feedbacks resetados com sucesso");
-            return true;
+            return "ok";
         } else if (data.status === "no feedbacks") {
             console.log("⚠️ Erro ao resetar feedbacks:", data.message);
-            return false;
+            return "no feedbacks";
         } else {
             console.log("⚠️ Formato de resposta inesperado:", data);
-            return false;
+            return "erro";
         }
     } catch (error) {
         console.error("❌ Erro ao resetar feedbacks:", error);
         return false;
     }
-}
+};
 
 export const getRandomRecomendationSuprise = async () => {
     const token = getToken();
@@ -581,4 +595,4 @@ export const getRandomRecomendationSuprise = async () => {
         console.error("Erro ao buscar recomendação:", error);
         throw error;
     }
-}
+};
