@@ -2,12 +2,12 @@ import { movieCache } from "./cache";
 
 // Função auxiliar para obter o token
 const getToken = () => {
-    return localStorage.getItem('token');
+    return localStorage.getItem("token");
 };
 
 export const fetchMovies = async (page = 1) => {
     const token = getToken();
-    
+
     // Usamos o token como chave do cache em vez do ID
     if (page === 1) {
         const cached = movieCache.get(token);
@@ -21,9 +21,9 @@ export const fetchMovies = async (page = 1) => {
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies`, {
         method: "POST",
-        headers: { 
+        headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ page }),
     });
@@ -31,7 +31,7 @@ export const fetchMovies = async (page = 1) => {
     if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
 
     const { movies } = await res.json();
-    const processed = movies.map(movie => ({
+    const processed = movies.map((movie) => ({
         id: movie.id,
         title: movie.title,
         image: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
@@ -50,12 +50,12 @@ export const fetchMovies = async (page = 1) => {
 
 export const sendFeedback = async (movieId, liked) => {
     const token = getToken();
-    
+
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback`, {
         method: "POST",
-        headers: { 
+        headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
             movieId: movieId,
@@ -67,120 +67,177 @@ export const sendFeedback = async (movieId, liked) => {
 export const gerarRecomendacao = async () => {
     const token = getToken();
     console.log("🔁 Gerando recomendação...");
-    
+
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/recommendation`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({}),
-      });
-      
-      if (!res.ok) throw new Error("Erro ao gerar recomendação");
-      
-      const data = await res.json();
-      console.log("📬 Recomendação recebida:", data.recomendacao);
-      return data.recomendacao; // Return the recommendation object instead of showing an alert
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({}),
+            }
+        );
+
+        if (!res.ok) throw new Error("Erro ao gerar recomendação");
+
+        const data = await res.json();
+        console.log("📬 Recomendação recebida:", data.recomendacao);
+        return data.recomendacao; // Return the recommendation object instead of showing an alert
     } catch (error) {
-      console.error("Erro ao buscar recomendação:", error);
-      throw error;
+        console.error("Erro ao buscar recomendação:", error);
+        throw error;
     }
 };
-
 
 export const fetchRecommendations = async () => {
     const token = getToken();
     console.log("📡 Buscando histórico de recomendações");
-    
+
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/recommendations`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({}),
-      });
-      
-      if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
-      
-      const data = await res.json();
-      
-      if (data.status === "ok" && Array.isArray(data.recommendations)) {
-        console.log(`🔍 ${data.recommendations.length} recomendações encontradas`);
-        return data.recommendations;
-      } else {
-        console.log("⚠️ Formato de resposta inesperado:", data);
-        return [];
-      }
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendations`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({}),
+            }
+        );
+
+        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+
+        const data = await res.json();
+        console.log("📬 Histórico de recomendações recebido:", data);
+
+        if (data.status === "ok" && Array.isArray(data.movies)) {
+            console.log(`🔍 ${data.movies.length} recomendações encontradas`);
+            return data.movies;
+        } else {
+            console.log("⚠️ Formato de resposta inesperado:", data);
+            return [];
+        }
     } catch (error) {
-      console.error("❌ Erro ao buscar recomendações:", error);
-      throw error;
+        console.error("❌ Erro ao buscar recomendações:", error);
+        throw error;
     }
-  };
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export const fetchUsers = async () => {
     const token = getToken();
     console.log("📡 Buscando usuários da plataforma");
-    
+
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      
-      if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
-      
-      const data = await res.json();
-      
-      if (data.status === "ok" && Array.isArray(data.users)) {
-        console.log(`🔍 ${data.users.length} usuários encontrados`);
-        return data.users;
-      } else {
-        console.log("⚠️ Formato de resposta inesperado:", data);
-        return [];
-      }
-    } catch (error) {
-      console.error("❌ Erro ao buscar usuários:", error);
-      throw error;
-    }
-  };
-  
-  export const fetchUserProfile = async (userId) => {
-    const token = getToken();
-    console.log(`📡 Buscando informações básicas do usuário: ${userId}`);
-    
-    try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile/${userId}/`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/users`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
             }
-        });
-      
+        );
+
         if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
-        
+
+        const data = await res.json();
+
+        if (data.status === "ok" && Array.isArray(data.users)) {
+            console.log(`🔍 ${data.users.length} usuários encontrados`);
+            return data.users;
+        } else {
+            console.log("⚠️ Formato de resposta inesperado:", data);
+            return [];
+        }
+    } catch (error) {
+        console.error("❌ Erro ao buscar usuários:", error);
+        throw error;
+    }
+};
+
+export const fetchMyUserProfile = async () => {
+    const token = getToken();
+    console.log(`📡 Buscando informações básicas do usuário:`);
+
+    try {
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/myprofile`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+
         const data = await res.json();
 
         console.log("Dados recebidos:", data); // Adicionei este log para depuração
-        
+
         if (data.status === "ok") {
-            console.log(`🔍 Informações básicas do usuário ${userId} carregadas`);
+            console.log(
+                `🔍 Informações básicas do usuário ${userId} carregadas`
+            );
             return data.user;
         } else {
             console.log("⚠️ Formato de resposta inesperado:", data);
             throw new Error("Formato de resposta inválido do servidor");
         }
     } catch (error) {
-        console.error(`❌ Erro ao buscar informações do usuário ${userId}:`, error);
+        console.error(
+            `❌ Erro ao buscar informações do usuário ${userId}:`,
+            error
+        );
+        throw error;
+    }
+};
+
+export const fetchUserProfile = async (userId) => {
+    const token = getToken();
+    console.log(`📡 Buscando informações básicas do usuário: ${userId}`);
+
+    try {
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/profile/${userId}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+
+        const data = await res.json();
+
+        console.log("Dados recebidos:", data); // Adicionei este log para depuração
+
+        if (data.status === "ok") {
+            console.log(
+                `🔍 Informações básicas do usuário ${userId} carregadas`
+            );
+            return data.user;
+        } else {
+            console.log("⚠️ Formato de resposta inesperado:", data);
+            throw new Error("Formato de resposta inválido do servidor");
+        }
+    } catch (error) {
+        console.error(
+            `❌ Erro ao buscar informações do usuário ${userId}:`,
+            error
+        );
         throw error;
     }
 };
@@ -189,20 +246,23 @@ export const fetchUsers = async () => {
 export const fetchUserFavorites = async (userId) => {
     const token = getToken();
     console.log(`📡 Buscando filmes favoritos do usuário: ${userId}`);
-    
+
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/favorites`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/favorites`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
             }
-        });
-      
+        );
+
         if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
-        
+
         const data = await res.json();
-        
+
         if (data.status === "ok") {
             console.log(`🔍 Filmes favoritos do usuário ${userId} carregados`);
             return data.movies || [];
@@ -211,7 +271,10 @@ export const fetchUserFavorites = async (userId) => {
             return [];
         }
     } catch (error) {
-        console.error(`❌ Erro ao buscar filmes favoritos do usuário ${userId}:`, error);
+        console.error(
+            `❌ Erro ao buscar filmes favoritos do usuário ${userId}:`,
+            error
+        );
         return [];
     }
 };
@@ -220,20 +283,23 @@ export const fetchUserFavorites = async (userId) => {
 export const fetchUserRecents = async (userId) => {
     const token = getToken();
     console.log(`📡 Buscando filmes recentes do usuário: ${userId}`);
-    
+
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/recents`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/watched`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
             }
-        });
-      
+        );
+
         if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
-        
+
         const data = await res.json();
-        
+
         if (data.status === "ok") {
             console.log(`🔍 Filmes recentes do usuário ${userId} carregados`);
             return data.movies || [];
@@ -242,7 +308,10 @@ export const fetchUserRecents = async (userId) => {
             return [];
         }
     } catch (error) {
-        console.error(`❌ Erro ao buscar filmes recentes do usuário ${userId}:`, error);
+        console.error(
+            `❌ Erro ao buscar filmes recentes do usuário ${userId}:`,
+            error
+        );
         return [];
     }
 };
@@ -251,32 +320,209 @@ export const fetchUserRecents = async (userId) => {
 export const fetchUserRecommended = async (userId) => {
     const token = getToken();
     console.log(`📡 Buscando filmes recomendados do usuário: ${userId}`);
-    
+
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/recommended`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/recommended`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
             }
-        });
-      
+        );
+
         if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
-        
+
         const data = await res.json();
 
         console.log("Dados recebidos:", data); // Adicionei este log para depuração
-        
+
         if (data.status === "ok") {
-            console.log(`🔍 Filmes recomendados do usuário ${userId} carregados`);
+            console.log(
+                `🔍 Filmes recomendados do usuário ${userId} carregados`
+            );
             return data.movies || [];
         } else {
             console.log("⚠️ Formato de resposta inesperado:", data);
             return [];
         }
     } catch (error) {
-        console.error(`❌ Erro ao buscar filmes recomendados do usuário ${userId}:`, error);
+        console.error(
+            `❌ Erro ao buscar filmes recomendados do usuário ${userId}:`,
+            error
+        );
         return [];
     }
 };
 
+// Endpoint para favoritar um filme recomendado
+export const updatefavoriteMovie = async (movieId, favorite) => {
+    const token = getToken();
+    console.log(`⭐ Favoritando filme: ${movieId}`);
+
+    try {
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation/favorite`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ movieId, favorite }), 
+            }
+        );
+
+        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+
+        const data = await res.json();
+
+        if (data.status === "ok") {
+            console.log(`🔍 Filme ${movieId} favoritado com sucesso`);
+            return true;
+        } else {
+            console.log("⚠️ Formato de resposta inesperado:", data);
+            return false;
+        }
+    } catch (error) {
+        console.error(`❌ Erro ao favoritar filme ${movieId}:`, error);
+        return false;
+    }
+};
+
+export const updateWatchlistMovie = async (movieId, watched) => {
+    const token = getToken();
+    console.log(`📝 Adicionando filme à watchlist: ${movieId}`);
+
+    try {
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation/watched`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ movieId, watched }), 
+            }
+        );
+
+        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+
+        const data = await res.json();
+
+        if (data.status === "ok") {
+            console.log(`🔍 Filme ${movieId} adicionado à watchlist com sucesso`);
+            return true;
+        } else {
+            console.log("⚠️ Formato de resposta inesperado:", data);
+            return false;
+        }
+    } catch (error) {
+        console.error(
+            `❌ Erro ao adicionar filme ${movieId} à watchlist:`,
+            error
+        );
+        return false;
+    }
+}
+
+export const deleteMovie = async (movieId) => {
+    const token = getToken();
+    console.log(`🗑️ Deletando filme: ${movieId}`);
+
+    try {
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation/delete`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ movieId }),
+            }
+        );
+
+        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+
+        const data = await res.json();
+
+        if (data.status === "ok") {
+            console.log(`🔍 Filme ${movieId} deletado com sucesso`);
+            return true;
+        } else {
+            console.log("⚠️ Formato de resposta inesperado:", data);
+            return false;
+        }
+    } catch (error) {
+        console.error(`❌ Erro ao deletar filme ${movieId}:`, error);
+        return false;
+    }
+}
+
+export const resetFeedbacks = async () => {
+    const token = getToken();
+    console.log("🗑️ Resetando todos os feedbacks do usuário");
+
+    try {
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/feedbacks/reset`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+
+        const data = await res.json();
+
+        if (data.status === "ok") {
+            console.log("🔍 Feedbacks resetados com sucesso");
+            return true;
+        } else if (data.status === "no feedbacks") {
+            console.log("⚠️ Erro ao resetar feedbacks:", data.message);
+            return false;
+        } else {
+            console.log("⚠️ Formato de resposta inesperado:", data);
+            return false;
+        }
+    } catch (error) {
+        console.error("❌ Erro ao resetar feedbacks:", error);
+        return false;
+    }
+}
+
+export const getRandomRecomendationSuprise = async () => {
+    const token = getToken();
+    console.log("🎉 Surpresa! Gerando uma recomendação aleatória...");
+
+    try {
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation/surprise`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({}),
+            }
+        );
+
+        if (!res.ok) throw new Error("Erro ao gerar recomendação");
+
+        const data = await res.json();
+        console.log("📬 Recomendação recebida:", data.recomendacao);
+        return data.recomendacao; // Return the recommendation object instead of showing an alert
+    } catch (error) {
+        console.error("Erro ao buscar recomendação:", error);
+        throw error;
+    }
+}

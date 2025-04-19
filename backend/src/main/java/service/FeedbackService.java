@@ -108,4 +108,47 @@ public class FeedbackService {
         }
     }
 
+    public boolean clearAllById(int userId) {
+        try {
+            // Verificar se o feedback existe
+            if (feedbackDAO.getFeedbacksByUserId(userId) == null) {
+                System.err.println("Nenhum feedback encontrado para o usuário " + userId);
+                throw new NoSuchFieldException("Nenhum feedback encontrado");
+            }
+            
+            // Verificar se o usuário existe
+            if (userId <= 0) {
+                System.err.println("Usuário não encontrado");
+                throw new NoSuchFieldException("Usuário não encontrado");
+            }
+
+            // Verificar se ha feedbacks para o usuário
+            if (feedbackDAO.getFeedbacksByUserId(userId).isEmpty()) {
+                System.err.println("Nenhum feedback encontrado para o usuário " + userId);
+                throw new NoSuchFieldException("Nenhum feedback encontrado");
+            }
+
+            // Limpar todos os feedbacks do usuário
+            if (feedbackDAO.clearAllById(userId)) {
+                System.out.println("Feedbacks removidos com sucesso");
+            } else {
+                System.err.println("Erro ao remover feedbacks");
+                throw new SQLException("Erro ao remover feedbacks");
+            }
+            return true;
+        } catch (Exception e) {
+            // Tratar exceções específicas
+            if (e instanceof NoSuchFieldException) {
+                System.err.println("Erro: " + e.getMessage());
+                return false;
+            } else if (e instanceof SQLException) {
+                System.err.println("Erro: " + e.getMessage());
+                return false;
+            } else {
+                System.err.println("Erro inesperado: " + e.getMessage());
+            }
+            return false;
+        }
+    }
+
 }

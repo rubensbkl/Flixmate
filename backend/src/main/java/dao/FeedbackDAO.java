@@ -100,7 +100,7 @@ public class FeedbackDAO extends DAO {
      * @param userId O ID do usuário
      * @return true se a remoção foi bem-sucedida, false caso contrário
      */
-    public boolean clear(int userId) {
+    public boolean clearAllById(int userId) {
         boolean status = false;
         try {
             String sql = "DELETE FROM feedbacks WHERE user_id = ?";

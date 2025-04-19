@@ -96,3 +96,8 @@ INSERT INTO genres (id, name) VALUES
 (10752, 'Guerra'),
 (37, 'Faroeste')
 ON CONFLICT (id) DO NOTHING;
+
+-- Inserir usuários de exemplo
+INSERT INTO users (first_name, last_name, email, password, gender, content_filter) VALUES
+('admin', 'admin', 'admin@admin.com', '$2a$12$DCtnqzWD9NIe1Gt2hfmUvOCe/YCH9gAhg2n9sD6jnKQ2V1qWDk.B.', 'M', false)
+ON CONFLICT (email) DO NOTHING;

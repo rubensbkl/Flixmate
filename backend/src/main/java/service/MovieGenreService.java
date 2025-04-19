@@ -16,6 +16,8 @@ public class MovieGenreService {
         this.movieGenreDAO = movieGenreDAO;
     }
 
+
+
     /**
      * Registra múltiplos gêneros para um filme
      * 
@@ -25,6 +27,13 @@ public class MovieGenreService {
      */
     public boolean storeMovieGenres(JsonObject movieObj) {
         int movieId = movieObj.get("id").getAsInt();
+
+        // Verifica se o filme já tem os gêneros associados
+        if (movieGenreDAO.checkIfMovieHasGenres(movieId)) {
+            System.out.println("Filme já tem gêneros associados: " + movieId);
+            return true;
+        }
+
         List<Integer> genreIds = new ArrayList<>();
         for (int i = 0; i < movieObj.get("genres").getAsJsonArray().size(); i++) {
             genreIds.add(movieObj.get("genres").getAsJsonArray().get(i).getAsJsonObject().get("id").getAsInt());
@@ -52,9 +61,15 @@ public class MovieGenreService {
     public List<Integer> getGenreIdsForMovie(int movieId) {
         List<Integer> genreIds = new ArrayList<>();
         ArrayList<Genre> genres = movieGenreDAO.getGenresByMovieId(movieId);
-
+        System.out.println("Gêneros associados ao filme " + movieId + ": " + genres);
         for (Genre genre : genres) {
             genreIds.add(genre.getId());
+        }
+
+        if (genreIds.isEmpty()) {
+            System.out.println("Nenhum gênero encontrado para o filme " + movieId);
+        } else {
+            System.out.println("Gêneros encontrados para o filme " + movieId + ": " + genreIds);
         }
 
         return genreIds;
