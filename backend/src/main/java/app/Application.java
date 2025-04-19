@@ -403,48 +403,48 @@ public class Application {
             }
         });
 
-        post("/api/recommendation", (req, res) -> {
+        get("/api/recommendation", (req, res) -> {
             int userId = req.attribute("userId");
-
+        
             // Buscar interações do usuário
-            List<Feedback> interacoes = feedbackService.getFeedbacksByUserId(userId);
-            System.out.println("Interações do usuário: " + interacoes);
+            ArrayList<Feedback> interacoes = feedbackService.getFeedbacksByUserId(userId);
             // Buscar gêneros favoritos do usuário
-            List<Genre> generosFavoritos = userGenreService.getPreferredGenres(userId);
-
+            ArrayList<Genre> generosFavoritos = userGenreService.getPreferredGenres(userId);
+        
             System.out.println("Interações do usuário: " + interacoes);
             System.out.println("Gêneros favoritos do usuário: " + generosFavoritos);
-
-            // Verificar se o usuário tem interações
+        
+            // Se o usuário não tiver interações, retornamos um erro mais amigável
             if (interacoes == null || interacoes.isEmpty()) {
-                res.status(400);
-                return gson.toJson(Map.of("error", "Usuário sem interações"));
+                // Alteração: em vez de retornar erro, gerar recomendação baseada apenas em gêneros
+                System.out.println("Usuário sem interações, usando apenas gêneros favoritos");
+                // Podemos usar a recomendação surpresa neste caso
+                return controller.gerarRecomendacaoAleatoria(userId, generosFavoritos, res);
             }
-
+        
             // Verificar se o usuário tem gêneros favoritos
             if (generosFavoritos == null || generosFavoritos.isEmpty()) {
                 res.status(400);
                 return gson.toJson(Map.of("error", "Usuário sem gêneros favoritos"));
             }
-
+        
             // chamar controller para gerar recomendação
             System.out.println("Gerando recomendação...");
             JsonObject recomendacao = controller.gerarRecomendacaoPersonalizada(userId, interacoes, generosFavoritos, res);
-
+        
             if (recomendacao == null) {
                 res.status(500);
                 return gson.toJson(Map.of("error", "Erro ao gerar recomendação"));
             }
-
+        
             if (recomendacao.has("error")) {
                 res.status(400);
                 return gson.toJson(Map.of("error", recomendacao.get("error").getAsString()));
             }
-
-            // ENviar a recomendação
+        
+            // Enviar a recomendação
             res.status(200);
             return gson.toJson(Map.of("status", "ok", "recomendacao", recomendacao));
-
         });
 
         // Endpoint para suprise
@@ -461,127 +461,6 @@ public class Application {
             return controller.gerarRecomendacaoAleatoria(userId, generosFavoritos, res);
         });
 
-        // post("/api/recommendation", (req, res) -> {
-        // int userId = req.attribute("userId");
-
-        // List<Feedback> interacoes = feedbackService.getFeedbacksByUserId(userId);
-        // // Verifica se o usuário tem interações
-        // if (interacoes != null) {
-        // RecommendationHelper helper = new RecommendationHelper();
-        // for (Feedback feedback : interacoes) {
-        // int movieId = feedback.getMovieId();
-        // Movie movie = movieService.buscarFilmePorId(movieId);
-        // List<Genre> generos = movieGenreService.buscarGenerosDoFilme(movieId);
-
-        // helper.addMovieWithGenres(movie, generos);
-        // }
-
-        // }
-
-        // // Buscar gêneros favoritos do usuário
-        // List<Genre> generosFavoritos = userGenreService.getPreferredGenres(userId);
-
-        // // Obter filmes candidatos para recomendação
-        // JsonArray candidateMoviesJson =
-        // recommendationService.getCandidateMoviesJSON(interacoes);
-
-        // if (candidateMoviesJson == null || candidateMoviesJson.size() == 0) {
-        // // Se nao houver filmes candidatos, buscar 10 aleatórios
-
-        // }
-
-        // // Adicionar filmes candidatos ao helper
-        // for (int i = 0; i < candidateMoviesJson.size(); i++) {
-        // JsonObject movieJson = candidateMoviesJson.get(i).getAsJsonObject();
-
-        // // Extrair os dados básicos do filme a partir do JSON
-        // int movieId = movieJson.get("id").getAsInt();
-        // String title = movieJson.get("title").getAsString();
-        // String releaseDate = movieJson.has("release_date") ?
-        // movieJson.get("release_date").getAsString() : "";
-        // String originalLanguage = movieJson.get("original_language").getAsString();
-        // double popularity = movieJson.get("popularity").getAsDouble();
-        // boolean adult = movieJson.get("adult").getAsBoolean();
-        // // Adicionar à lista de candidatos
-
-        // Movie movie = new Movie(movieId, title, releaseDate, originalLanguage,
-        // popularity, adult);
-
-        // helper.addCandidateMovieId(movieId);
-
-        // // Processar gêneros do JSON
-        // List<Genre> genres = new ArrayList<>();
-        // if (movieJson.has("genre_ids") && movieJson.get("genre_ids").isJsonArray()) {
-        // JsonArray genreIdsJson = movieJson.getAsJsonArray("genre_ids");
-        // for (int j = 0; j < genreIdsJson.size(); j++) {
-        // int genreId = genreIdsJson.get(j).getAsInt();
-        // // Buscar detalhes do gênero pelo ID
-        // Genre genre = genreService.getGenreById(genreId);
-        // if (genre != null) {
-        // genres.add(genre);
-        // }
-        // }
-        // }
-
-        // // Adicionar o filme com seus gêneros ao helper
-        // helper.addMovieWithGenres(movie, genres);
-        // }
-
-        // // Verificar se temos dados suficientes para gerar recomendação
-        // if (!helper.hasEnoughDataForRecommendation()) {
-        // res.status(400);
-        // return gson.toJson(Map.of("error", "Dados insuficientes para gerar
-        // recomendação"));
-        // }
-
-        // try {
-        // System.out.println("Chamando IA para gerar recomendação...");
-        // int recommendedMovieId = ai.gerarRecomendacao(interacoes, generosFavoritos,
-        // helper);
-        // System.out.println("ID do filme recomendado: " + recommendedMovieId);
-
-        // System.out.println("Limpando interações do usuário...");
-        // boolean clearFeedback = feedbackService.clearAllById(userId);
-        // System.out.println("Resultado da limpeza: " + clearFeedback);
-
-        // if (!clearFeedback) {
-        // res.status(500);
-        // return gson.toJson(Map.of("error", "Erro ao limpar interações"));
-        // }
-
-        // // Limpar o helper depois de usar
-        // helper.clear();
-        // // Checar se o filme ja existe no banco de dados
-        // Movie existingMovie = movieService.buscarFilmePorId(recommendedMovieId);
-        // JsonObject movieObj;
-        // if (existingMovie != null) {
-        // System.out.println("Filme já existe no banco de dados: " + existingMovie);
-        // return gson.toJson(Map.of("status", "ok", "recomendacao", existingMovie));
-        // } else {
-        // System.out.println("Filme não encontrado no banco de dados, buscando na
-        // API...");
-        // movieObj = tmdb.getMovieDetails(recommendedMovieId);
-        // // Armazenar o filme no banco de dados
-        // boolean storedRecomendation = movieService.storeMovie(movieObj);
-        // System.out.println("Filme armazenado: " + storedRecomendation);
-        // }
-        // boolean storedGenres = movieGenreService.storeMovieGenres(movieObj);
-
-        // // Armazenar a recomendação no banco de dados
-        // boolean storedRecommendation =
-        // recommendationService.storeRecommendation(userId, recommendedMovieId);
-
-        // System.out.println("Recomendação armazenada: " + storedRecommendation);
-
-        // return gson.toJson(Map.of("status", "ok", "recomendacao", movieObj));
-        // } catch (Exception e) {
-        // System.out.println("Erro ao gerar recomendação:");
-        // e.printStackTrace();
-        // res.status(500);
-        // return gson.toJson(Map.of("error", "Erro ao gerar recomendação"));
-        // }
-
-        // });
 
         // Endpoint para classifcar filmes favoritos de recomendações
         post("/api/recommendation/favorite", (req, res) -> {
@@ -810,7 +689,6 @@ public class Application {
             }
         });
 
-        // Endpoint para listar todos os usuários
         get("/api/users", (req, res) -> {
             try {
                 int currentUserId = req.attribute("userId");
@@ -844,11 +722,106 @@ public class Application {
             }
         });
 
-        // Endpoint para pegar filmes recomendados marcados como assistidos por
-        // determinado usuário
-        get("/api/users/:userId/watched", (req, res) -> {
+        get("/api/me", (req, res) -> {
             try {
                 int targetUserId = req.attribute("userId");
+
+                // Buscar o usuário pelo ID
+                User user = userService.getUserById(targetUserId);
+
+                if (user == null) {
+                    res.status(404);
+                    return gson.toJson(Map.of("error", "Usuário não encontrado"));
+                }
+
+                // Apenas informações básicas do usuário
+                Map<String, Object> userData = Map.of(
+                        "id", user.getId(),
+                        "firstName", user.getFirstName(),
+                        "lastName", user.getLastName(),
+                        "email", user.getEmail(),
+                        "gender", String.valueOf(user.getGender())
+                );
+
+                return gson.toJson(Map.of("status", "ok", "user", userData));
+            } catch (NumberFormatException e) {
+                res.status(400);
+                return gson.toJson(Map.of("error", "ID de usuário inválido"));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao buscar informações do usuário: " + e.getMessage()));
+            }
+        });
+
+        get("/api/private", (req, res) -> {
+            try {
+                int targetUserId = req.attribute("userId");
+
+                // Buscar o usuário pelo ID
+                User user = userService.getUserById(targetUserId);
+
+                if (user == null) {
+                    res.status(404);
+                    return gson.toJson(Map.of("error", "Usuário não encontrado"));
+                }
+
+                // Apenas informações básicas do usuário
+                Map<String, Object> userData = Map.of(
+                        "id", user.getId(),
+                        "firstName", user.getFirstName(),
+                        "lastName", user.getLastName(),
+                        "email", user.getEmail(),
+                        "gender", String.valueOf(user.getGender()),
+                        "contentFilter", user.isAdult() ? "Sim" : "Não"
+                );
+
+                return gson.toJson(Map.of("status", "ok", "user", userData));
+            } catch (NumberFormatException e) {
+                res.status(400);
+                return gson.toJson(Map.of("error", "ID de usuário inválido"));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao buscar informações do usuário: " + e.getMessage()));
+            }
+        });
+
+
+        get("/api/profile/:userId", (req, res) -> {
+            try {
+                int targetUserId = Integer.parseInt(req.params("userId"));
+
+                // Buscar o usuário pelo ID
+                User user = userService.getUserById(targetUserId);
+
+                if (user == null) {
+                    res.status(404);
+                    return gson.toJson(Map.of("error", "Usuário não encontrado"));
+                }
+
+                // Apenas informações básicas do usuário
+                Map<String, Object> userData = Map.of(
+                        "id", user.getId(),
+                        "firstName", user.getFirstName(),
+                        "lastName", user.getLastName(),
+                        "email", user.getEmail(),
+                        "gender", String.valueOf(user.getGender()));
+
+                return gson.toJson(Map.of("status", "ok", "user", userData));
+            } catch (NumberFormatException e) {
+                res.status(400);
+                return gson.toJson(Map.of("error", "ID de usuário inválido"));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao buscar informações do usuário: " + e.getMessage()));
+            }
+        });
+
+        get("/api/profile/:userId/watched", (req, res) -> {
+            try {
+                int targetUserId = Integer.parseInt(req.params("userId"));
 
                 // Prevent SQL injection
                 if (targetUserId <= 0) {
@@ -888,11 +861,9 @@ public class Application {
             }
         });
 
-        // Endpoint para pegar filmes recomendados marcados como favoritos por
-        // determinado usuário
-        get("/api/users/:userId/favorites", (req, res) -> {
+        get("/api/profile/:userId/favorites", (req, res) -> {
             try {
-                int targetUserId = req.attribute("userId");
+                int targetUserId = Integer.parseInt(req.params("userId"));
 
                 // Prevent SQL injection
                 if (targetUserId <= 0) {
@@ -933,71 +904,9 @@ public class Application {
             }
         });
 
-        get("/api/myprofile", (req, res) -> {
+        get("/api/profile/:userId/recommended", (req, res) -> {
             try {
-                int targetUserId = req.attribute("userId");
-
-                // Buscar o usuário pelo ID
-                User user = userService.getUserById(targetUserId);
-
-                if (user == null) {
-                    res.status(404);
-                    return gson.toJson(Map.of("error", "Usuário não encontrado"));
-                }
-
-                // Apenas informações básicas do usuário
-                Map<String, Object> userData = Map.of(
-                        "id", user.getId(),
-                        "firstName", user.getFirstName(),
-                        "lastName", user.getLastName(),
-                        "email", user.getEmail(),
-                        "gender", String.valueOf(user.getGender()));
-
-                return gson.toJson(Map.of("status", "ok", "user", userData));
-            } catch (NumberFormatException e) {
-                res.status(400);
-                return gson.toJson(Map.of("error", "ID de usuário inválido"));
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.status(500);
-                return gson.toJson(Map.of("error", "Erro ao buscar informações do usuário: " + e.getMessage()));
-            }
-        });
-
-        get("/api/profile/:userId", (req, res) -> {
-            try {
-                int targetUserId = req.attribute("userId");
-
-                // Buscar o usuário pelo ID
-                User user = userService.getUserById(targetUserId);
-
-                if (user == null) {
-                    res.status(404);
-                    return gson.toJson(Map.of("error", "Usuário não encontrado"));
-                }
-
-                // Apenas informações básicas do usuário
-                Map<String, Object> userData = Map.of(
-                        "id", user.getId(),
-                        "firstName", user.getFirstName(),
-                        "lastName", user.getLastName(),
-                        "email", user.getEmail(),
-                        "gender", String.valueOf(user.getGender()));
-
-                return gson.toJson(Map.of("status", "ok", "user", userData));
-            } catch (NumberFormatException e) {
-                res.status(400);
-                return gson.toJson(Map.of("error", "ID de usuário inválido"));
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.status(500);
-                return gson.toJson(Map.of("error", "Erro ao buscar informações do usuário: " + e.getMessage()));
-            }
-        });
-
-        get("/api/users/:userId/recommended", (req, res) -> {
-            try {
-                int targetUserId = req.attribute("userId");
+                int targetUserId = Integer.parseInt(req.params("userId"));
 
                 // Prevent SQL injection
                 if (targetUserId <= 0) {
