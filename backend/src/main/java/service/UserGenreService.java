@@ -1,6 +1,7 @@
 package service;
 
 import java.util.List;
+import java.util.ArrayList;
 
 import com.google.gson.JsonObject;
 
@@ -34,7 +35,7 @@ public class UserGenreService {
     }
 
     // Create a method to get the preferred genres of a user
-    public List<Genre> getPreferredGenres(int userId) {
+    public ArrayList<Genre> getPreferredGenres(int userId) {
         return userGenreDAO.getPreferredGenres(userId);
     }
 

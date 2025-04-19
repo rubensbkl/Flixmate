@@ -2,6 +2,7 @@ package service;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.ArrayList;
 
 import dao.FeedbackDAO;
 import model.Feedback;
@@ -87,10 +88,10 @@ public class FeedbackService {
     }
 
     // feedbackDAO.getFeedbacksByUserId
-    public List<Feedback> getFeedbacksByUserId(int userId) {
+    public ArrayList<Feedback> getFeedbacksByUserId(int userId) {
         try {
             // Verificar se o feedback existe
-            List<Feedback> feedbacks = feedbackDAO.getFeedbacksByUserId(userId);
+            ArrayList<Feedback> feedbacks = feedbackDAO.getFeedbacksByUserId(userId);
             if (feedbacks == null || feedbacks.isEmpty()) {
                 System.err.println("Nenhum feedback encontrado para o usuário " + userId);
                 throw new NoSuchFieldException("Nenhum feedback encontrado");

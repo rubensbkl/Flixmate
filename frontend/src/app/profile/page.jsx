@@ -4,18 +4,17 @@ import Navbar from "@/components/Navbar";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ScrollSection from "@/components/ScrollSection";
 import {
-    fetchMyUserProfile,
+    fetchMe,
     fetchUserFavorites,
     fetchUserRecents,
-    fetchUserRecommended
+    fetchUserRecommended,
 } from "@/lib/api";
 import { UserIcon } from "@heroicons/react/24/outline";
-import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { PencilSquareIcon } from "@heroicons/react/24/outline";
 
-export default function ProfilePage() {
-    const { userId } = useParams();
-
+export default function MyProfilePage() {
     // Estados para os dados do usuário
     const [userInfo, setUserInfo] = useState(null);
     const [favoriteMovies, setFavoriteMovies] = useState([]);
@@ -31,34 +30,32 @@ export default function ProfilePage() {
     // Estado de erro
     const [error, setError] = useState(null);
 
+    const router = useRouter();
+
     // Carregar informações do usuário
     useEffect(() => {
         const loadUserInfo = async () => {
             try {
                 setLoadingUser(true);
-                const data = await fetchMyUserProfile(userId);
+                const data = await fetchMe();
                 setUserInfo(data);
             } catch (err) {
                 console.error("Erro ao buscar informações do usuário:", err);
-                setError(
-                    "Não foi possível carregar as informações do usuário."
-                );
+                setError("Não foi possível carregar as informações do usuário.");
             } finally {
                 setLoadingUser(false);
             }
         };
 
-        if (userId) {
-            loadUserInfo();
-        }
-    }, [userId]);
+        loadUserInfo();
+    }, []);
 
     // Carregar filmes favoritos
     useEffect(() => {
         const loadFavorites = async () => {
             try {
                 setLoadingFavorites(true);
-                const movies = await fetchUserFavorites(userId);
+                const movies = await fetchUserFavorites(userInfo.id);
                 setFavoriteMovies(movies);
             } catch (err) {
                 console.error("Erro ao buscar filmes favoritos:", err);
@@ -67,17 +64,17 @@ export default function ProfilePage() {
             }
         };
 
-        if (userId && userInfo) {
+        if (userInfo) {
             loadFavorites();
         }
-    }, [userId, userInfo]);
+    }, [userInfo]);
 
     // Carregar filmes recentes
     useEffect(() => {
         const loadRecents = async () => {
             try {
                 setLoadingRecents(true);
-                const movies = await fetchUserRecents(userId);
+                const movies = await fetchUserRecents(userInfo.id);
                 setRecentMovies(movies);
             } catch (err) {
                 console.error("Erro ao buscar filmes recentes:", err);
@@ -86,17 +83,17 @@ export default function ProfilePage() {
             }
         };
 
-        if (userId && userInfo) {
+        if (userInfo) {
             loadRecents();
         }
-    }, [userId, userInfo]);
+    }, [userInfo]);
 
     // Carregar filmes recomendados
     useEffect(() => {
         const loadRecommended = async () => {
             try {
                 setLoadingRecommended(true);
-                const movies = await fetchUserRecommended(userId);
+                const movies = await fetchUserRecommended(userInfo.id);
                 setRecommendedMovies(movies);
             } catch (err) {
                 console.error("Erro ao buscar filmes recomendados:", err);
@@ -105,10 +102,10 @@ export default function ProfilePage() {
             }
         };
 
-        if (userId && userInfo) {
+        if (userInfo) {
             loadRecommended();
         }
-    }, [userId, userInfo]);
+    }, [userInfo]);
 
     // Componente para exibir o loading do perfil
     if (loadingUser) {
@@ -162,25 +159,26 @@ export default function ProfilePage() {
                     <div className="max-w-4xl mx-auto px-4 md:px-8 py-6">
                         <div className="bg-white mb-8 pt-2">
                             <div className="flex items-center gap-4">
-                                <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
-                                    {userInfo.profileImage ? (
-                                        <img
-                                            src={userInfo.profileImage}
-                                            alt="Foto de perfil"
-                                            className="h-full w-full object-cover"
-                                        />
-                                    ) : (
-                                        <UserIcon className="h-8 w-8 text-gray-400" />
-                                    )}
-                                </div>
-                                <div>
-                                    <h1 className="text-xl font-bold text-gray-800">
-                                        {userInfo.firstName} {userInfo.lastName}
-                                    </h1>
-                                    <p className="text-gray-500 text-sm">
-                                        {userInfo.email}
-                                    </p>
-                                </div>
+                            <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+                                {userInfo.profileImage ? (
+                                <img src={userInfo.profileImage} alt="Foto de perfil" className="h-full w-full object-cover" />
+                                ) : (
+                                <UserIcon className="h-8 w-8 text-gray-400" />
+                                )}
+                            </div>
+                            <div className="flex-1">
+                                <h1 className="text-xl font-bold text-gray-800">
+                                {userInfo.firstName} {userInfo.lastName}
+                                </h1>
+                                <p className="text-gray-500 text-sm">{userInfo.email}</p>
+                            </div>
+                            <button
+                                onClick={() => router.push("/profile/edit")}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                            >
+                                <PencilSquareIcon className="h-5 w-5" />
+                                Editar Perfil
+                            </button>
                             </div>
                         </div>
 
