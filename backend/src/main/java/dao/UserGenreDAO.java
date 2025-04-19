@@ -92,8 +92,8 @@ public class UserGenreDAO extends DAO {
      * @param userId ID do usuário
      * @return Lista de objetos Genre com os detalhes dos gêneros preferidos
      */
-    public List<Genre> getPreferredGenres(int userId) {
-        List<Genre> genres = new ArrayList<>();
+    public ArrayList<Genre> getPreferredGenres(int userId) {
+        ArrayList<Genre> genres = new ArrayList<>();
         try {
             String sql = "SELECT g.id, g.name FROM genres g " +
                          "JOIN user_genres upg ON g.id = upg.genre_id " +

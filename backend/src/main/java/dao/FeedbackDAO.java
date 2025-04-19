@@ -47,8 +47,8 @@ public class FeedbackDAO extends DAO {
      * @param userId O ID do usuário
      * @return Lista de interações do usuário
      */
-    public List<Feedback> getFeedbacksByUserId(int userId) {
-        List<Feedback> interacoes = new ArrayList<>();
+    public ArrayList<Feedback> getFeedbacksByUserId(int userId) {
+        ArrayList<Feedback> interacoes = new ArrayList<>();
         try {
             String sql = "SELECT * FROM feedbacks WHERE user_id = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
