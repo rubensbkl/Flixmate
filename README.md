@@ -1,6 +1,6 @@
 # 🎥 Flixmate
 
-O **Flixmate** é um sistema de recomendação de filmes personalizado, que sugere títulos baseados nas preferências e avaliações dos usuários. A plataforma é composta por um backend em **Java** e um frontend moderno desenvolvido com **Next.js**, tudo orquestrado por **Docker**, garantindo fácil instalação e execução tanto em ambientes de desenvolvimento quanto em produção.
+O **Flixmate** é uma plataforma inteligente de recomendação de filmes, que utiliza **Inteligência Artificial** para sugerir títulos personalizados com base nas preferências e avaliações dos usuários. A aplicação combina um backend robusto em **Java**, um frontend dinâmico em **Next.js** e uma infraestrutura moderna baseada em **Docker**, garantindo fácil instalação e execução tanto em ambientes de desenvolvimento quanto em produção.
 
 ## 👥 Alunos integrantes da equipe
 
@@ -65,7 +65,6 @@ cd flixmate
 ### 2️⃣ Configurar variáveis de ambiente
 
 Personalize as environment keys no arquivo docker-compose.dev.yml ou docker-compose.yml conforme necessário.
-Você pode criar um arquivo .env na raiz ou editar diretamente no docker-compose.
 Exemplo:
 
 ````bash
@@ -75,7 +74,7 @@ JWT_SECRET=uma_chave_secreta_aqui
 
 ### 3️⃣ Rodar no ambiente de desenvolvimento
 
-Renomeie o arquivo docker-compose-example.dev.yml para docker-compose.dev.yml
+Renomeie o arquivo `docker-compose-example.dev.yml` para `docker-compose.dev.yml`
 
 ````bash
 mv docker-compose-example.dev.yml docker-compose.dev.yml
@@ -94,7 +93,7 @@ A aplicação será disponibilizada localmente:
 
 ### 4️⃣ Rodar no ambiente de produção
 
-Renomeie o arquivo docker-compose-example.yml para docker-compose.yml
+Renomeie o arquivo `docker-compose-example.yml` para `docker-compose.yml`
 
 ````bash
 mv docker-compose-example.yml docker-compose.yml
@@ -110,7 +109,7 @@ A aplicação será disponibilizada:
 
 - Frontend: <https://flixmate.com.br>
 - Backend: <https://flixmate.com/api>
-- Com Nginx configurado como proxy reverso e Certbot gerando certificados SSL automaticamente.
+- Com **Nginx** configurado como proxy reverso e **Certbot** gerando certificados SSL automaticamente.
 
 ## 📌 Notas
 
@@ -119,7 +118,7 @@ A aplicação será disponibilizada:
 
 ## 📃 Licença
 
-Este projeto é acadêmico e faz parte do Trabalho Interdisciplinar Integrado à Escola de Negócios (TIIEN) do curso de Administração da PUC Minas.
+Este projeto é acadêmico e faz parte do Trabalho Interdisciplinar Integrado à Escola de Negócios (**TIIEN**) do curso de Administração da **PUC Minas**.
 
 ## 📞 Contato
 
