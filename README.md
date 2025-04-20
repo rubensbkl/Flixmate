@@ -47,7 +47,6 @@ flixmate/
 │ └── src/
 ├── docker-compose.dev.yml
 ├── docker-compose.yml
-├── .env (personalizado) 
 └── README.md
 ````
 
@@ -109,6 +108,14 @@ Renomeie o arquivo `docker-compose-example.yml` para `docker-compose.yml`
 mv docker-compose-example.yml docker-compose.yml
 ````
 
+Altere a variável de ambiente `NEXT_PUBLIC_API_URL` em `docker-compose.yml` para o seu domínio
+
+````bash
+NEXT_PUBLIC_API_URL=https://your-domain.com
+````
+
+Configure o Nginx e o Certbot para utilizar o seu domínio e DNS apontar para um servidor com proxy reverso e certificado SSL automático.
+
 Execute o Docker Compose:
 
 ````bash
@@ -117,9 +124,8 @@ docker compose -f docker-compose.yml up --build
 
 A aplicação será disponibilizada:
 
-- Frontend: <https://flixmate.com.br>
-- Backend: <https://flixmate.com/api>
-- Com **Nginx** configurado como proxy reverso e **Certbot** gerando certificados SSL automaticamente.
+- Frontend: <https://your-domain.com>
+- Backend: <https://your-domain.com/api>
 
 ## 📌 Notas
 
