@@ -209,7 +209,7 @@ export default function Home() {
 
         // Proceed with reset if feedbackCount > 1
         console.log("Iniciando reset de matches...");
-        clearSession(); // Clear session immediately
+        // clearSession(); // Clear session immediately
 
         try {
             const data = await resetFeedbacks(); // Await the async call
@@ -227,8 +227,8 @@ export default function Home() {
 
             setFeedbackCount(0); // Reset local count
             currentPage.current = 1;
-            movieCache.clear(localStorage.getItem("token"));
-            await loadMovies(); // Reload movies
+            // movieCache.clear(localStorage.getItem("token"));
+            // await loadMovies(); // Reload movies
         } catch (error) {
             console.error("Falha na chamada para resetar feedbacks:", error);
             setErrorMessage(

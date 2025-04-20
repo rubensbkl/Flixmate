@@ -37,16 +37,16 @@ export default function Navbar() {
     };
 
     const linkClass = (path) =>
-        `flex items-center px-4 py-3 ${
-            pathname === path
-                ? "text-blue-600 bg-blue-50"
-                : "text-gray-700 hover:bg-gray-100"
+        `flex items-center px-4 py-3 ${pathname === path
+            ? "text-blue-600 bg-blue-50"
+            : "text-gray-700 hover:bg-gray-100"
         } rounded-lg transition-colors`;
 
     // Mobile bottom navigation
     if (isMobile) {
         return (
             <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center h-16 z-10 safe-area-bottom">
+
                 <Link
                     href="/"
                     className={`flex flex-col items-center justify-center p-2 ${
@@ -60,7 +60,7 @@ export default function Navbar() {
                 <Link
                     href="/search"
                     className={`flex flex-col items-center justify-center p-2 ${
-                        pathname === "/search"
+                        (pathname.startsWith("/profile/") || pathname === "/search") && !(pathname === "/profile/edit")
                             ? "text-blue-600"
                             : "text-gray-700"
                     }`}
@@ -72,7 +72,7 @@ export default function Navbar() {
                 <Link
                     href="/recommendations"
                     className={`flex flex-col items-center justify-center p-2 ${
-                        pathname === "/recommendations"
+                        pathname.startsWith("/recommendations")
                             ? "text-blue-600"
                             : "text-gray-700"
                     }`}
@@ -84,7 +84,7 @@ export default function Navbar() {
                 <Link
                     href={`/profile`}
                     className={`flex flex-col items-center justify-center p-2 ${
-                        pathname.startsWith("/profile")
+                        pathname === "/profile" || pathname === "/profile/edit"
                             ? "text-blue-600"
                             : "text-gray-700"
                     }`}
@@ -115,24 +115,46 @@ export default function Navbar() {
             </div>
 
             <nav className="flex-1 p-4 space-y-1">
-                <Link href="/" className={linkClass("/")}>
+                <Link
+                    href={`/`}
+                    className={
+                        pathname == "/"
+                            ? "flex items-center px-4 py-3 text-blue-600 bg-blue-50 rounded-lg transition-colors"
+                            : "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    }
+                >
                     <HomeIcon className="w-5 h-5 mr-3" />
                     Home
                 </Link>
-                <Link href="/search" className={linkClass("/search")}>
+                <Link
+                    href={`/search`}
+                    className={
+                        (pathname.startsWith("/profile/") || pathname == "/search") && !(pathname == "/profile/edit")
+                            ? "flex items-center px-4 py-3 text-blue-600 bg-blue-50 rounded-lg transition-colors"
+                            : "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    }
+                >
                     <MagnifyingGlassIcon className="w-5 h-5 mr-3" />
                     Buscar
                 </Link>
                 <Link
-                    href="/recommendations"
-                    className={linkClass("/recommendations")}
+                    href={`/recommendations`}
+                    className={
+                        pathname.startsWith("/recommendations")
+                            ? "flex items-center px-4 py-3 text-blue-600 bg-blue-50 rounded-lg transition-colors"
+                            : "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    }
                 >
                     <FilmIcon className="w-5 h-5 mr-3" />
                     Recomendações
                 </Link>
                 <Link
                     href={`/profile`}
-                    className={linkClass(`/profile`)}
+                    className={
+                        pathname == "/profile" || pathname == "/profile/edit"
+                            ? "flex items-center px-4 py-3 text-blue-600 bg-blue-50 rounded-lg transition-colors"
+                            : "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    }
                 >
                     <UserIcon className="w-5 h-5 mr-3" />
                     Meu Perfil
