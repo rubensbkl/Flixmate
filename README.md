@@ -125,7 +125,7 @@ Este projeto é acadêmico e faz parte do Trabalho Interdisciplinar Integrado à
 
 Para dúvidas, sugestões ou contribuições:
 
-- Bernardo Vieira Rocha
-- Carlos Eduardo de Melo Sabino
-- Felipe Costa Unsonst
-- Rubens Dias Bicalho
+- [Bernardo Vieira Rocha](https://github.com/bernardovieirarocha)
+- [Carlos Eduardo de Melo Sabino](https://github.com/cadumeloo)
+- [Felipe Costa Unsonst](https://github.com/felipeunsonst)
+- [Rubens Dias Bicalho](https://github.com/rubensbkl)
