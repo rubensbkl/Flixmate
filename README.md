@@ -68,8 +68,18 @@ Personalize as environment keys no arquivo docker-compose.dev.yml ou docker-comp
 Exemplo:
 
 ````bash
-TMDB_API_KEY=sua_api_key_aqui
-JWT_SECRET=uma_chave_secreta_aqui
+ENV=dev || production
+PORT=6789
+DB_HOST=your_db_host_here
+DB_NAME=your_db_name_here
+DB_PORT=5432
+DB_USER=your_db_user_here
+DB_PASSWORD=your_db_password_here
+JWT_SECRET=your_jwt_secret_here
+TMDB_API_KEY=your_tmdb_api_key_here
+AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint_here
+AZURE_OPENAI_API_KEY=your_azure_openai_api_key_here
+AZURE_OPENAI_DEPLOYMENT_NAME=your_azure_openai_deployment_name_here
 ````
 
 ### 3️⃣ Rodar no ambiente de desenvolvimento
@@ -118,7 +128,7 @@ A aplicação será disponibilizada:
 
 ## 📃 Licença
 
-Este projeto é acadêmico e faz parte do Trabalho Interdisciplinar Integrado à Escola de Negócios (**TIIEN**) do curso de Administração da **PUC Minas**.
+Este projeto é acadêmico e faz parte do Trabalho Interdisciplinar do curso de Ciência da Computação da **PUC Minas**.
 
 ## 📞 Contato
 
