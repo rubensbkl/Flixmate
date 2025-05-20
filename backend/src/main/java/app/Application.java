@@ -15,13 +15,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import controller.Controller;
 import dao.FeedbackDAO;
 import dao.GenreDAO;
 import dao.MovieDAO;
@@ -34,7 +34,6 @@ import model.Genre;
 import model.Movie;
 import model.Recommendation;
 import model.User;
-import service.AIService;
 import service.FeedbackService;
 import service.GenreService;
 import service.MovieGenreService;
@@ -43,7 +42,10 @@ import service.RecommendationService;
 import service.TMDBService;
 import service.UserGenreService;
 import service.UserService;
+import util.AiOutput;
+import util.FlixAi;
 import util.JWTUtil;
+import util.RecommendationHelper;
 
 public class Application {
 
@@ -121,7 +123,6 @@ public class Application {
 
         // Services
         TMDBService tmdb = new TMDBService(tmdbApiKey);
-        AIService ai = new AIService(azureOpenAIEndpoint, azureOpenAIKey, azureOpenAIDeploymentName);
         MovieGenreService movieGenreService = new MovieGenreService(movieGenreDAO);
         RecommendationService recommendationService = new RecommendationService(recommendationDAO, tmdb);
         MovieService movieService = new MovieService(movieDAO, movieGenreService, tmdb);
@@ -130,11 +131,9 @@ public class Application {
         UserService userService = new UserService(userDAO);
         GenreService genreService = new GenreService(genreDAO);
 
-        Controller controller = new Controller(tmdb, movieService, movieGenreService, recommendationService, ai,
-                genreService, feedbackService);
-
         // JWT Util
         JWTUtil jwt = new JWTUtil(jwtSecret);
+        RecommendationHelper helper = new RecommendationHelper();
 
         // Configurar a porta do servidor
         port(porta);
@@ -219,7 +218,7 @@ public class Application {
         post("/api/register", (req, res) -> {
             JsonObject requestBody = JsonParser.parseString(req.body()).getAsJsonObject();
 
-            // Extrair os dados do usuário
+            // Extrai dados do usuário
             User user = new User();
             user.setFirstName(requestBody.get("firstName").getAsString());
             user.setLastName(requestBody.get("lastName").getAsString());
@@ -228,31 +227,27 @@ public class Application {
             user.setGender(requestBody.get("gender").getAsString().charAt(0));
             user.setAdult(requestBody.get("isUserAdult").getAsBoolean());
 
-            // Extrair o array de gêneros favoritos
-            JsonArray favoriteGenresArray = requestBody.getAsJsonArray("favoriteGenres");
-            List<Integer> favoriteGenres = new ArrayList<>();
-            for (int i = 0; i < favoriteGenresArray.size(); i++) {
-                favoriteGenres.add(favoriteGenresArray.get(i).getAsInt());
-            }
-
-            System.out.println("Usuário recebido: " + user);
-            System.out.println("Gêneros favoritos: " + favoriteGenres);
-
-            // Verificações básicas
+            // Verificações do usuário
             if (user.getEmail() == null || user.getPassword() == null ||
                     user.getFirstName() == null || user.getLastName() == null ||
                     user.getGender() == '\0') {
                 res.status(400);
                 return gson.toJson(Map.of("error", "Todos os campos são obrigatórios"));
             }
-
-            // Verificar se o email já existe
+            
             if (userService.getUserByEmail(user.getEmail()) != null) {
                 res.status(400);
                 return gson.toJson(Map.of("error", "Email já cadastrado"));
             }
 
-            // Verificar se foram selecionados gêneros favoritos
+            // Extrair dados dos gêneros favoritos
+            JsonArray favoriteGenresArray = requestBody.getAsJsonArray("favoriteGenres");
+            List<Integer> favoriteGenres = new ArrayList<>();
+            for (int i = 0; i < favoriteGenresArray.size(); i++) {
+                favoriteGenres.add(favoriteGenresArray.get(i).getAsInt());
+            }
+
+            // Verificações dos gêneros favoritos
             if (favoriteGenres.isEmpty()) {
                 res.status(400);
                 return gson.toJson(Map.of("error", "Selecione pelo menos um gênero favorito"));
@@ -408,66 +403,6 @@ public class Application {
             }
         });
 
-        get("/api/recommendation", (req, res) -> {
-            int userId = req.attribute("userId");
-
-            // Buscar interações do usuário
-            ArrayList<Feedback> interacoes = feedbackService.getFeedbacksByUserId(userId);
-            // Buscar gêneros favoritos do usuário
-            ArrayList<Genre> generosFavoritos = userGenreService.getPreferredGenres(userId);
-
-            System.out.println("Interações do usuário: " + interacoes);
-            System.out.println("Gêneros favoritos do usuário: " + generosFavoritos);
-
-            // Se o usuário não tiver interações, retornamos um erro mais amigável
-            if (interacoes == null || interacoes.isEmpty()) {
-                // Alteração: em vez de retornar erro, gerar recomendação baseada apenas em
-                // gêneros
-                System.out.println("Usuário sem interações, usando apenas gêneros favoritos");
-                // Podemos usar a recomendação surpresa neste caso
-                return controller.gerarRecomendacaoAleatoria(userId, generosFavoritos, res);
-            }
-
-            // Verificar se o usuário tem gêneros favoritos
-            if (generosFavoritos == null || generosFavoritos.isEmpty()) {
-                res.status(400);
-                return gson.toJson(Map.of("error", "Usuário sem gêneros favoritos"));
-            }
-
-            // chamar controller para gerar recomendação
-            System.out.println("Gerando recomendação...");
-            JsonObject recomendacao = controller.gerarRecomendacaoPersonalizada(userId, interacoes, generosFavoritos,
-                    res);
-
-            if (recomendacao == null) {
-                res.status(500);
-                return gson.toJson(Map.of("error", "Erro ao gerar recomendação"));
-            }
-
-            if (recomendacao.has("error")) {
-                res.status(400);
-                return gson.toJson(Map.of("error", recomendacao.get("error").getAsString()));
-            }
-
-            // Enviar a recomendação
-            res.status(200);
-            return gson.toJson(Map.of("status", "ok", "recomendacao", recomendacao));
-        });
-
-        // Endpoint para suprise
-        post("/api/recommendation/surprise", (req, res) -> {
-            int userId = req.attribute("userId");
-
-            System.out.println("Gerando recomendação surpresa...");
-            // Buscar gêneros favoritos do usuário
-            List<Genre> generosFavoritos = userGenreService.getPreferredGenres(userId);
-
-            System.out.println("Gêneros favoritos do usuário: " + generosFavoritos);
-
-            // Gerar recomendação aleatória
-            return controller.gerarRecomendacaoAleatoria(userId, generosFavoritos, res);
-        });
-
         // Endpoint para classifcar filmes favoritos de recomendações
         post("/api/recommendation/favorite", (req, res) -> {
             try {
@@ -565,7 +500,7 @@ public class Application {
                 // Buscar cada filme no banco de dados e converter para mapa
                 for (Recommendation recommendation : recommendations) {
                     int movieId = recommendation.getMovieId();
-                    Movie movie = movieService.buscarFilmePorId(movieId);
+                    Movie movie = movieService.getMovieById(movieId);
 
                     if (movie != null) {
                         List<Integer> movieGenresIds = movieGenreService.getGenreIdsForMovie(movieId);
@@ -854,7 +789,7 @@ public class Application {
                 // Buscar cada filme no banco de dados e converter para mapa
                 for (Recommendation recommendation : recommendations) {
                     int movieId = recommendation.getMovieId();
-                    Movie movie = movieService.buscarFilmePorId(movieId);
+                    Movie movie = movieService.getMovieById(movieId);
 
                     // Verifica se o filme foi assistido
                     if (movie != null && recommendation.isWatched()) {
@@ -896,7 +831,7 @@ public class Application {
                 // Buscar cada filme no banco de dados e converter para mapa
                 for (Recommendation recommendation : recommendations) {
                     int movieId = recommendation.getMovieId();
-                    Movie movie = movieService.buscarFilmePorId(movieId);
+                    Movie movie = movieService.getMovieById(movieId);
 
                     // Verifica se o filme é favorito
                     if (movie != null && recommendation.isFavorite()) {
@@ -939,7 +874,7 @@ public class Application {
                 // Buscar cada filme no banco de dados e converter para mapa
                 for (Recommendation recommendation : recommendations) {
                     int movieId = recommendation.getMovieId();
-                    Movie movie = movieService.buscarFilmePorId(movieId);
+                    Movie movie = movieService.getMovieById(movieId);
                     if (movie != null) {
                         Map<String, Object> movieData = Map.of(
                                 "id", movie.getId(),
@@ -1150,6 +1085,112 @@ public class Application {
                 return gson.toJson(Map.of("error", "Erro ao atualizar perfil: " + e.getMessage()));
             }
         });
+
+        post("/api/recomendar", (req, res) -> {
+            int userId = req.attribute("userId");
+
+            ArrayList<Integer> recommendedMovies = recommendationService.getRecommendedMoviesIds(userId);
+
+            System.out.println("Filmes recomendados: " + recommendedMovies.size());
+
+            ArrayList<Integer> allMovies = movieService.getAllMoviesIds();
+
+            System.out.println("Filmes disponíveis: " + allMovies.size());
+
+            if (allMovies.isEmpty()) {
+                res.status(400);
+                return "{\"erro\": \"Não há filmes disponíveis para recomendar.\"}";
+            }
+
+            List<Integer> candidatos = allMovies.stream()
+                .filter(id -> !recommendedMovies.contains(id))
+                .limit(50)
+                .collect(Collectors.toList());
+
+            System.out.println("Filmes candidatos: " + candidatos.size());
+
+            if (candidatos.isEmpty()) {
+                res.status(400);
+                return "{\"erro\": \"Não há filmes não avaliados para recomendar.\"}";
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("{ \"Inputs\": { \"input1\": [");
+            for (int i = 0; i < candidatos.size(); i++) {
+                int movieId = candidatos.get(i);
+                sb.append(String.format("{\"user_id\": %d, \"movie_id\": %d}", userId, movieId));
+                if (i < candidatos.size() - 1) sb.append(",");
+            }
+            sb.append("] } }");
+            String inputJson = sb.toString();
+
+            String respostaJson = FlixAi.callAzureML(inputJson);
+
+            List<AiOutput> recomendacoes = helper.parseRespostaAzure(respostaJson);
+
+            if (recomendacoes.isEmpty()) {
+                res.status(404);
+                return "{\"erro\": \"Nenhuma recomendação recebida da IA.\"}";
+            }
+
+            recomendacoes.sort((a, b) -> Double.compare(b.predicted_rating, a.predicted_rating));
+            int melhorFilmeId = recomendacoes.get(0).movie_id;
+
+            boolean stored = recommendationService.storeRecommendation(userId, melhorFilmeId);
+            if (!stored) {
+                System.err.println("Erro ao salvar recomendação no banco para userId=" + userId + ", movieId=" + melhorFilmeId);
+            }
+
+            JsonObject movie = tmdb.getMovieDetails(melhorFilmeId);
+
+            if (movie == null) {
+                res.status(404);
+                return "{\"erro\": \"Filme não encontrado.\"}";
+            }
+
+            res.type("application/json");
+            return movie.toString();
+        });
+
+        get("/api/movie/:movieId", (req, res) -> {
+            System.out.println("Buscando informações do filme com ID: " + req.params("movieId"));
+            try {
+                int movieId = Integer.parseInt(req.params("movieId"));  
+                System.out.println("Buscando informações do filme com ID: " + movieId);
+
+                // Buscar o filme pelo ID
+                Movie movie = movieService.getMovieById(movieId);
+
+                System.out.println("Filme encontrado: " + movie);
+
+                if (movie == null) {
+                    res.status(404);
+                    return gson.toJson(Map.of("error", "Filme não encontrado"));
+                }
+
+                // Montar a resposta com os dados básicos do filme
+                Map<String, Object> movieData = Map.of(
+                    "id", movie.getId(),
+                    "title", movie.getTitle(),
+                    "overview", movie.getOverview(),
+                    "releaseDate", movie.getReleaseDate(),
+                    "posterPath", movie.getPosterPath()
+                );
+                System.out.println("Dados do filme: " + movieData);
+                res.type("application/json");
+                return gson.toJson(Map.of("status", "ok", "movie", movieData));
+
+            } catch (NumberFormatException e) {
+                res.status(400);
+                return gson.toJson(Map.of("error", "ID de filme inválido"));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao buscar informações do filme: " + e.getMessage()));
+            }
+        });
+
+
     }
 
 }

@@ -19,7 +19,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
     fetchMovies,
     gerarRecomendacao,
-    getRandomRecomendationSuprise,
     resetFeedbacks,
     sendFeedback,
 } from "@/lib/api";
@@ -241,7 +240,7 @@ export default function Home() {
     const surprise = async () => {
         setIsLoadingRecommendation(true);
 
-        const randomMovie = await getRandomRecomendationSuprise();
+        const randomMovie = await gerarRecomendacao();
         setRecommendedMovie(randomMovie);
         setTimeout(() => {
             setIsLoadingRecommendation(false);
@@ -260,7 +259,7 @@ export default function Home() {
     if (loading && movies.length === 0) {
         return (
             <ProtectedRoute>
-                <div className="bg-gray-100 flex flex-col md:flex-row h-screen">
+                <div className="flex flex-col md:flex-row h-screen">
                     <div
                         className={`${
                             isMobile ? "h-16" : "md:w-64 md:min-h-screen"
@@ -273,7 +272,7 @@ export default function Home() {
                         <div className="text-xl font-semibold mb-4">
                             Carregando filmes...
                         </div>
-                        <div className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
+                        <div className="w-16 h-16 border-t-4 border-accent border-solid rounded-full animate-spin"></div>
                     </main>
                 </div>
             </ProtectedRoute>
@@ -282,7 +281,7 @@ export default function Home() {
 
     return (
         <ProtectedRoute>
-            <div className="bg-gray-100 flex flex-col md:flex-row h-screen overflow-hidden">
+            <div className="flex flex-col md:flex-row h-screen overflow-hidden">
                 {/* Navbar - Fixed height for mobile, fixed width for desktop */}
                 <div
                     className={`${
@@ -293,12 +292,12 @@ export default function Home() {
                 </div>
 
                 {/* Conteúdo principal */}
-                <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] md:h-screen overflow-hidden">
+                <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] md:h-screen overflow-hidden "> 
                     <div className="flex-1 flex flex-col overflow-hidden">
                         {/* Barra de progresso */}
-                        <div className="relative h-1 w-full bg-gray-200">
+                        <div className="relative h-1 w-full bg-foreground">
                             <div
-                                className="absolute h-1 bg-black transition-all duration-300 ease-in-out"
+                                className="absolute h-1 bg-accent transition-all duration-300 ease-in-out"
                                 style={{
                                     width: `${(feedbackCount / 10) * 100}%`,
                                 }}
@@ -395,41 +394,41 @@ export default function Home() {
                             <button
                                 onClick={resetMatches}
                                 disabled={loading}
-                                className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
+                                className="w-14 h-14 flex items-center justify-center bg-foreground rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
                                 title="Reiniciar"
                             >
-                                <ArrowPathIcon className="w-6 h-6 text-gray-700" />
+                                <ArrowPathIcon className="w-6 h-6 text-accent" />
                             </button>
                             <button
                                 onClick={() => swipe("left")}
-                                className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
+                                className="w-14 h-14 flex items-center justify-center bg-foreground rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
                                 disabled={!canSwipe}
                                 title="Descurtir"
                             >
-                                <XMarkIcon className="w-6 h-6 text-red-700" />
+                                <XMarkIcon className="w-6 h-6 text-accent" />
                             </button>
                             <button
                                 onClick={() => swipe("right")}
-                                className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
+                                className="w-14 h-14 flex items-center justify-center bg-foreground rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
                                 disabled={!canSwipe}
                                 title="Curtir"
                             >
-                                <HeartIcon className="w-6 h-6 text-green-500" />
+                                <HeartIcon className="w-6 h-6 text-accent" />
                             </button>
                             <button
                                 onClick={surprise}
-                                className="w-14 h-14 flex items-center justify-center bg-yellow-400 rounded-full shadow-lg hover:scale-105 transition"
+                                className="w-14 h-14 flex items-center justify-center bg-foreground rounded-full shadow-lg hover:scale-105 transition"
                                 disabled={!canSwipe}
                                 title="Surpresa"
                             >
-                                <SparklesIcon className="w-6 h-6 text-gray-700" />
+                                <SparklesIcon className="w-6 h-6 text-accent" />
                             </button>
                         </div>
                     </div>
 
                     {/* Overlay de carregamento */}
                     <div
-                        className={`fixed inset-0 bg-gray-100 flex flex-col items-center justify-center transition-opacity duration-500 ${
+                        className={`fixed inset-0 flex flex-col bg-background items-center justify-center transition-opacity duration-500 ${
                             isLoadingRecommendation
                                 ? "opacity-100 z-50"
                                 : "opacity-0 pointer-events-none"

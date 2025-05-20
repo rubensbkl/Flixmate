@@ -34,7 +34,7 @@ public class FeedbackService {
             }
 
             // Verificar se o filme existe
-            if (movieService.buscarFilmePorId(movieId) == null) {
+            if (movieService.getMovieById(movieId) == null) {
                 System.err.println("Filme não encontrado");
                 throw new NoSuchFieldException("Filme não encontrado");
             }
@@ -149,6 +149,31 @@ public class FeedbackService {
                 System.err.println("Erro inesperado: " + e.getMessage());
             }
             return false;
+        }
+    }
+
+    public ArrayList<Integer> getRatedMoviesIds(int userId) {
+        ArrayList<Integer> feedbacksIds = new ArrayList<>();
+        try {
+            List<Feedback> feedbacks = feedbackDAO.getFeedbacksByUserId(userId);
+            if (feedbacks == null || feedbacks.isEmpty()) {
+                System.err.println("Nenhum feedback encontrado");
+                throw new NoSuchFieldException("Nenhum feedback encontrado");
+            }
+
+            for (Feedback feedback : feedbacks) {
+                feedbacksIds.add(feedback.getMovieId());
+            }
+            return feedbacksIds;
+        } catch (Exception e) {
+            // Tratar exceções específicas
+            if (e instanceof NoSuchFieldException) {
+                System.err.println("Erro: " + e.getMessage());
+                return null;
+            } else {
+                System.err.println("Erro inesperado: " + e.getMessage());
+                return null;
+            }
         }
     }
 

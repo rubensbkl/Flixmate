@@ -119,7 +119,7 @@ export default function UserProfilePage() {
                 </div>
                 <main className="flex-1 flex items-center justify-center">
                     <div className="text-center">
-                        <div className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin mx-auto mb-4"></div>
+                        <div className="w-16 h-16 border-t-4 border-accent border-solid rounded-full animate-spin mx-auto mb-4"></div>
                         <p className="text-xl font-medium text-gray-700">
                             Carregando perfil...
                         </p>
@@ -164,7 +164,7 @@ export default function UserProfilePage() {
                     <div className="max-w-4xl mx-auto px-4 md:px-8 py-6">
                         <div className="bg-white mb-8 pt-2">
                             <div className="flex items-center gap-4">
-                                <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+                                <div className="h-16 w-16 rounded-full flex items-center justify-center overflow-hidden">
                                     {userInfo.profileImage ? (
                                         <img
                                             src={userInfo.profileImage}

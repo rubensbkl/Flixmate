@@ -1,4 +1,5 @@
-// src/components/Navbar.jsx
+"use client";
+
 import { useAuth } from "@/contexts/AuthContext";
 import {
     ArrowLeftStartOnRectangleIcon,
@@ -36,21 +37,15 @@ export default function Navbar() {
         logout();
     };
 
-    const linkClass = (path) =>
-        `flex items-center px-4 py-3 ${pathname === path
-            ? "text-blue-600 bg-blue-50"
-            : "text-gray-700 hover:bg-gray-100"
-        } rounded-lg transition-colors`;
-
     // Mobile bottom navigation
     if (isMobile) {
         return (
-            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center h-16 z-10 safe-area-bottom">
+            <nav className="fixed flex bottom-0 left-0 right-0 bg-background border-t border-foreground justify-around items-center h-16 z-10 safe-area-bottom">
 
                 <Link
                     href="/"
                     className={`flex flex-col items-center justify-center p-2 ${
-                        pathname === "/" ? "text-blue-600" : "text-gray-700"
+                        pathname === "/" ? "text-secondary" : "text-primary"
                     }`}
                 >
                     <HomeIcon className="w-6 h-6" />
@@ -61,8 +56,8 @@ export default function Navbar() {
                     href="/search"
                     className={`flex flex-col items-center justify-center p-2 ${
                         (pathname.startsWith("/profile/") || pathname === "/search") && !(pathname === "/profile/edit")
-                            ? "text-blue-600"
-                            : "text-gray-700"
+                            ? "text-secondary"
+                            : "text-primary"
                     }`}
                 >
                     <MagnifyingGlassIcon className="w-6 h-6" />
@@ -73,8 +68,8 @@ export default function Navbar() {
                     href="/recommendations"
                     className={`flex flex-col items-center justify-center p-2 ${
                         pathname.startsWith("/recommendations")
-                            ? "text-blue-600"
-                            : "text-gray-700"
+                            ? "text-primary"
+                            : "text-secondary"
                     }`}
                 >
                     <FilmIcon className="w-6 h-6" />
@@ -85,8 +80,8 @@ export default function Navbar() {
                     href={`/profile`}
                     className={`flex flex-col items-center justify-center p-2 ${
                         pathname === "/profile" || pathname === "/profile/edit"
-                            ? "text-blue-600"
-                            : "text-gray-700"
+                            ? "text-primary"
+                            : "text-secondary"
                     }`}
                 >
                     <UserIcon className="w-6 h-6" />
@@ -95,7 +90,7 @@ export default function Navbar() {
                 {/* Logout */}
                 <button
                     onClick={handleLogout}
-                    className="flex text-red-700 flex-col items-center justify-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="flex text-red-700 flex-col items-center justify-center p-2 text-secondary hover:bg-foreground rounded-lg transition-colors"
                 >
                     <ArrowLeftStartOnRectangleIcon className="w-6 h-6" />
                     <span className="text-xs mt-1">Sair</span>
@@ -106,32 +101,30 @@ export default function Navbar() {
 
     // Desktop sidebar
     return (
-        <aside className="w-64 bg-white h-full border-r border-gray-200 flex flex-col">
-            <div className="p-4 border-b border-gray-200">
-                <h1 className="text-xl font-bold text-gray-800">FlixMate</h1>
-                <p className="text-sm text-gray-500">
+        <aside className="w-64 h-full flex flex-col">
+            <div className="p-4 pb-10">
+                <h1 className="text-xl font-bold text-primary">FlixMate</h1>
+                <p className="text-sm text-accent">
                     Seu assistente de filmes
                 </p>
             </div>
 
-            <nav className="flex-1 p-4 space-y-1">
+            <nav className="flex-1 space-y-2.5">
                 <Link
-                    href={`/`}
-                    className={
-                        pathname == "/"
-                            ? "flex items-center px-4 py-3 text-blue-600 bg-blue-50 rounded-lg transition-colors"
-                            : "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                    }
+                    href="/"
+                    className={`flex items-center px-4 py-3 rounded-r-xl transition-colors ${
+                        pathname === "/" ? "text-primary bg-foreground font-bold" : "text-secondary hover:bg-foreground"
+                    }`}
                 >
                     <HomeIcon className="w-5 h-5 mr-3" />
                     Home
                 </Link>
                 <Link
-                    href={`/search`}
+                    href="/search"
                     className={
                         (pathname.startsWith("/profile/") || pathname == "/search") && !(pathname == "/profile/edit")
-                            ? "flex items-center px-4 py-3 text-blue-600 bg-blue-50 rounded-lg transition-colors"
-                            : "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                            ? "flex items-center px-4 py-3 rounded-r-xl text-primary bg-foreground transition-colors"
+                            : "flex items-center px-4 py-3 rounded-r-xl text-secondary hover:bg-foreground transition-colors"
                     }
                 >
                     <MagnifyingGlassIcon className="w-5 h-5 mr-3" />
@@ -141,8 +134,8 @@ export default function Navbar() {
                     href={`/recommendations`}
                     className={
                         pathname.startsWith("/recommendations")
-                            ? "flex items-center px-4 py-3 text-blue-600 bg-blue-50 rounded-lg transition-colors"
-                            : "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                            ? "flex items-center px-4 py-3 rounded-r-xl text-primary bg-foreground transition-colors"
+                            : "flex items-center px-4 py-3 rounded-r-xl text-secondary hover:bg-foreground transition-colors"
                     }
                 >
                     <FilmIcon className="w-5 h-5 mr-3" />
@@ -152,8 +145,8 @@ export default function Navbar() {
                     href={`/profile`}
                     className={
                         pathname == "/profile" || pathname == "/profile/edit"
-                            ? "flex items-center px-4 py-3 text-blue-600 bg-blue-50 rounded-lg transition-colors"
-                            : "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                            ? "flex items-center px-4 py-3 rounded-r-xl text-primary bg-foreground transition-colors"
+                            : "flex items-center px-4 py-3 rounded-r-xl text-secondary hover:bg-foreground transition-colors"
                     }
                 >
                     <UserIcon className="w-5 h-5 mr-3" />
@@ -161,10 +154,10 @@ export default function Navbar() {
                 </Link>
             </nav>
 
-            <div className="p-4 border-t border-gray-200">
+            <div className="pb-4">
                 <button
                     onClick={handleLogout}
-                    className="flex text-red-700 items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="flex items-center w-full px-4 py-3 rounded-r-xl text-secondary hover:bg-foreground transition-colors"
                 >
                     <ArrowLeftStartOnRectangleIcon className="w-5 h-5 mr-3" />
                     Sair

@@ -117,7 +117,7 @@ export default function MyProfilePage() {
                 </div>
                 <main className="flex-1 flex items-center justify-center">
                     <div className="text-center">
-                        <div className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin mx-auto mb-4"></div>
+                        <div className="w-16 h-16 border-t-4 border-accent border-solid rounded-full animate-spin mx-auto mb-4"></div>
                         <p className="text-xl font-medium text-gray-700">
                             Carregando perfil...
                         </p>
@@ -157,12 +157,12 @@ export default function MyProfilePage() {
                 </div>
 
                 {/* Conteúdo principal */}
-                <main className="flex-1 bg-white overflow-x-hidden">
+                <main className="flex-1 overflow-x-hidden">
                     {/* Cabeçalho do perfil - estilo mobile/desktop */}
                     <div className="max-w-4xl mx-auto px-4 md:px-8 py-6">
-                        <div className="bg-white mb-8 pt-2">
+                        <div className="mb-8 pt-2">
                             <div className="flex items-center gap-4">
-                                <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+                                <div className="h-16 w-16 rounded-full flex items-center justify-center overflow-hidden">
                                     {userInfo.profileImage ? (
                                         <img
                                             src={userInfo.profileImage}
@@ -174,16 +174,16 @@ export default function MyProfilePage() {
                                     )}
                                 </div>
                                 <div className="flex-1">
-                                    <h1 className="text-xl font-bold text-gray-800">
+                                    <h1 className="text-xl font-bold text-primary">
                                         {userInfo.firstName} {userInfo.lastName}
                                     </h1>
-                                    <p className="text-gray-500 text-sm">
+                                    <p className="text-secondary text-sm">
                                         {userInfo.email}
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => router.push("/profile/edit")}
-                                    className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm md:text-base"
+                                    className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-foreground text-accent rounded-lg hover:bg-blue-700 transition text-sm md:text-base"
                                 >
                                     <PencilSquareIcon className="h-4 w-4 md:h-5 md:w-5" />
                                     {/* Keep text visible on mobile but adjust overall size */}

@@ -16,14 +16,14 @@ export default function ProtectedRoute({ children }) {
 
     if (loading || !user) {
         return (
-            <div className="flex items-center justify-center h-screen bg-black text-white">
+            <div className="flex items-center justify-center h-screen bg-background text-white">
                 <div className="flex flex-col items-center space-y-4">
                     {/* Spinner animado */}
-                    <div className="animate-spin h-12 w-12 rounded-full border-4 border-t-transparent border-blue-500"></div>
+                    <div className="animate-spin h-12 w-12 rounded-full border-4 border-t-transparent border-accent"></div>
 
 
                     {/* Texto pulsante */}
-                    <p className="text-lg animate-pulse tracking-wide text-gray-300">
+                    <p className="text-lg animate-pulse tracking-wide text-secondary">
                         Verificando acesso ao Flixmate...
                     </p>
                 </div>

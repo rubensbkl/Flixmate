@@ -33,7 +33,7 @@
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx"
-  ],
+, "src/app/movie/[movieId]/page.jsx", "src/lib/api.js"  ],
   "exclude": [
     "node_modules"
   ]

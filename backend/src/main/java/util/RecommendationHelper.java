@@ -9,6 +9,13 @@ import model.Feedback;
 import model.Genre;
 import model.Movie;
 
+import util.AiOutput;
+
+import java.lang.reflect.Type;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
+
 /**
  * Classe auxiliar para processar recomendações de filmes
  */
@@ -154,5 +161,54 @@ public class RecommendationHelper {
      */
     public boolean hasEnoughDataForRecommendation() {
         return !candidateMovieIds.isEmpty() && !moviesWithGenresMap.isEmpty();
+    }
+
+    public static String gerarJsonParaAzureML(int userId, List<Integer> candidateMovieIds) {
+        StringBuilder json = new StringBuilder();
+        json.append("[");
+
+        for (int i = 0; i < candidateMovieIds.size(); i++) {
+            int movieId = candidateMovieIds.get(i);
+            json.append("{")
+                .append("\"user_id\": ").append(userId).append(", ")
+                .append("\"movie_id\": ").append(movieId)
+                .append("}");
+
+            if (i < candidateMovieIds.size() - 1) {
+                json.append(",");
+            }
+        }
+
+        json.append("]");
+        return json.toString();
+    }
+
+    public List<AiOutput> parseRespostaAzure(String json) {
+        List<AiOutput> lista = new ArrayList<>();
+
+        JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+        JsonObject results = root.getAsJsonObject("Results");
+        JsonArray outputs = results.getAsJsonArray("WebServiceOutput0");
+
+        // A Azure retorna uma lista com 1 objeto contendo Rated Item 1..5, Predicted Rating 1..5, etc.
+        if (outputs.size() > 0) {
+            JsonObject item = outputs.get(0).getAsJsonObject();
+
+            // Os pares vêm em índices de 1 a 5 (5 recomendações)
+            for (int i = 1; i <= 5; i++) {
+                String movieKey = "Rated Item " + i;
+                String ratingKey = "Predicted Rating " + i;
+
+                if (item.has(movieKey) && item.has(ratingKey)) {
+                    AiOutput ao = new AiOutput();
+                    ao.user_id = Integer.parseInt(item.get("User").getAsString());
+                    ao.movie_id = Integer.parseInt(item.get(movieKey).getAsString());
+                    ao.predicted_rating = item.get(ratingKey).getAsDouble();
+
+                    lista.add(ao);
+                }
+            }
+        }
+        return lista;
     }
 }

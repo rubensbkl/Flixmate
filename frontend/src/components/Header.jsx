@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function Header() {
     return (
-        <header className="w-full bg-gray-100 ">
+        <header className="w-full">
             <div className="container mx-auto py-4 flex justify-center ">
                 <Image 
                     src="/flixmate-logo.svg" 

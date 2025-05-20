@@ -70,9 +70,9 @@ export const gerarRecomendacao = async () => {
 
     try {
         const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation`,
+            `${process.env.NEXT_PUBLIC_API_URL}/api/recomendar`,
             {
-                method: "GET",
+                method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
@@ -88,8 +88,8 @@ export const gerarRecomendacao = async () => {
             throw new Error(data.error || "Erro ao gerar recomendação");
         }
 
-        console.log("📬 Recomendação recebida:", data.recomendacao);
-        return data.recomendacao;
+        console.log("📬 Recomendação recebida:", data);
+        return data; // não use data.recomendacao
     } catch (error) {
         console.error("Erro ao buscar recomendação:", error);
         throw error;
@@ -569,30 +569,43 @@ export const resetFeedbacks = async () => {
     }
 };
 
-export const getRandomRecomendationSuprise = async () => {
-    const token = getToken();
-    console.log("🎉 Surpresa! Gerando uma recomendação aleatória...");
+export const fetchMovieById = async (movieId) => {
+    const token = getToken(); // pega o token
+    console.log(`📡 Buscando informações básicas do usuário: ${movieId}`);
 
     try {
         const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation/surprise`,
+            `${process.env.NEXT_PUBLIC_API_URL}/api/movie/${movieId}`,
             {
-                method: "POST",
+                method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`, // adiciona o token aqui
                 },
-                body: JSON.stringify({}),
             }
         );
 
-        if (!res.ok) throw new Error("Erro ao gerar recomendação");
+        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
 
         const data = await res.json();
-        console.log("📬 Recomendação recebida:", data.recomendacao);
-        return data.recomendacao; // Return the recommendation object instead of showing an alert
-    } catch (error) {
-        console.error("Erro ao buscar recomendação:", error);
+
+        console.log("Dados recebidos:", data); // Adicionei este log para depuração
+
+        if (data.status === "ok") {
+            console.log(
+                `🔍 Informações básicas do filme ${movieId} carregadas`
+            );
+            return data.movie;
+        } else {
+            console.log("⚠️ Formato de resposta inesperado:", data);
+            throw new Error("Formato de resposta inválido do servidor");
+        }
+    }   catch (error) {
+        console.error(
+            `❌ Erro ao buscar informações do filme ${movieId}:`,
+            error
+        );
         throw error;
     }
-};
+         
+}

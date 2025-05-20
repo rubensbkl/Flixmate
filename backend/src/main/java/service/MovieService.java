@@ -1,5 +1,7 @@
 package service;
 
+import java.util.ArrayList;
+
 import com.google.gson.JsonObject;
 
 import dao.MovieDAO;
@@ -73,13 +75,17 @@ public class MovieService {
      * @param movieId O ID do filme
      * @return O filme encontrado ou null se não encontrado
      */
-    public Movie buscarFilmePorId(int movieId) {
+    public Movie getMovieById(int movieId) {
         return movieDAO.getMovieById(movieId);
     }
 
     // getMovieDetails
     public JsonObject getMovieDetails(int movieId) {
         return tmdbService.getMovieDetails(movieId);
+    }
+
+    public ArrayList<Integer> getAllMoviesIds() {
+        return movieDAO.getAllMoviesIds();
     }
 
 }
