@@ -75,10 +75,10 @@ const ScrollSection = ({ title, movies, loading, emptyMessage }) => {
 
   return (
     <section className="mb-6 last:mb-20">
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">{title}</h2>
+      <h2 className="text-lg font-semibold text-primary mb-4">{title}</h2>
       {loading ? (
         <div className="flex items-center justify-center py-6">
-          <div className="w-8 h-8 border-t-3 border-blue-500 border-solid rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-t-3 border-accent border-solid rounded-full animate-spin"></div>
         </div>
       ) : movies.length === 0 ? (
         <p className="text-gray-500 py-2">{emptyMessage}</p>

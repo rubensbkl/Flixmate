@@ -144,7 +144,7 @@ export default function HistoricoPage() {
 
     return (
         <ProtectedRoute>
-            <div className="bg-gray-100 flex flex-col md:flex-row min-h-screen">
+            <div className="flex flex-col md:flex-row min-h-screen">
                 {/* Navbar - ajustada para mobile/desktop */}
                 <div className="md:w-64 md:min-h-screen">
                     <Navbar />
@@ -158,7 +158,7 @@ export default function HistoricoPage() {
 
                         {loading ? (
                             <div className="flex flex-1 justify-center items-center p-4 md:p-8">
-                                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+                                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-accent"></div>
                             </div>
                         ) : error ? (
                             <div className="flex flex-1 justify-center items-center text-red-500 p-4 text-center">
@@ -170,7 +170,7 @@ export default function HistoricoPage() {
                             </div>
                         ) : (
                             <section className="w-full md:w-[60%] space-y-3 mb-16 md:mb-0 movie-list-container">
-                                {recomendacoes.map((movie) => (
+                                {[...recomendacoes].reverse().map((movie) => (
                                     <MovieCard
                                         key={movie.id}
                                         movie={movie}

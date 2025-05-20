@@ -47,7 +47,7 @@ const MovieMatchModal = ({ isOpen, onClose, movie, onNavigate }) => {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
-            className="relative w-full max-w-sm md:max-w-lg lg:max-w-xl rounded-xl overflow-hidden bg-black"
+            className="relative w-full max-w-sm md:max-w-lg lg:max-w-xl rounded-xl overflow-hidden"
           >
             <button
               onClick={onClose}

@@ -227,7 +227,7 @@ export default function EditProfilePage() {
                     </div>
                     <main className="flex-1 flex items-center justify-center p-4">
                         <div className="text-center">
-                            <div className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin mx-auto mb-4"></div>
+                            <div className="w-16 h-16 border-t-4 border-accent border-solid rounded-full animate-spin mx-auto mb-4"></div>
                             <p className="text-xl font-medium text-gray-700">Carregando seu perfil...</p>
                         </div>
                     </main>
@@ -238,14 +238,14 @@ export default function EditProfilePage() {
 
     return (
         <ProtectedRoute>
-            <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
+            <div className="flex flex-col md:flex-row min-h-screen">
                 <div className="md:w-64 md:min-h-screen">
                     <Navbar />
                 </div>
 
                 <main className="flex-1 p-4 md:p-8 max-w-3xl mx-auto mb-20 md:mb-0">
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <h1 className="text-2xl font-bold mb-6 text-gray-800">Editar Perfil</h1>
+                    <div className="rounded-lg shadow-sm p-6">
+                        <h1 className="text-2xl font-bold mb-6 text-primary">Editar Perfil</h1>
 
                         {/* Mensagem de sucesso */}
                         {successMessage && (
@@ -263,12 +263,12 @@ export default function EditProfilePage() {
 
                         {/* Informações Básicas */}
                         <div className="mb-6">
-                            <h2 className="text-lg font-medium mb-4 text-gray-800">Informações Básicas</h2>
+                            <h2 className="text-lg font-medium mb-4 text-primary">Informações Básicas</h2>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {/* Nome */}
                                 <div>
-                                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label htmlFor="firstName" className="block text-sm font-medium text-secondary mb-1">
                                         Nome *
                                     </label>
                                     <input
@@ -276,14 +276,14 @@ export default function EditProfilePage() {
                                         id="firstName"
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 bg-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-accent text-primary"
                                         required
                                     />
                                 </div>
                                 
                                 {/* Sobrenome */}
                                 <div>
-                                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label htmlFor="lastName" className="block text-sm font-medium text-secondary mb-1">
                                         Sobrenome *
                                     </label>
                                     <input
@@ -291,14 +291,14 @@ export default function EditProfilePage() {
                                         id="lastName"
                                         value={lastName}
                                         onChange={(e) => setLastName(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 bg-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-accent text-primary"
                                         required
                                     />
                                 </div>
                                 
                                 {/* Email */}
                                 <div>
-                                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label htmlFor="email" className="block text-sm font-medium text-secondary mb-1">
                                         Email *
                                     </label>
                                     <input
@@ -306,21 +306,21 @@ export default function EditProfilePage() {
                                         id="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 bg-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-accent text-primary"
                                         required
                                     />
                                 </div>
                                 
                                 {/* Gênero */}
                                 <div>
-                                    <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label htmlFor="gender" className="block text-sm font-medium text-secondary mb-1">
                                         Gênero *
                                     </label>
                                     <select
                                         id="gender"
                                         value={gender}
                                         onChange={(e) => setGender(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 bg-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-accent text-primary"
                                         required
                                     >
                                         <option value="">Selecione</option>
@@ -334,10 +334,10 @@ export default function EditProfilePage() {
 
                         {/* Gêneros */}
                         <div className="mb-6">
-                            <h2 className="text-lg font-medium mb-2 text-gray-800">
+                            <h2 className="text-lg font-medium mb-2 text-primary">
                                 Gêneros Favoritos *
                             </h2>
-                            <p className="text-sm text-gray-600 mb-3">
+                            <p className="text-sm text-secondary mb-3">
                                 Selecione de 1 a 5 gêneros
                             </p>
 
@@ -346,7 +346,7 @@ export default function EditProfilePage() {
                                     <div
                                         key={genre.id}
                                         className={`flex items-center p-2 rounded-md ${
-                                            genres.includes(genre.id) ? 'bg-blue-50 border border-blue-100' : ''
+                                            genres.includes(genre.id) ? 'bg-foreground' : ''
                                         }`}
                                     >
                                         <input
@@ -354,15 +354,15 @@ export default function EditProfilePage() {
                                             type="checkbox"
                                             checked={genres.includes(genre.id)}
                                             onChange={() => handleGenreToggle(genre.id)}
-                                            className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            className="h-5 w-5 text-accent rounded focus:ring-accent"
                                             disabled={!genres.includes(genre.id) && genres.length >= 5 || (genres.length === 1 && genres.includes(genre.id))}
                                         />
                                         <label
                                             htmlFor={`genre-${genre.id}`}
                                             className={`ml-2 ${
                                                 genres.includes(genre.id) 
-                                                    ? 'font-medium text-blue-800' 
-                                                    : 'text-gray-700'
+                                                    ? 'font-medium text-primary' 
+                                                    : 'text-secondary'
                                             } ${
                                                 !genres.includes(genre.id) && genres.length >= 5
                                                     ? 'text-gray-400'
@@ -386,19 +386,19 @@ export default function EditProfilePage() {
                         </div>
 
                         {/* Filtro de Conteúdo */}
-                        <div className="mb-8 flex items-center space-x-3 p-3 border border-gray-100 rounded-md bg-gray-50">
+                        <div className="mb-8 flex items-center space-x-3 p-3 rounded-md">
                             <div className="flex-1">
-                                <label className="text-gray-800 font-medium block mb-1">
+                                <label className="text-primary font-medium block mb-1">
                                     Filtro de Conteúdo
                                 </label>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-secondary">
                                     Ative para filtrar conteúdo adulto e violento
                                 </p>
                             </div>
                             <button
                                 onClick={() => setContentFilter(!contentFilter)}
                                 className={`w-14 h-7 rounded-full flex items-center transition ${
-                                    contentFilter ? "bg-blue-600" : "bg-gray-300"
+                                    contentFilter ? "bg-accent" : "bg-foreground"
                                 }`}
                                 aria-pressed={contentFilter}
                                 role="switch"
@@ -418,7 +418,7 @@ export default function EditProfilePage() {
                             <button
                                 onClick={handleSave}
                                 disabled={saving || genres.length === 0}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-6 py-2 bg-accent text-white rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {saving ? (
                                     <span className="flex items-center">

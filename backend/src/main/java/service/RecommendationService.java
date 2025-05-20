@@ -105,4 +105,13 @@ public class RecommendationService {
     public boolean checkIfMovieAlreadyRecommended(int userId, int movieId) {
         return recommendationDAO.isMovieRecommended(userId, movieId);
     }
+
+    public ArrayList<Integer> getRecommendedMoviesIds(int userId) {
+        ArrayList<Recommendation> recommendations = recommendationDAO.getRecommendationsByUserId(userId);
+        ArrayList<Integer> recommendedMoviesIds = new ArrayList<>();
+        for (Recommendation recommendation : recommendations) {
+            recommendedMoviesIds.add(recommendation.getMovieId());
+        }
+        return recommendedMoviesIds;
+    }
 }

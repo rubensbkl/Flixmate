@@ -3,6 +3,7 @@ package dao;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 
 import model.Movie;
 
@@ -126,4 +127,20 @@ public class MovieDAO extends DAO {
         return status;
     }
 
+    public ArrayList<Integer> getAllMoviesIds() {
+        ArrayList<Integer> ids = new ArrayList<>();
+        try {
+            String sql = "SELECT id FROM movies";
+            PreparedStatement st = conexao.prepareStatement(sql);
+            ResultSet rs = st.executeQuery();
+            while (rs.next()) {
+                ids.add(rs.getInt("id"));
+            }
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar IDs dos filmes: " + e.getMessage(), e);
+        }
+        return ids;
+    }
 }
