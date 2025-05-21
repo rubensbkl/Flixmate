@@ -88,14 +88,14 @@ def movie_to_features(movie_id, user, movie):
         'adult': int(movie.get('adult', 0)),
     }
 
-def train_model(feedbacks, model, movie_dict):
+def train_model(ratings, model, movie_dict):
     updated = False
-    for f in feedbacks:
-        user = f['user']
+    for r in ratings:
+        user = r['user']
         try:
-            movie_id = int(f['movie'])
+            movie_id = int(r['movie'])
         except (ValueError, KeyError):
-            logger.warning(f"ID de filme inválido ou faltando: {f.get('movie', None)}")
+            logger.warning(f"ID de filme inválido ou faltando: {r.get('movie', None)}")
             continue
 
         if movie_id not in movie_dict:
@@ -103,12 +103,12 @@ def train_model(feedbacks, model, movie_dict):
             continue
 
         x = movie_to_features(movie_id, user, movie_dict[movie_id])
-        model.learn_one(x, f['feedback'])
+        model.learn_one(x, r['rating'])
         updated = True
 
     return model, updated
 
-def recommend(user, model, movie_dict, top_n=5):  # 🔄 top_n default agora é 5
+def recommend(user, model, movie_dict, top_n=5):
     scores = []
     for movie_id, movie in movie_dict.items():
         x = movie_to_features(movie_id, user, movie)
@@ -118,7 +118,6 @@ def recommend(user, model, movie_dict, top_n=5):  # 🔄 top_n default agora é 
 
     top = sorted(scores, key=lambda x: x[1], reverse=True)[:top_n]
 
-    # 🛠️ Log dos filmes ausentes (se aplicável)
     candidate_ids = movie_dict.keys()
     missing = [mid for mid in candidate_ids if mid not in movie_dict]
     if missing:
@@ -127,24 +126,24 @@ def recommend(user, model, movie_dict, top_n=5):  # 🔄 top_n default agora é 
     return top
 
 # ENDPOINT 1 - Treinamento sem recomendação
-def train(feedbacks):
+def train(ratings):
     model = load_model()
     movie_dict = load_movies()
 
-    model, updated = train_model(feedbacks, model, movie_dict)
+    model, updated = train_model(ratings, model, movie_dict)
     save_model(model, updated)
     return {"message": "✅ Treinamento concluído com sucesso."}
 
 # ENDPOINT 2 - Treinamento + recomendação
-def recommend_after_training(feedbacks, candidate_ids=None, top_n=1):  # top_n flexível
-    if not feedbacks:
-        return {"error": "Feedbacks vazios."}
+def recommend_after_training(ratings, candidate_ids=None, top_n=1):
+    if not ratings:
+        return {"error": "Lista de avaliações vazia."}
 
-    user = feedbacks[0]['user']
+    user = ratings[0]['user']
     model = load_model()
     movie_dict = load_movies()
 
-    model, updated = train_model(feedbacks, model, movie_dict)
+    model, updated = train_model(ratings, model, movie_dict)
     save_model(model, updated)
 
     if candidate_ids:
@@ -157,7 +156,7 @@ def recommend_after_training(feedbacks, candidate_ids=None, top_n=1):  # top_n f
     return {"recommended_movie": top[0][0], "score": top[0][1]}
 
 # ENDPOINT 3 - Recomendação surpresa (sem treinamento)
-def surprise(user, candidate_ids, top_n=1):  # top_n flexível
+def surprise(user, candidate_ids, top_n=1):
     model = load_model()
     movie_dict = load_movies()
 

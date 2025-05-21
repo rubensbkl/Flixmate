@@ -21,6 +21,7 @@ threadpoolctl==3.6.0
 typing-inspection==0.4.0
 typing_extensions==4.13.2
 tzdata==2025.2
-uvicorn==0.34.2
+uvicorn[standard]
 sqlalchemy
 psycopg2-binary
+websockets

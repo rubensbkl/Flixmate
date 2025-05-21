@@ -64,6 +64,55 @@ export const sendFeedback = async (movieId, liked) => {
     });
 };
 
+export const getMovieRate = async (movieId) => {
+    const token = getToken();
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rate/${movieId}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            return data.rating; // valor da nota
+        } else if (res.status === 404) {
+            return null; // sem nota ainda
+        }
+    } catch (err) {
+        console.error("Erro ao verificar feedback:", err);
+    }
+};
+
+export const setMovieRate = async (movieId, rating) => {
+    const token = getToken();
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rate`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                movieId: movieId,
+                rating: rating,
+            }),
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            return data.status;
+        } else {
+            const err = await res.json();
+            throw new Error(err.error || "Erro na requisição");
+        }
+    } catch (err) {
+        console.error("Erro ao enviar avaliação:", err);
+    }
+};
+
 export const gerarRecomendacao = async () => {
     const token = getToken();
     console.log("🔁 Gerando recomendação...");
@@ -79,6 +128,40 @@ export const gerarRecomendacao = async () => {
                 },
             }
         );
+
+        const data = await res.json();
+
+        // Mesmo se o status não for 200, verifique se há uma resposta com formato válido
+        if (!res.ok) {
+            console.error("Erro na resposta da API:", data);
+            throw new Error(data.error || "Erro ao gerar recomendação");
+        }
+
+        console.log("📬 Recomendação recebida:", data);
+        return data; // não use data.recomendacao
+    } catch (error) {
+        console.error("Erro ao buscar recomendação:", error);
+        throw error;
+    }
+};
+
+export const getSurprise = async () => {
+    const token = getToken();
+    console.log("🔁 Gerando surpresa...");
+
+    try {
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/surprise`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        console.log("Resposta da API:", res); // Adicionei este log para depuração
 
         const data = await res.json();
 
@@ -600,12 +683,12 @@ export const fetchMovieById = async (movieId) => {
             console.log("⚠️ Formato de resposta inesperado:", data);
             throw new Error("Formato de resposta inválido do servidor");
         }
-    }   catch (error) {
+    } catch (error) {
         console.error(
             `❌ Erro ao buscar informações do filme ${movieId}:`,
             error
         );
         throw error;
     }
-         
+
 }
