@@ -1,8 +1,8 @@
 import requests
 
-feedbacks = [
-    {"user": "6", "movie": "870028", "feedback": 0}
+ratings = [
+    {"user": "6", "movie": "541671", "rating": 1}
 ]
 
-res = requests.post("http://localhost:5005/train", json={"feedbacks": feedbacks})
+res = requests.post("http://localhost:5005/train", json={"ratings": ratings})
 print(res.json())

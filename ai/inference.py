@@ -1,20 +1,20 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from recommender import train, recommend_after_training, surprise
 from pydantic import BaseModel
 from typing import List, Optional
 
 app = FastAPI()
 
-class Feedback(BaseModel):
+class Rating(BaseModel):
     user: str
     movie: str
-    feedback: int  # 1 ou 0
+    rating: int  # 1 ou 0
 
 class TrainRequest(BaseModel):
-    feedbacks: List[Feedback]
+    ratings: List[Rating]
 
 class RecommendRequest(BaseModel):
-    feedbacks: List[Feedback]
+    ratings: List[Rating]
     candidate_ids: Optional[List[str]]
 
 class SurpriseRequest(BaseModel):
@@ -23,14 +23,13 @@ class SurpriseRequest(BaseModel):
 
 @app.post("/train")
 def train_endpoint(req: TrainRequest):
-    feedbacks = [f.dict() for f in req.feedbacks]
-    return train(feedbacks)
+    ratings = [r.dict() for r in req.ratings]
+    return train(ratings)
 
 @app.post("/recommend")
 def recommend_endpoint(req: RecommendRequest):
-    feedbacks = [f.dict() for f in req.feedbacks]
-    candidate_ids = req.candidate_ids
-    return recommend_after_training(feedbacks, candidate_ids)
+    ratings = [r.dict() for r in req.ratings]
+    return recommend_after_training(ratings, req.candidate_ids)
 
 @app.post("/surprise")
 def surprise_endpoint(req: SurpriseRequest):

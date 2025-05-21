@@ -1,5 +1,7 @@
 package service;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.ArrayList;
@@ -174,6 +176,45 @@ public class FeedbackService {
                 System.err.println("Erro inesperado: " + e.getMessage());
                 return null;
             }
+        }
+    }
+
+    public Integer getRating(int userId, int movieId) {
+        try {
+            // Verificar se o feedback existe
+            Feedback feedback = feedbackDAO.getFeedback(userId, movieId);
+            if (feedback == null) {
+                System.err.println("Feedback não encontrado");
+                throw new NoSuchFieldException("Feedback não encontrado");
+            }
+            return feedback.getFeedback() ? 1 : 0;
+        } catch (Exception e) {
+            // Tratar exceções específicas
+            if (e instanceof NoSuchFieldException) {
+                System.err.println("Erro: " + e.getMessage());
+                return null;
+            } else {
+                System.err.println("Erro inesperado: " + e.getMessage());
+                return null;
+            }
+        }
+    }
+
+    public boolean storeOrUpdateRating(int userId, int movieId, boolean rating) {
+        try {
+            // Verificar se o feedback já existe
+            Feedback existingFeedback = feedbackDAO.getFeedback(userId, movieId);
+            if (existingFeedback != null) {
+                // Atualizar feedback existente
+                existingFeedback.setFeedback(rating);
+                return feedbackDAO.update(existingFeedback);
+            } else {
+                // Armazenar novo feedback
+                return storeFeedback(userId, movieId, rating);
+            }
+        } catch (Exception e) {
+            System.err.println("Erro ao armazenar ou atualizar feedback: " + e.getMessage());
+            return false;
         }
     }
 

@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
     fetchMovies,
     gerarRecomendacao,
+    getSurprise,
     resetFeedbacks,
     sendFeedback,
 } from "@/lib/api";
@@ -240,7 +241,7 @@ export default function Home() {
     const surprise = async () => {
         setIsLoadingRecommendation(true);
 
-        const randomMovie = await gerarRecomendacao();
+        const randomMovie = await getSurprise();
         setRecommendedMovie(randomMovie);
         setTimeout(() => {
             setIsLoadingRecommendation(false);
