@@ -8,7 +8,7 @@ app = FastAPI()
 class Rating(BaseModel):
     user: str
     movie: str
-    rating: int  # 1 ou 0
+    rating: int
 
 class TrainRequest(BaseModel):
     ratings: List[Rating]

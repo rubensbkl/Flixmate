@@ -7,12 +7,12 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
     setMovieRate,
-    getMovieRate,
 } from "@/lib/api";
 import {
-    ArrowPathIcon,
     HeartIcon,
     XMarkIcon,
+    HandThumbUpIcon,
+    HandThumbDownIcon,
 } from "@heroicons/react/24/outline";
 
 export default function MovieProfilePage() {
@@ -21,24 +21,18 @@ export default function MovieProfilePage() {
     const [movieInfo, setMovieInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [feedback, setFeedback] = useState(null);
+    const [rating, setRating] = useState(null);
+    const [watched, setWatched] = useState(null);
 
     useEffect(() => {
         const loadMovie = async () => {
             try {
                 setLoading(true);
-                const data = await fetchMovieById(movieId);
-                setMovieInfo(data);
+                const { movie, watched, rating } = await fetchMovieById(movieId);
+                setMovieInfo(movie);
+                setRating(rating);
 
-                // Verifica feedback anterior do usuário
-                const userFeedback = await getMovieRate(movieId);
-                if (userFeedback === true) {
-                    setFeedback("like");
-                } else if (userFeedback === false) {
-                    setFeedback("dislike");
-                } else {
-                    setFeedback(null);
-                }
+
             } catch (err) {
                 console.error("Erro ao buscar filme:", err);
                 setError("Não foi possível carregar os dados do filme.");
@@ -47,25 +41,32 @@ export default function MovieProfilePage() {
             }
         };
 
-
         if (movieId) {
             loadMovie();
         }
     }, [movieId]);
 
     const handleLike = async () => {
+        if (rating === true) {
+            setRating(null);
+            return;
+        }
         try {
             await setMovieRate(movieId, true);
-            setFeedback("like");
+            setRating(true);
         } catch (err) {
             console.error("Erro ao enviar like:", err);
         }
     };
 
     const handleDislike = async () => {
+        if (rating === false) {
+            setRating(null);
+            return;
+        }
         try {
             await setMovieRate(movieId, false);
-            setFeedback("dislike");
+            setRating(false);
         } catch (err) {
             console.error("Erro ao enviar dislike:", err);
         }
@@ -110,41 +111,38 @@ export default function MovieProfilePage() {
 
     return (
         <ProtectedRoute>
-            <div className="flex min-h-screen">
+            <div className="flex flex-col md:flex-row h-screen overflow-hidden">
                 <div className="md:w-64">
                     <Navbar />
                 </div>
-                <main className="flex-1 bg-white">
+                <main className="flex-1">
                     <div className="max-w-4xl mx-auto px-4 md:px-8 py-6">
                         <div className="flex gap-6 flex-col md:flex-row">
                             <div className="w-full md:w-1/3">
                                 <img
-                                    src={movieInfo.posterUrl}
+                                    src={`https://image.tmdb.org/t/p/w500${movieInfo.posterPath}`}
                                     alt={movieInfo.title}
                                     className="rounded-2xl shadow-lg w-full"
                                 />
                             </div>
                             <div className="flex-1">
-                                <h1 className="text-3xl font-bold mb-2">
+                                <h1 className="text-3xl font-bold mb-6 text-primary">
                                     {movieInfo.title}
                                 </h1>
-                                <p className="text-gray-500 mb-4 italic">
-                                    {movieInfo.tagline}
-                                </p>
-                                <p className="text-gray-700 mb-4">
+                                <p className="text-gray-200 mb-4">
                                     {movieInfo.overview}
                                 </p>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-gray-400">
                                     <strong>Gêneros:</strong>{" "}
                                     {movieInfo.genres?.join(", ")}
                                 </p>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-gray-400">
                                     <strong>Data de Lançamento:</strong>{" "}
                                     {movieInfo.releaseDate}
                                 </p>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-gray-400">
                                     <strong>Nota Média:</strong>{" "}
-                                    {movieInfo.voteAverage} ⭐
+                                    {movieInfo.voteAverage}
                                 </p>
                             </div>
                         </div>
@@ -153,49 +151,42 @@ export default function MovieProfilePage() {
                         <button
                             onClick={handleDislike}
                             className={`w-14 h-14 flex items-center justify-center rounded-full shadow-lg hover:scale-105 transition ${
-                                feedback === "dislike"
-                                    ? "bg-red-500"
+                                rating === false
+                                    ? "bg-accent"
                                     : "bg-foreground"
                             
                             }`}
                             title="Descurtir"
                         >
-                            <XMarkIcon
+                            <HandThumbDownIcon
                                 className={`w-6 h-6 ${
-                                    feedback === "dislike"
-                                        ? "text-white"
+                                    rating === false
+                                        ? "text-foreground"
                                         : "text-accent"
                                 }`}
                             />
                         </button>
                         <button
-                            // onClick={resetMatches}
-                            disabled={loading}
-                            className="w-14 h-14 flex items-center justify-center bg-foreground rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
-                            title="Reiniciar"
-                        >
-                            <ArrowPathIcon className="w-6 h-6 text-accent" />
-                        </button>
-                        <button
                             onClick={handleLike}
                             className={`w-14 h-14 flex items-center justify-center rounded-full shadow-lg hover:scale-105 transition ${
-                                feedback === "like"
-                                    ? "bg-green-500"
+                                rating === true
+                                    ? "bg-accent"
                                     : "bg-foreground"
                             }`}
                             title="Curtir"
                         >
-                            <HeartIcon
+                            <HandThumbUpIcon
                                 className={`w-6 h-6 ${
-                                    feedback === "like"
-                                        ? "text-white"
+                                    rating === true
+                                        ? "text-foreground"
                                         : "text-accent"
                                 }`}
                             />
                         </button>
                     </div>
                 </main>
-            </div>
+            </div>   
+
         </ProtectedRoute>
     );
 }

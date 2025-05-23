@@ -102,7 +102,7 @@ public class Movie {
         this.popularity = popularity;
     }
     
-    public boolean getAdult() {
+    public boolean isAdult() {
         return adult;
     }
     

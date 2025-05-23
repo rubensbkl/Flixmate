@@ -64,28 +64,6 @@ export const sendFeedback = async (movieId, liked) => {
     });
 };
 
-export const getMovieRate = async (movieId) => {
-    const token = getToken();
-    try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rate/${movieId}`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-            return data.rating; // valor da nota
-        } else if (res.status === 404) {
-            return null; // sem nota ainda
-        }
-    } catch (err) {
-        console.error("Erro ao verificar feedback:", err);
-    }
-};
-
 export const setMovieRate = async (movieId, rating) => {
     const token = getToken();
     try {
@@ -653,17 +631,17 @@ export const resetFeedbacks = async () => {
 };
 
 export const fetchMovieById = async (movieId) => {
-    const token = getToken(); // pega o token
-    console.log(`📡 Buscando informações básicas do usuário: ${movieId}`);
+    const token = getToken();
+    console.log(`📡 Buscando informações completas do filme: ${movieId}`);
 
     try {
         const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/movie/${movieId}`,
+            `${process.env.NEXT_PUBLIC_API_URL}/api/movie/${movieId}/details`,
             {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`, // adiciona o token aqui
+                    Authorization: `Bearer ${token}`,
                 },
             }
         );
@@ -672,23 +650,22 @@ export const fetchMovieById = async (movieId) => {
 
         const data = await res.json();
 
-        console.log("Dados recebidos:", data); // Adicionei este log para depuração
+        console.log("📦 Dados recebidos da API:", data);
 
-        if (data.status === "ok") {
-            console.log(
-                `🔍 Informações básicas do filme ${movieId} carregadas`
-            );
-            return data.movie;
+        // Aqui não usamos mais data.status === "ok"
+        if (data.movieData) {
+            return {
+                movie: data.movieData,
+                watched: data.watched,
+                rating: data.rating
+            };
         } else {
-            console.log("⚠️ Formato de resposta inesperado:", data);
+            console.warn("⚠️ Formato de resposta inesperado:", data);
             throw new Error("Formato de resposta inválido do servidor");
         }
+
     } catch (error) {
-        console.error(
-            `❌ Erro ao buscar informações do filme ${movieId}:`,
-            error
-        );
+        console.error(`❌ Erro ao buscar informações do filme ${movieId}:`, error);
         throw error;
     }
-
-}
+};

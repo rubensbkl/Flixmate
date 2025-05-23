@@ -124,7 +124,7 @@ public class RecommendationHelper {
                         .append(": \"").append(movie.getTitle()).append("\" (").append(movie.getReleaseDate()).append(")\n")
                         .append("   Gêneros: ").append(movie.getGenresAsString()).append("\n")
                         .append("   Popularidade: ").append(movie.getPopularity())
-                        .append(", Adulto: ").append(movie.getAdult())
+                        .append(", Adulto: ").append(movie.isAdult())
                         .append(", Idioma: ").append(movie.getOriginalLanguage())
                         .append(interacao.getFeedback() ? " ✓ GOSTOU" : " ✗ NÃO GOSTOU")
                         .append("\n");
@@ -143,7 +143,7 @@ public class RecommendationHelper {
                         .append(": \"").append(movie.getTitle()).append("\" (").append(movie.getReleaseDate()).append(")\n")
                         .append("   Gêneros: ").append(movie.getGenresAsString()).append("\n")
                         .append("   Popularidade: ").append(movie.getPopularity())
-                        .append(", Adulto: ").append(movie.getAdult())
+                        .append(", Adulto: ").append(movie.isAdult())
                         .append(", Idioma: ").append(movie.getOriginalLanguage())
                         .append("\n");
             }
