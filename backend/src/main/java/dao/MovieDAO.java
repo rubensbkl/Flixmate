@@ -37,7 +37,7 @@ public class MovieDAO extends DAO {
             st.setString(5, movie.getReleaseDate());
             st.setString(6, movie.getOriginalLanguage());
             st.setDouble(7, movie.getPopularity());
-            st.setBoolean(8, movie.getAdult());
+            st.setBoolean(8, movie.isAdult());
             st.setString(9, movie.getPosterPath());
             
             int rowsAffected = st.executeUpdate();
@@ -114,7 +114,7 @@ public class MovieDAO extends DAO {
             st.setString(2, movie.getReleaseDate());
             st.setString(3, movie.getOriginalLanguage());
             st.setDouble(4, movie.getPopularity());
-            st.setBoolean(5, movie.getAdult());
+            st.setBoolean(5, movie.isAdult());
             st.setInt(6, movie.getId());
             
             int rowsAffected = st.executeUpdate();

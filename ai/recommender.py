@@ -3,11 +3,9 @@ import pickle
 import pandas as pd
 import logging
 import threading
-import psycopg2
 from functools import lru_cache
 from river import compose, linear_model, preprocessing
 from sqlalchemy import create_engine
-import tempfile
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
@@ -15,7 +13,6 @@ DB_NAME = os.getenv("DB_NAME", "postgres")
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
 
-# Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

@@ -16,13 +16,13 @@ public class MovieWithGenres extends Movie {
 
     public MovieWithGenres(Movie movie) {
         super(movie.getId(), movie.getTitle(), movie.getReleaseDate(),
-                movie.getOriginalLanguage(), movie.getPopularity(), movie.getAdult());
+                movie.getOriginalLanguage(), movie.getPopularity(), movie.isAdult());
         this.genres = new ArrayList<>();
     }
 
     public MovieWithGenres(Movie movie, List<Genre> genres) {
         super(movie.getId(), movie.getTitle(), movie.getReleaseDate(),
-                movie.getOriginalLanguage(), movie.getPopularity(), movie.getAdult());
+                movie.getOriginalLanguage(), movie.getPopularity(), movie.isAdult());
         this.genres = genres != null ? new ArrayList<>(genres) : new ArrayList<>();
     }
 
@@ -76,7 +76,7 @@ public class MovieWithGenres extends Movie {
                 ", release_date='" + getReleaseDate() + '\'' +
                 ", original_language='" + getOriginalLanguage() + '\'' +
                 ", popularity=" + getPopularity() +
-                ", adult=" + getAdult() +
+                ", adult=" + isAdult() +
                 ", genres=" + genres +
                 '}';
     }

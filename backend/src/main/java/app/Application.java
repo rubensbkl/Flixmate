@@ -371,38 +371,7 @@ public class Application {
 
         get("/api/ping", (req, res) -> gson.toJson(Map.of("status", "ok", "message", "pong")));
 
-        post("/api/feedback", (req, res) -> {
-            try {
-                int userId = req.attribute("userId");
-                JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
-                int movieId = bodyObj.get("movieId").getAsInt();
-                boolean feedbackValue = bodyObj.get("feedback").getAsBoolean();
-
-                JsonObject movieObj = tmdb.getMovieDetails(movieId);
-                if (movieObj == null) {
-                    res.status(400);
-                    return gson.toJson(Map.of("error", "Filme não encontrado na API TMDB"));
-                }
-
-                boolean storedMovie = movieService.storeMovie(movieObj);
-                boolean storedGenres = movieGenreService.storeMovieGenres(movieObj);
-                boolean storedFeedback = feedbackService.storeFeedback(userId, movieId, feedbackValue);
-
-                boolean success = storedMovie && storedGenres && storedFeedback;
-
-                if (success) {
-                    res.status(201);
-                    return gson.toJson(Map.of("status", "Interação registrada com sucesso"));
-                } else {
-                    res.status(500);
-                    return gson.toJson(Map.of("status", "Erro ao registrar interação"));
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.status(500);
-                return gson.toJson(Map.of("error", "Erro no servidor: " + e.getMessage()));
-            }
-        });
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Endpoint para classifcar filmes favoritos de recomendações
         post("/api/recommendation/favorite", (req, res) -> {
@@ -539,95 +508,6 @@ public class Application {
                 e.printStackTrace();
                 res.status(500);
                 return gson.toJson(Map.of("error", "Erro ao receber recomendações"));
-            }
-        });
-
-        post("/api/movies", (req, res) -> {
-
-            // Extrair ID do usuário do token
-            int userId = req.attribute("userId");
-
-            JsonObject requestBody = gson.fromJson(req.body(), JsonObject.class);
-            int page = requestBody.has("page") ? requestBody.get("page").getAsInt() : 1;
-            System.out.println("Page: " + page);
-            try {
-                // Pega a flag do filtro adulto do usuário
-                boolean contentFilter = userService.getContentFilter(userId);
-                System.out.println("Content Filter: " + contentFilter);
-                // DAO de preferências
-                List<Genre> preferredGenresList = userGenreDAO.getPreferredGenres(userId);
-                List<Integer> preferredGenres = preferredGenresList.stream()
-                        .map(Genre::getId)
-                        .toList();
-
-                // Pega filmes de várias listas
-                JsonArray trendingMovies = tmdb.getTrendingMovies(page);
-                JsonArray popularMovies = tmdb.getPopularMovies(page);
-                JsonArray topRatedMovies = tmdb.getTopRatedMovies(page);
-                JsonArray upcomingMovies = tmdb.getUpcomingMovies(page);
-
-                // Usamos um Set para evitar duplicatas por ID
-                Map<Integer, JsonObject> uniqueMoviesMap = new HashMap<>();
-
-                // Função para processar cada array e adicionar ao mapa de filmes únicos
-                Consumer<JsonArray> processMovies = (moviesArray) -> {
-                    if (moviesArray != null) {
-                        moviesArray.forEach(element -> {
-                            if (element.isJsonObject()) {
-                                JsonObject movie = element.getAsJsonObject();
-                                if (movie.has("id")) {
-                                    int movieId = movie.get("id").getAsInt();
-
-                                    // Verifica se é conteúdo adulto e se o filtro está ativado
-                                    boolean isAdult = movie.has("adult") && movie.get("adult").getAsBoolean();
-                                    if (contentFilter && isAdult) {
-                                        // Pula o filme se for adulto e o usuário não quiser ver
-                                        System.out.println(
-                                                "Filme " + movieId + " é adulto e o filtro está ativado. Pulando...");
-                                        return;
-                                    }
-                                    // Só adiciona se ainda não existe no mapa
-                                    if (!uniqueMoviesMap.containsKey(movieId)) {
-                                        uniqueMoviesMap.put(movieId, movie);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                };
-
-                // Processa todas as listas
-                processMovies.accept(trendingMovies);
-                processMovies.accept(popularMovies);
-                processMovies.accept(topRatedMovies);
-                processMovies.accept(upcomingMovies);
-
-                // Converte o mapa para uma lista
-                List<JsonObject> allMovies = new ArrayList<>(uniqueMoviesMap.values());
-
-                // Ordena pela compatibilidade com os gêneros preferidos
-                allMovies.sort((m1, m2) -> {
-                    int score1 = userGenreService.calculateGenreScore(m1, preferredGenres);
-                    int score2 = userGenreService.calculateGenreScore(m2, preferredGenres);
-                    return Integer.compare(score2, score1); // Ordem decrescente
-                });
-
-                int totalMovies = allMovies.size();
-                int moviesToReturn = (totalMovies / 10) * 10; // maior múltiplo de 10 menor ou igual
-                if (moviesToReturn == 0 && totalMovies > 0) {
-                    moviesToReturn = Math.min(10, totalMovies);
-                }
-                List<JsonObject> topMovies = allMovies.stream().limit(moviesToReturn).toList();
-
-                // Log para debug
-                System.out.println("Total de filmes após remover duplicatas e aplicar filtros: " + totalMovies);
-                System.out.println("Enviando " + moviesToReturn + " filmes para o cliente");
-
-                return gson.toJson(Map.of("status", "ok", "movies", topMovies));
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.status(500);
-                return gson.toJson(Map.of("error", "Erro ao buscar recomendações de filmes: " + e.getMessage()));
             }
         });
 
@@ -1109,6 +989,134 @@ public class Application {
             }
         });
 
+        //=====================================//
+        // Endpoints de Recomendação de Filmes //
+        //=====================================//
+
+        // Pega lista de filmes para o usuario avaliar
+        post("/api/movies", (req, res) -> {
+
+            // Extrair ID do usuário do token
+            int userId = req.attribute("userId");
+
+            JsonObject requestBody = gson.fromJson(req.body(), JsonObject.class);
+            int page = requestBody.has("page") ? requestBody.get("page").getAsInt() : 1;
+            System.out.println("Page: " + page);
+            try {
+                // Pega a flag do filtro adulto do usuário
+                boolean contentFilter = userService.getContentFilter(userId);
+                System.out.println("Content Filter: " + contentFilter);
+                // DAO de preferências
+                List<Genre> preferredGenresList = userGenreDAO.getPreferredGenres(userId);
+                List<Integer> preferredGenres = preferredGenresList.stream()
+                        .map(Genre::getId)
+                        .toList();
+
+                // Pega filmes de várias listas
+                JsonArray trendingMovies = tmdb.getTrendingMovies(page);
+                JsonArray popularMovies = tmdb.getPopularMovies(page);
+                JsonArray topRatedMovies = tmdb.getTopRatedMovies(page);
+                JsonArray upcomingMovies = tmdb.getUpcomingMovies(page);
+
+                // Usamos um Set para evitar duplicatas por ID
+                Map<Integer, JsonObject> uniqueMoviesMap = new HashMap<>();
+
+                // Função para processar cada array e adicionar ao mapa de filmes únicos
+                Consumer<JsonArray> processMovies = (moviesArray) -> {
+                    if (moviesArray != null) {
+                        moviesArray.forEach(element -> {
+                            if (element.isJsonObject()) {
+                                JsonObject movie = element.getAsJsonObject();
+                                if (movie.has("id")) {
+                                    int movieId = movie.get("id").getAsInt();
+
+                                    // Verifica se é conteúdo adulto e se o filtro está ativado
+                                    boolean isAdult = movie.has("adult") && movie.get("adult").getAsBoolean();
+                                    if (contentFilter && isAdult) {
+                                        // Pula o filme se for adulto e o usuário não quiser ver
+                                        System.out.println(
+                                                "Filme " + movieId + " é adulto e o filtro está ativado. Pulando...");
+                                        return;
+                                    }
+                                    // Só adiciona se ainda não existe no mapa
+                                    if (!uniqueMoviesMap.containsKey(movieId)) {
+                                        uniqueMoviesMap.put(movieId, movie);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                };
+
+                // Processa todas as listas
+                processMovies.accept(trendingMovies);
+                processMovies.accept(popularMovies);
+                processMovies.accept(topRatedMovies);
+                processMovies.accept(upcomingMovies);
+
+                // Converte o mapa para uma lista
+                List<JsonObject> allMovies = new ArrayList<>(uniqueMoviesMap.values());
+
+                // Ordena pela compatibilidade com os gêneros preferidos
+                allMovies.sort((m1, m2) -> {
+                    int score1 = userGenreService.calculateGenreScore(m1, preferredGenres);
+                    int score2 = userGenreService.calculateGenreScore(m2, preferredGenres);
+                    return Integer.compare(score2, score1); // Ordem decrescente
+                });
+
+                int totalMovies = allMovies.size();
+                int moviesToReturn = (totalMovies / 10) * 10; // maior múltiplo de 10 menor ou igual
+                if (moviesToReturn == 0 && totalMovies > 0) {
+                    moviesToReturn = Math.min(10, totalMovies);
+                }
+                List<JsonObject> topMovies = allMovies.stream().limit(moviesToReturn).toList();
+
+                // Log para debug
+                System.out.println("Total de filmes após remover duplicatas e aplicar filtros: " + totalMovies);
+                System.out.println("Enviando " + moviesToReturn + " filmes para o cliente");
+
+                return gson.toJson(Map.of("status", "ok", "movies", topMovies));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao buscar recomendações de filmes: " + e.getMessage()));
+            }
+        });
+
+        // Registra a avaliação do usuário
+        post("/api/feedback", (req, res) -> {
+            try {
+                int userId = req.attribute("userId");
+                JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
+                int movieId = bodyObj.get("movieId").getAsInt();
+                boolean feedbackValue = bodyObj.get("feedback").getAsBoolean();
+
+                JsonObject movieObj = tmdb.getMovieDetails(movieId);
+                if (movieObj == null) {
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "Filme não encontrado na API TMDB"));
+                }
+
+                boolean storedMovie = movieService.storeMovie(movieObj);
+                boolean storedGenres = movieGenreService.storeMovieGenres(movieObj);
+                boolean storedFeedback = feedbackService.storeFeedback(userId, movieId, feedbackValue);
+
+                boolean success = storedMovie && storedGenres && storedFeedback;
+
+                if (success) {
+                    res.status(201);
+                    return gson.toJson(Map.of("status", "Interação registrada com sucesso"));
+                } else {
+                    res.status(500);
+                    return gson.toJson(Map.of("status", "Erro ao registrar interação"));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro no servidor: " + e.getMessage()));
+            }
+        });
+
         //========================================//
         // AI - Artificial Intelligence Endpoints //
         //========================================//
@@ -1235,8 +1243,6 @@ public class Application {
                 return "{\"erro\": \"Não há filmes não avaliados para recomendar.\"}";
             }
 
-
-
             JsonObject recomendacao = flixAi.surprise(userId, candidatos);
 
             if (recomendacao == null || !recomendacao.has("recommended_movie")) {
@@ -1261,33 +1267,41 @@ public class Application {
             return movie.toString();
         });
 
-        get("/api/movie/:movieId", (req, res) -> {
-            System.out.println("Buscando informações do filme com ID: " + req.params("movieId"));
+        get("/api/movie/:movieId/details", (req, res) -> {
             try {
-                int movieId = Integer.parseInt(req.params("movieId"));  
-                System.out.println("Buscando informações do filme com ID: " + movieId);
+                int userId = req.attribute("userId"); // assumindo que já está autenticado
+                int movieId = Integer.parseInt(req.params("movieId"));
 
-                // Buscar o filme pelo ID
+                // Buscar dados do filme
                 Movie movie = movieService.getMovieById(movieId);
-
-                System.out.println("Filme encontrado: " + movie);
-
                 if (movie == null) {
                     res.status(404);
                     return gson.toJson(Map.of("error", "Filme não encontrado"));
                 }
 
-                // Montar a resposta com os dados básicos do filme
+                // Buscar avaliação do usuário (pode ser null)
+                Integer rating = feedbackService.getRating(userId, movieId);
+
                 Map<String, Object> movieData = Map.of(
                     "id", movie.getId(),
                     "title", movie.getTitle(),
                     "overview", movie.getOverview(),
+                    "rating", movie.getRating(),
                     "releaseDate", movie.getReleaseDate(),
+                    "originalLanguage", movie.getOriginalLanguage(),
+                    "popularity", movie.getPopularity(),
+                    "adult", movie.isAdult(),
                     "posterPath", movie.getPosterPath()
                 );
-                System.out.println("Dados do filme: " + movieData);
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("movieData", movieData);
+                response.put("watched", rating != null);  // true se o usuário já avaliou
+                response.put("rating", rating != null ? rating == 1 : null); // true = like, false = deslike, null = não avaliou
+
                 res.type("application/json");
-                return gson.toJson(Map.of("status", "ok", "movie", movieData));
+                res.status(200);
+                return gson.toJson(response);
 
             } catch (NumberFormatException e) {
                 res.status(400);
@@ -1295,10 +1309,9 @@ public class Application {
             } catch (Exception e) {
                 e.printStackTrace();
                 res.status(500);
-                return gson.toJson(Map.of("error", "Erro ao buscar informações do filme: " + e.getMessage()));
+                return gson.toJson(Map.of("error", "Erro ao buscar dados do filme: " + e.getMessage()));
             }
         });
-
 
     }
 
