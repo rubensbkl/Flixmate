@@ -42,7 +42,6 @@ import service.RecommendationService;
 import service.TMDBService;
 import service.UserGenreService;
 import service.UserService;
-import util.AiOutput;
 import util.FlixAi;
 import util.JWTUtil;
 import util.RecommendationHelper;
@@ -1083,40 +1082,6 @@ public class Application {
             }
         });
 
-        // Registra a avaliação do usuário
-        post("/api/feedback", (req, res) -> {
-            try {
-                int userId = req.attribute("userId");
-                JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
-                int movieId = bodyObj.get("movieId").getAsInt();
-                boolean feedbackValue = bodyObj.get("feedback").getAsBoolean();
-
-                JsonObject movieObj = tmdb.getMovieDetails(movieId);
-                if (movieObj == null) {
-                    res.status(400);
-                    return gson.toJson(Map.of("error", "Filme não encontrado na API TMDB"));
-                }
-
-                boolean storedMovie = movieService.storeMovie(movieObj);
-                boolean storedGenres = movieGenreService.storeMovieGenres(movieObj);
-                boolean storedFeedback = feedbackService.storeFeedback(userId, movieId, feedbackValue);
-
-                boolean success = storedMovie && storedGenres && storedFeedback;
-
-                if (success) {
-                    res.status(201);
-                    return gson.toJson(Map.of("status", "Interação registrada com sucesso"));
-                } else {
-                    res.status(500);
-                    return gson.toJson(Map.of("status", "Erro ao registrar interação"));
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.status(500);
-                return gson.toJson(Map.of("error", "Erro no servidor: " + e.getMessage()));
-            }
-        });
-
         //========================================//
         // AI - Artificial Intelligence Endpoints //
         //========================================//
@@ -1128,12 +1093,30 @@ public class Application {
                 JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
                 int movieId = bodyObj.get("movieId").getAsInt();
                 boolean ratingValue = bodyObj.get("rating").getAsBoolean();
-                System.out.println("Avaliação recebida: " + ratingValue);
-                // Armazena ou atualiza a avaliação
+
+                // Verifica se o filme existe
+                boolean movieExists = movieService.movieExists(movieId);
+                if (!movieExists) {
+                    JsonObject movieObj = tmdb.getMovieDetails(movieId);
+                    if (movieObj == null) {
+                        res.status(404);
+                        return gson.toJson(Map.of("error", "Filme não encontrado no TMDB"));
+                    } else {
+                        boolean storedMovie = movieService.storeMovie(movieObj);
+                        boolean storedGenres = movieGenreService.storeMovieGenres(movieObj);
+                    }
+                }
+                
                 boolean storedRating = feedbackService.storeOrUpdateRating(userId, movieId, ratingValue);
+                System.out.println("Situacao da Avaliacao:" + storedRating);
+
+                
+                System.out.println("ID do usuário: " + userId);
+                System.out.println("ID do filme: " + movieId);
+                System.out.println("Avaliação recebida: " + ratingValue);
                 System.out.println("Avaliação armazenada: " + storedRating);
+                
                 if (storedRating) {
-                    System.out.println("Treinando IA com feedback do usuário " + userId);
                     flixAi.train(userId, movieId, ratingValue);
                 }
 
@@ -1153,74 +1136,7 @@ public class Application {
         });
 
         // Endpoint 2
-        post("/api/recomendar", (req, res) -> {
-            int userId = req.attribute("userId");
-
-            ArrayList<Integer> recommendedMovies = recommendationService.getRecommendedMoviesIds(userId);
-
-            System.out.println("Filmes recomendados: " + recommendedMovies.size());
-
-            ArrayList<Integer> allMovies = movieService.getAllMoviesIds();
-
-            System.out.println("Filmes disponíveis: " + allMovies.size());
-
-            if (allMovies.isEmpty()) {
-                res.status(400);
-                return "{\"erro\": \"Não há filmes disponíveis para recomendar.\"}";
-            }
-
-            List<Integer> candidatos = allMovies.stream()
-                .filter(id -> !recommendedMovies.contains(id))
-                .limit(50)
-                .collect(Collectors.toList());
-
-            System.out.println("Filmes candidatos: " + candidatos.size());
-
-            if (candidatos.isEmpty()) {
-                res.status(400);
-                return "{\"erro\": \"Não há filmes não avaliados para recomendar.\"}";
-            }
-
-            StringBuilder sb = new StringBuilder();
-            sb.append("{ \"Inputs\": { \"input1\": [");
-            for (int i = 0; i < candidatos.size(); i++) {
-                int movieId = candidatos.get(i);
-                sb.append(String.format("{\"user_id\": %d, \"movie_id\": %d}", userId, movieId));
-                if (i < candidatos.size() - 1) sb.append(",");
-            }
-            sb.append("] } }");
-            String inputJson = sb.toString();
-
-            String respostaJson = flixAi.callAzureML(inputJson);
-
-            List<AiOutput> recomendacoes = helper.parseRespostaAzure(respostaJson);
-
-            if (recomendacoes.isEmpty()) {
-                res.status(404);
-                return "{\"erro\": \"Nenhuma recomendação recebida da IA.\"}";
-            }
-
-            recomendacoes.sort((a, b) -> Double.compare(b.predicted_rating, a.predicted_rating));
-            int melhorFilmeId = recomendacoes.get(0).movie_id;
-
-            boolean stored = recommendationService.storeRecommendation(userId, melhorFilmeId);
-            if (!stored) {
-                System.err.println("Erro ao salvar recomendação no banco para userId=" + userId + ", movieId=" + melhorFilmeId);
-            }
-
-            JsonObject movie = tmdb.getMovieDetails(melhorFilmeId);
-
-            if (movie == null) {
-                res.status(404);
-                return "{\"erro\": \"Filme não encontrado.\"}";
-            }
-
-            res.type("application/json");
-            return movie.toString();
-        });
-
-        // Endpoint 3
-        get("/api/surprise", (req, res) -> {
+        get("/api/recommendation", (req, res) -> {
             int userId = req.attribute("userId");
 
             ArrayList<Integer> recommendedMovies = recommendationService.getRecommendedMoviesIds(userId);
@@ -1239,15 +1155,20 @@ public class Application {
                 .collect(Collectors.toList());
             System.out.println("Filmes candidatos: " + candidatos.size());
             if (candidatos.isEmpty()) {
-                res.status(400);
+                // res.status(400);
                 return "{\"erro\": \"Não há filmes não avaliados para recomendar.\"}";
             }
+
+            // Imprimir Candidatos
+            System.out.println("Candidatos: " + candidatos);
 
             JsonObject recomendacao = flixAi.surprise(userId, candidatos);
 
+            System.out.println("Recomendação (JSON): " + recomendacao.toString());
+
             if (recomendacao == null || !recomendacao.has("recommended_movie")) {
-                res.status(404);
-                return "{\"erro\": \"Nenhuma recomendação recebida da IA.\"}";
+                // res.status(404);
+                return "{\"erro\": \"Não há filmes não avaliados para recomendar.\"}";
             }
 
             int melhorFilmeId = recomendacao.get("recommended_movie").getAsInt();

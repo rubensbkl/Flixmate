@@ -156,7 +156,6 @@ def recommend_after_training(ratings, candidate_ids=None, top_n=1):
 def surprise(user, candidate_ids, top_n=1):
     model = load_model()
     movie_dict = load_movies()
-
     candidate_movies = {
         int(mid): movie_dict[int(mid)]
         for mid in candidate_ids if int(mid) in movie_dict

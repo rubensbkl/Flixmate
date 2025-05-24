@@ -48,22 +48,6 @@ export const fetchMovies = async (page = 1) => {
     return processed;
 };
 
-export const sendFeedback = async (movieId, liked) => {
-    const token = getToken();
-
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-            movieId: movieId,
-            feedback: liked,
-        }),
-    });
-};
-
 export const setMovieRate = async (movieId, rating) => {
     const token = getToken();
     try {
@@ -91,45 +75,13 @@ export const setMovieRate = async (movieId, rating) => {
     }
 };
 
-export const gerarRecomendacao = async () => {
-    const token = getToken();
-    console.log("🔁 Gerando recomendação...");
-
-    try {
-        const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/recomendar`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            }
-        );
-
-        const data = await res.json();
-
-        // Mesmo se o status não for 200, verifique se há uma resposta com formato válido
-        if (!res.ok) {
-            console.error("Erro na resposta da API:", data);
-            throw new Error(data.error || "Erro ao gerar recomendação");
-        }
-
-        console.log("📬 Recomendação recebida:", data);
-        return data; // não use data.recomendacao
-    } catch (error) {
-        console.error("Erro ao buscar recomendação:", error);
-        throw error;
-    }
-};
-
-export const getSurprise = async () => {
+export const getRecommendation = async () => {
     const token = getToken();
     console.log("🔁 Gerando surpresa...");
 
     try {
         const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/surprise`,
+            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation`,
             {
                 method: "GET",
                 headers: {
@@ -143,10 +95,14 @@ export const getSurprise = async () => {
 
         const data = await res.json();
 
-        // Mesmo se o status não for 200, verifique se há uma resposta com formato válido
-        if (!res.ok) {
+        // Caso de erro, verifique o status da resposta
+        if (data.erro === "Não há filmes não avaliados para recomendar.") {
+          
+            return;
+        } else if (!res.ok) {
             console.error("Erro na resposta da API:", data);
             throw new Error(data.error || "Erro ao gerar recomendação");
+            return;
         }
 
         console.log("📬 Recomendação recebida:", data);

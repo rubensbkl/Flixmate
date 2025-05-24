@@ -18,10 +18,9 @@ import MovieMatchModal from "@/components/MovieMatchModal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
     fetchMovies,
-    gerarRecomendacao,
-    getSurprise,
+    setMovieRate,
+    getRecommendation,
     resetFeedbacks,
-    sendFeedback,
 } from "@/lib/api";
 import { movieCache } from "@/lib/cache";
 import { clearSession, loadSession, saveSession } from "@/lib/session";
@@ -128,7 +127,7 @@ export default function Home() {
         setIsAnimating(true);
         setSwipeDirection(direction);
 
-        await sendFeedback(movie.id, liked);
+        await setMovieRate(movie.id, liked);
 
         const newCount = feedbackCount + 1;
         setFeedbackCount(newCount);
@@ -143,7 +142,7 @@ export default function Home() {
             try {
                 setIsLoadingRecommendation(true);
                 // Get recommendation and show match modal
-                const recommendationData = await gerarRecomendacao();
+                const recommendationData = await getRecommendation();
                 setRecommendedMovie(recommendationData);
 
                 // Reset feedback count
@@ -241,7 +240,7 @@ export default function Home() {
     const surprise = async () => {
         setIsLoadingRecommendation(true);
 
-        const randomMovie = await getSurprise();
+        const randomMovie = await getRecommendation();
         setRecommendedMovie(randomMovie);
         setTimeout(() => {
             setIsLoadingRecommendation(false);

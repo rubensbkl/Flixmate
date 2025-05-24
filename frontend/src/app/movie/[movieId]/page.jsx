@@ -141,6 +141,10 @@ export default function MovieProfilePage() {
                                     {movieInfo.releaseDate}
                                 </p>
                                 <p className="text-sm text-gray-400">
+                                    <strong>Rating:</strong>{" "}
+                                    {movieInfo.rating}
+                                </p>
+                                <p className="text-sm text-gray-400">
                                     <strong>Nota Média:</strong>{" "}
                                     {movieInfo.voteAverage}
                                 </p>
