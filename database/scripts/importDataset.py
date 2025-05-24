@@ -3,7 +3,7 @@ import psycopg2
 from psycopg2.extras import execute_values
 
 # Carregar o CSV já tratado
-df = pd.read_csv("movies_tratado.csv")
+df = pd.read_csv("newDataset.csv")
 
 # Dados de conexão com o banco
 USUARIO = "cinematch"
