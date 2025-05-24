@@ -88,4 +88,14 @@ public class MovieService {
         return movieDAO.getAllMoviesIds();
     }
 
+    /**
+     * Verifica se um filme existe no banco de dados
+     * 
+     * @param movieId O ID do filme a ser verificado
+     * @return true se o filme existe, false caso contrário
+     */
+    public boolean movieExists(int movieId) {
+        return movieDAO.exists(movieId);
+    }
+
 }

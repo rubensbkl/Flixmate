@@ -1,10 +1,8 @@
 package service;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 import dao.FeedbackDAO;
 import model.Feedback;
@@ -118,7 +116,7 @@ public class FeedbackService {
                 System.err.println("Nenhum feedback encontrado para o usuário " + userId);
                 throw new NoSuchFieldException("Nenhum feedback encontrado");
             }
-            
+
             // Verificar se o usuário existe
             if (userId <= 0) {
                 System.err.println("Usuário não encontrado");
@@ -200,16 +198,31 @@ public class FeedbackService {
         }
     }
 
+    
+
+    /**
+     * Armazena ou atualiza a avaliação (rating) de um usuário para um filme.
+     * Se já existir um feedback para o usuário e filme informados, verifica se o valor do feedback é igual ao novo valor.
+     * Caso seja igual, não realiza nenhuma alteração e retorna false.
+     * Caso seja diferente, atualiza o feedback existente com o novo valor.
+     * Se não existir feedback, cria um novo registro de feedback.
+     *
+     * @param userId  o ID do usuário que está avaliando
+     * @param movieId o ID do filme a ser avaliado
+     * @param rating  o valor da avaliação (true para positivo, false para negativo)
+     * @return true se o feedback foi armazenado ou atualizado com sucesso, false caso contrário
+     */
     public boolean storeOrUpdateRating(int userId, int movieId, boolean rating) {
         try {
-            // Verificar se o feedback já existe
             Feedback existingFeedback = feedbackDAO.getFeedback(userId, movieId);
             if (existingFeedback != null) {
-                // Atualizar feedback existente
+                if (existingFeedback.getFeedback() == rating) {
+                    System.err.println("Feedback já existe com o mesmo valor");
+                    return false;
+                }
                 existingFeedback.setFeedback(rating);
                 return feedbackDAO.update(existingFeedback);
             } else {
-                // Armazenar novo feedback
                 return storeFeedback(userId, movieId, rating);
             }
         } catch (Exception e) {

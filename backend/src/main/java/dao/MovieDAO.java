@@ -56,13 +56,15 @@ public class MovieDAO extends DAO {
      * @param movieId O ID do filme a ser verificado
      * @return true se o filme existe, false caso contrário
      */
-    public boolean exists(int movieId) throws SQLException {
+    public boolean exists(int movieId) {
         String sql = "SELECT 1 FROM movies WHERE id = ?";
         try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
             stmt.setInt(1, movieId);
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next(); // Retorna true se o filme for encontrado
             }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao verificar se o filme existe: " + e.getMessage(), e);
         }
     }
 
