@@ -151,3 +151,4 @@ next-env.d.ts
 *.pkl
 __pycache__/
 venv/
+database/scripts/*.csv
