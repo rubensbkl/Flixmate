@@ -4,7 +4,10 @@ import Header from '@/components/Header';
 import Navbar from '@/components/Navbar';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Searchbar from '@/components/Searchbar';
-import { useRouter } from 'next/navigation';
+import { 
+    fetchMovies
+} from '@/lib/api';
+
 import { useEffect, useState, useCallback } from 'react';
 
 // Debounce para evitar muitas requisições rápido
@@ -15,16 +18,6 @@ function useDebounce(value, delay) {
         return () => clearTimeout(handler);
     }, [value, delay]);
     return debouncedValue;
-}
-
-// Função de busca que você deve implementar para buscar da sua API/servidor
-async function fetchMovies(query, page = 1, limit = 25) {
-    // Exemplo: chame sua API passando query, page e limit para paginação
-    // Retorne { results: [], total: number }
-    const params = new URLSearchParams({ query, page, limit });
-    const res = await fetch(`/api/movies/search?${params.toString()}`);
-    if (!res.ok) throw new Error('Erro ao buscar filmes');
-    return await res.json();
 }
 
 export default function SearchPage() {
@@ -40,6 +33,7 @@ export default function SearchPage() {
 
     // Buscar filmes sempre que query ou página mudar
     useEffect(() => {
+        console.log('Buscando filmes com a query:', debouncedQuery);
         if (!debouncedQuery.trim()) {
             setMovies([]);
             setHasMore(false);
@@ -50,9 +44,11 @@ export default function SearchPage() {
         const loadMovies = async () => {
             setLoading(true);
             setError(null);
-
+            console.log('Carregando filmes...');
             try {
+                console.log('Buscando filmes na API...');
                 const data = await fetchMovies(debouncedQuery, page, 25);
+                console.log('Filmes encontrados:', data);
                 if (page === 1) {
                     setMovies(data.results);
                 } else {

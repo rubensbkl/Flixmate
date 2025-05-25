@@ -1196,14 +1196,13 @@ public class Application {
         get("/api/movies/search", (req, res) -> {
             try {
                 // Autenticação: você pode pegar o userId assim (se usar)
-                int currentUserId = req.attribute("userId");
-                if (currentUserId <= 0) {
-                    res.status(401);
-                    return gson.toJson(Map.of("error", "Usuário não autorizado"));
-                }
+                int userId = req.attribute("userId");
 
                 // Parâmetros da query
                 String query = req.queryParams("query");
+                System.out.println("Query: " + query);
+                System.out.println("UserId: " + userId);
+
                 if (query == null) query = "";
                 query = query.trim();
 
@@ -1220,7 +1219,7 @@ public class Application {
                 if (limit < 1 || limit > 100) limit = 25; // limite maximo 100
 
                 // Busca paginada usando DAO
-                List<Movie> movies = movieService.search(query, page, limit);
+                ArrayList<Movie> movies = movieService.search(query, page, limit);
 
                 // Montar resposta simplificada
                 List<Map<String, Object>> results = new ArrayList<>();
