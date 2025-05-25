@@ -47,51 +47,7 @@ public class FlixAi {
         }
     }
 
-    public JsonObject recommend(ArrayList<Feedback> feedbacks, ArrayList<Integer> candidateIds) {
-        JsonObject payload = new JsonObject();
-        JsonArray ratingsArray = new JsonArray();
-
-        for (Feedback feedback : feedbacks) {
-            JsonObject ratingObj = new JsonObject();
-            ratingObj.addProperty("user", String.valueOf(feedback.getUserId()));
-            ratingObj.addProperty("movie", String.valueOf(feedback.getMovieId()));
-            ratingObj.addProperty("rating", feedback.getFeedback() ? 1 : 0);
-            ratingsArray.add(ratingObj);
-        }
-
-        payload.add("ratings", ratingsArray);
-
-        System.out.println("Enviando dados para IA local: " + payload.toString());
-
-        try {
-            HttpClient client = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .build();
-
-            HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(AI_URL + "/train"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
-                .build();
-
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() != 200) {
-                System.err.println("Erro na resposta IA trainandrecommend: " + response.body());
-                return null;
-            }
-
-            System.out.println("Resposta da IA: " + response.body());
-
-            return JsonParser.parseString(response.body()).getAsJsonObject();
-
-        } catch (Exception e) {
-            System.err.println("Erro ao enviar dados para IA local: " + e.getMessage());
-            return null;
-        }
-    }
-
-    public JsonObject surprise(int userId, List<Integer> candidateIds) throws Exception {
+    public JsonObject recommend(int userId, List<Integer> candidateIds) throws Exception {
         JsonObject payload = new JsonObject();
         payload.addProperty("user", String.valueOf(userId));
 
@@ -106,7 +62,7 @@ public class FlixAi {
             .build();
 
         HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(AI_URL + "/surprise"))
+            .uri(URI.create(AI_URL + "/recommend"))
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
             .build();
@@ -114,7 +70,7 @@ public class FlixAi {
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() != 200) {
-            System.err.println("Erro na resposta IA surprise: " + response.body());
+            System.err.println("Erro na resposta IA recommend: " + response.body());
             return null;
         }
 

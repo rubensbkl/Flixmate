@@ -100,17 +100,19 @@ def train_model(ratings, model, movie_dict):
             continue
 
         x = movie_to_features(movie_id, user, movie_dict[movie_id])
+        logger.info(f"Treinando usuário {user} com filme {movie_id} e features {x} => rating {r['rating']}")
         model.learn_one(x, r['rating'])
         updated = True
 
     return model, updated
 
-def recommend(user, model, movie_dict, top_n=5):
+def model_recommend(user, model, movie_dict, top_n=5):
     scores = []
     for movie_id, movie in movie_dict.items():
         x = movie_to_features(movie_id, user, movie)
         proba = model.predict_proba_one(x)
         score = max([proba.get(k, 0) for k in [True, 1, '1']])
+        logger.info(f"User {user} - Movie {movie_id} - Score {score:.4f} - Features: {x}")
         scores.append((movie_id, score))
 
     top = sorted(scores, key=lambda x: x[1], reverse=True)[:top_n]
@@ -120,9 +122,10 @@ def recommend(user, model, movie_dict, top_n=5):
     if missing:
         logger.warning(f"🎯 Filmes candidatos ausentes: {missing}")
 
+    logger.info(f"Top {top_n} recommendations for user {user}: {top}")
     return top
 
-# ENDPOINT 1 - Treinamento sem recomendação
+# ENDPOINT 1 - Treina o modelo
 def train(ratings):
     model = load_model()
     movie_dict = load_movies()
@@ -131,29 +134,8 @@ def train(ratings):
     save_model(model, updated)
     return {"message": "✅ Treinamento concluído com sucesso."}
 
-# ENDPOINT 2 - Treinamento + recomendação
-def recommend_after_training(ratings, candidate_ids=None, top_n=1):
-    if not ratings:
-        return {"error": "Lista de avaliações vazia."}
-
-    user = ratings[0]['user']
-    model = load_model()
-    movie_dict = load_movies()
-
-    model, updated = train_model(ratings, model, movie_dict)
-    save_model(model, updated)
-
-    if candidate_ids:
-        movie_dict = {int(mid): movie_dict[int(mid)] for mid in candidate_ids if int(mid) in movie_dict}
-
-    top = recommend(user, model, movie_dict, top_n=top_n)
-    if not top:
-        return {"error": "❌ Nenhum filme candidato disponível para recomendação."}
-
-    return {"recommended_movie": top[0][0], "score": top[0][1]}
-
-# ENDPOINT 3 - Recomendação surpresa (sem treinamento)
-def surprise(user, candidate_ids, top_n=1):
+# ENDPOINT 2 - Retorna recomendação
+def recommend(user, candidate_ids, top_n=1):
     model = load_model()
     movie_dict = load_movies()
     candidate_movies = {
@@ -161,7 +143,7 @@ def surprise(user, candidate_ids, top_n=1):
         for mid in candidate_ids if int(mid) in movie_dict
     }
 
-    top = recommend(user, model, candidate_movies, top_n=top_n)
+    top = model_recommend(user, model, candidate_movies, top_n=top_n)
     if not top:
         return {"error": "❌ Nenhum filme candidato disponível para recomendação."}
 

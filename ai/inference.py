@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from recommender import train, recommend_after_training, surprise
+from recommender import train, recommend
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 
 app = FastAPI()
 
@@ -14,10 +14,6 @@ class TrainRequest(BaseModel):
     ratings: List[Rating]
 
 class RecommendRequest(BaseModel):
-    ratings: List[Rating]
-    candidate_ids: Optional[List[str]]
-
-class SurpriseRequest(BaseModel):
     user: str
     candidate_ids: List[str]
 
@@ -28,9 +24,4 @@ def train_endpoint(req: TrainRequest):
 
 @app.post("/recommend")
 def recommend_endpoint(req: RecommendRequest):
-    ratings = [r.dict() for r in req.ratings]
-    return recommend_after_training(ratings, req.candidate_ids)
-
-@app.post("/surprise")
-def surprise_endpoint(req: SurpriseRequest):
-    return surprise(req.user, req.candidate_ids)
+    return recommend(req.user, req.candidate_ids)
