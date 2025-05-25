@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.List;
 
 import model.Feedback;
 
@@ -161,5 +160,28 @@ public class FeedbackDAO extends DAO {
             System.err.println("Erro ao contar interações: " + e.getMessage());
         }
         return count;
+    }
+
+    /**
+     * Remove uma interação específica
+     * @param userId O ID do usuário
+     * @param movieId O ID do filme
+     * @return true se a remoção foi bem-sucedida, false caso contrário
+     */
+    public boolean removeFeedback(int userId, int movieId) {
+        boolean status = false;
+        try {
+            String sql = "DELETE FROM feedbacks WHERE user_id = ? AND movie_id = ?";
+            PreparedStatement st = conexao.prepareStatement(sql);
+            st.setInt(1, userId);
+            st.setInt(2, movieId);
+            
+            int affectedRows = st.executeUpdate();
+            status = (affectedRows > 0);
+            st.close();
+        } catch (SQLException e) {
+            System.err.println("Erro ao remover interação: " + e.getMessage());
+        }
+        return status;
     }
 }

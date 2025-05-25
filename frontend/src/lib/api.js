@@ -48,8 +48,41 @@ export const fetchMoviesToRate = async (page = 1) => {
     return processed;
 };
 
+// Função para buscar o rating atual do usuário para um filme específico
+export const getMovieRating = async (movieId) => {
+    const token = getToken();
+    
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rate/${movieId}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            return data.currentRating; // retorna true, false ou null
+        } else if (res.status === 404) {
+            // Usuário ainda não avaliou este filme
+            return null;
+        } else {
+            const err = await res.json();
+            console.error("Erro na resposta da API:", err);
+            throw new Error(err.error || "Erro ao buscar rating");
+        }
+    } catch (err) {
+        console.error("Erro ao buscar rating:", err);
+        throw err;
+    }
+};
+
+
+// Função corrigida para enviar rating
 export const setMovieRate = async (movieId, rating) => {
     const token = getToken();
+    
     try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rate`, {
             method: "POST",
@@ -58,20 +91,50 @@ export const setMovieRate = async (movieId, rating) => {
                 Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
-                movieId: movieId,
+                movieId: parseInt(movieId),
                 rating: rating,
             }),
         });
 
         if (res.ok) {
             const data = await res.json();
-            return data.status;
+            console.log("Avaliação enviada com sucesso:", data);
+            return data;
         } else {
             const err = await res.json();
+            console.error("Erro na resposta da API:", err);
             throw new Error(err.error || "Erro na requisição");
         }
     } catch (err) {
         console.error("Erro ao enviar avaliação:", err);
+        throw err;
+    }
+};
+
+// Função para remover rating (se você quiser implementar)
+export const removeMovieRating = async (movieId) => {
+    const token = getToken();
+    
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rate/${movieId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            return data;
+        } else {
+            const err = await res.json();
+            console.error("Erro na resposta da API:", err);
+            throw new Error(err.error || "Erro ao remover rating");
+        }
+    } catch (err) {
+        console.error("Erro ao remover rating:", err);
+        throw err;
     }
 };
 
@@ -102,10 +165,8 @@ export const getRecommendation = async () => {
         } else if (!res.ok) {
             console.error("Erro na resposta da API:", data);
             throw new Error(data.error || "Erro ao gerar recomendação");
-            return;
         }
 
-        console.log("📬 Recomendação recebida:", data);
         return data; // não use data.recomendacao
     } catch (error) {
         console.error("Erro ao buscar recomendação:", error);

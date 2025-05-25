@@ -9,8 +9,8 @@ export default function Header() {
                     alt="CineMatch Logo" 
                     width={40} 
                     height={40} 
-                    className="h-auto"
-                />
+                    className="invert h-auto"
+                    style={{ filter: "invert(1)" }}                />
             </div>
         </header>
     );

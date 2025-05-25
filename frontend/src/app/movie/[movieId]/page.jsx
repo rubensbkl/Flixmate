@@ -2,18 +2,13 @@
 
 import Navbar from "@/components/Navbar";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { fetchMovieById } from "@/lib/api";
+import { fetchMovieById, getMovieRating, setMovieRate } from "@/lib/api";
+import {
+    HandThumbDownIcon,
+    HandThumbUpIcon,
+} from "@heroicons/react/24/outline";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-    setMovieRate,
-} from "@/lib/api";
-import {
-    HeartIcon,
-    XMarkIcon,
-    HandThumbUpIcon,
-    HandThumbDownIcon,
-} from "@heroicons/react/24/outline";
 
 export default function MovieProfilePage() {
     const { movieId } = useParams();
@@ -22,17 +17,31 @@ export default function MovieProfilePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [rating, setRating] = useState(null);
-    const [watched, setWatched] = useState(null);
+    const [ratingLoading, setRatingLoading] = useState(false);
 
     useEffect(() => {
         const loadMovie = async () => {
             try {
                 setLoading(true);
-                const { movie, watched, rating } = await fetchMovieById(movieId);
+                const { movie, rating: initialRating } = await fetchMovieById(movieId);
+                console.log("Dados do filme:", movie);
+                console.log("Rating inicial do filme:", initialRating);
+
+                if (!movie) {
+                    setError("Filme não encontrado.");
+                    return;
+                }
                 setMovieInfo(movie);
-                setRating(rating);
-
-
+                
+                // Buscar o rating atual do usuário para este filme
+                try {
+                    const currentRating = await getMovieRating(movieId);
+                    setRating(currentRating);
+                    console.log("Rating atual encontrado:", currentRating);
+                } catch (ratingError) {
+                    console.log("Nenhum rating encontrado para este filme");
+                    setRating(null);
+                }
             } catch (err) {
                 console.error("Erro ao buscar filme:", err);
                 setError("Não foi possível carregar os dados do filme.");
@@ -47,28 +56,78 @@ export default function MovieProfilePage() {
     }, [movieId]);
 
     const handleLike = async () => {
-        if (rating === true) {
-            setRating(null);
-            return;
-        }
+        if (ratingLoading) return;
+        
         try {
-            await setMovieRate(movieId, true);
-            setRating(true);
+            setRatingLoading(true);
+            
+            console.log("Estado atual antes do like:", rating);
+            
+            // Sempre envia a requisição para o backend
+            const response = await setMovieRate(movieId, true);
+            
+            console.log("Resposta do backend:", response);
+            
+            // Verifica se a resposta contém currentRating (mesmo que seja null)
+            if (response && ('currentRating' in response)) {
+                setRating(response.currentRating);
+                console.log("Novo estado após like:", response.currentRating);
+                console.log("Operação realizada:", response.operation);
+            } else {
+                console.error("Resposta do backend não contém currentRating");
+                console.error("Propriedades da resposta:", Object.keys(response || {}));
+            }
+            
         } catch (err) {
-            console.error("Erro ao enviar like:", err);
+            console.error("Erro ao processar like:", err);
+            // Em caso de erro, recarrega o estado atual do servidor
+            try {
+                const currentRating = await getMovieRating(movieId);
+                setRating(currentRating);
+                console.log("Estado recarregado após erro:", currentRating);
+            } catch (reloadError) {
+                console.error("Erro ao recarregar estado:", reloadError);
+            }
+        } finally {
+            setRatingLoading(false);
         }
     };
 
     const handleDislike = async () => {
-        if (rating === false) {
-            setRating(null);
-            return;
-        }
+        if (ratingLoading) return;
+        
         try {
-            await setMovieRate(movieId, false);
-            setRating(false);
+            setRatingLoading(true);
+            
+            console.log("Estado atual antes do dislike:", rating);
+            
+            // Sempre envia a requisição para o backend
+            const response = await setMovieRate(movieId, false);
+            
+            console.log("Resposta do backend:", response);
+            
+            // Verifica se a resposta contém currentRating (mesmo que seja null)
+            if (response && ('currentRating' in response)) {
+                setRating(response.currentRating);
+                console.log("Novo estado após dislike:", response.currentRating);
+                console.log("Operação realizada:", response.operation);
+            } else {
+                console.error("Resposta do backend não contém currentRating");
+                console.error("Propriedades da resposta:", Object.keys(response || {}));
+            }
+            
         } catch (err) {
-            console.error("Erro ao enviar dislike:", err);
+            console.error("Erro ao processar dislike:", err);
+            // Em caso de erro, recarrega o estado atual do servidor
+            try {
+                const currentRating = await getMovieRating(movieId);
+                setRating(currentRating);
+                console.log("Estado recarregado após erro:", currentRating);
+            } catch (reloadError) {
+                console.error("Erro ao recarregar estado:", reloadError);
+            }
+        } finally {
+            setRatingLoading(false);
         }
     };
 
@@ -141,12 +200,7 @@ export default function MovieProfilePage() {
                                     {movieInfo.releaseDate}
                                 </p>
                                 <p className="text-sm text-gray-400">
-                                    <strong>Rating:</strong>{" "}
-                                    {movieInfo.rating}
-                                </p>
-                                <p className="text-sm text-gray-400">
-                                    <strong>Nota Média:</strong>{" "}
-                                    {movieInfo.voteAverage}
+                                    <strong>Rating:</strong> {movieInfo.rating}
                                 </p>
                             </div>
                         </div>
@@ -154,12 +208,10 @@ export default function MovieProfilePage() {
                     <div className="flex space-x-4 py-4 md:py-2 justify-center mb-20 md:mb-4">
                         <button
                             onClick={handleDislike}
+                            disabled={ratingLoading}
                             className={`w-14 h-14 flex items-center justify-center rounded-full shadow-lg hover:scale-105 transition ${
-                                rating === false
-                                    ? "bg-accent"
-                                    : "bg-foreground"
-                            
-                            }`}
+                                rating === false ? "bg-accent" : "bg-foreground"
+                            } ${ratingLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                             title="Descurtir"
                         >
                             <HandThumbDownIcon
@@ -172,11 +224,10 @@ export default function MovieProfilePage() {
                         </button>
                         <button
                             onClick={handleLike}
+                            disabled={ratingLoading}
                             className={`w-14 h-14 flex items-center justify-center rounded-full shadow-lg hover:scale-105 transition ${
-                                rating === true
-                                    ? "bg-accent"
-                                    : "bg-foreground"
-                            }`}
+                                rating === true ? "bg-accent" : "bg-foreground"
+                            } ${ratingLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                             title="Curtir"
                         >
                             <HandThumbUpIcon
@@ -189,8 +240,7 @@ export default function MovieProfilePage() {
                         </button>
                     </div>
                 </main>
-            </div>   
-
+            </div>
         </ProtectedRoute>
     );
 }

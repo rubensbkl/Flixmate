@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS feedbacks (
 CREATE TABLE IF NOT EXISTS recommendations (
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     movie_id INTEGER REFERENCES movies(id) ON DELETE CASCADE NOT NULL,
+    -- Score de recomendação (0 a 1)
     watched BOOLEAN DEFAULT FALSE NOT NULL,
     favorite BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
