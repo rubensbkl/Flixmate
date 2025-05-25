@@ -99,7 +99,7 @@ public class MovieService {
         return movieDAO.exists(movieId);
     }
 
-    public List<Movie> search(String query, int page, int limit) throws Exception {
+    public ArrayList<Movie> search(String query, int page, int limit) throws Exception {
         // Aqui pode colocar regras de negócio, logs, caching, validações...
         return movieDAO.search(query, page, limit);
     }

@@ -147,12 +147,12 @@ public class MovieDAO extends DAO {
         return ids;
     }
 
-    public List<Movie> search(String query, int page, int limit) {
-        List<Movie> movies = new ArrayList<>();
+    public ArrayList<Movie> search(String query, int page, int limit) {
+        ArrayList<Movie> movies = new ArrayList<>();
 
-        String sql = "SELECT id, title, poster_path, release_date FROM movies " +
-                    "WHERE LOWER(title) LIKE ? " +
-                    "ORDER BY title ASC " +
+        String sql = "SELECT id, title, poster_path, release_date, popularity FROM movies " +
+                    "WHERE LOWER(title) LIKE ? AND adult = false " +
+                    "ORDER BY popularity DESC " +
                     "LIMIT ? OFFSET ?";
 
         try {
@@ -168,6 +168,7 @@ public class MovieDAO extends DAO {
                 movie.setTitle(rs.getString("title"));
                 movie.setPosterPath(rs.getString("poster_path"));
                 movie.setReleaseDate(rs.getString("release_date"));
+                movie.setPopularity(rs.getDouble("popularity")); // Corrigido aqui
                 movies.add(movie);
             }
             rs.close();
@@ -176,6 +177,12 @@ public class MovieDAO extends DAO {
             throw new RuntimeException("Erro ao buscar filmes: " + e.getMessage(), e);
         }
 
+        System.out.println("Filmes encontrados: " + movies.size());
+        for (Movie movie : movies) {
+            System.out.println(movie.toString());
+        }
+
         return movies;
     }
+
 }
