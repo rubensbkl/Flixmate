@@ -1162,7 +1162,7 @@ public class Application {
             // Imprimir Candidatos
             System.out.println("Candidatos: " + candidatos);
 
-            JsonObject recomendacao = flixAi.surprise(userId, candidatos);
+            JsonObject recomendacao = flixAi.recommend(userId, candidatos);
 
             System.out.println("Recomendação (JSON): " + recomendacao.toString());
 
@@ -1186,6 +1186,64 @@ public class Application {
 
             res.type("application/json");
             return movie.toString();
+        });
+
+        //=====================//
+        // Endpoints de Filmes //
+        //=====================//
+
+        // Endpoint seila
+        get("/api/movies/search", (req, res) -> {
+            try {
+                // Autenticação: você pode pegar o userId assim (se usar)
+                int currentUserId = req.attribute("userId");
+                if (currentUserId <= 0) {
+                    res.status(401);
+                    return gson.toJson(Map.of("error", "Usuário não autorizado"));
+                }
+
+                // Parâmetros da query
+                String query = req.queryParams("query");
+                if (query == null) query = "";
+                query = query.trim();
+
+                int page = 1;
+                int limit = 25;
+                try {
+                    page = Integer.parseInt(req.queryParams("page"));
+                    limit = Integer.parseInt(req.queryParams("limit"));
+                } catch (Exception e) {
+                    // valores default se parsing falhar
+                }
+
+                if (page < 1) page = 1;
+                if (limit < 1 || limit > 100) limit = 25; // limite maximo 100
+
+                // Busca paginada usando DAO
+                List<Movie> movies = movieService.search(query, page, limit);
+
+                // Montar resposta simplificada
+                List<Map<String, Object>> results = new ArrayList<>();
+                for (Movie movie : movies) {
+                    Map<String, Object> movieData = Map.of(
+                        "id", movie.getId(),
+                        "title", movie.getTitle(),
+                        "poster_path", movie.getPosterPath(),
+                        "release_date", movie.getReleaseDate()
+                    );
+                    results.add(movieData);
+                }
+
+                res.type("application/json");
+                return gson.toJson(Map.of(
+                    "status", "ok",
+                    "results", results
+                ));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao buscar filmes: " + e.getMessage()));
+            }
         });
 
         get("/api/movie/:movieId/details", (req, res) -> {

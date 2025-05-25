@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 import model.Movie;
 
@@ -144,5 +145,37 @@ public class MovieDAO extends DAO {
             throw new RuntimeException("Erro ao buscar IDs dos filmes: " + e.getMessage(), e);
         }
         return ids;
+    }
+
+    public List<Movie> search(String query, int page, int limit) {
+        List<Movie> movies = new ArrayList<>();
+
+        String sql = "SELECT id, title, poster_path, release_date FROM movies " +
+                    "WHERE LOWER(title) LIKE ? " +
+                    "ORDER BY title ASC " +
+                    "LIMIT ? OFFSET ?";
+
+        try {
+            PreparedStatement st = conexao.prepareStatement(sql);
+            st.setString(1, "%" + query.toLowerCase() + "%");
+            st.setInt(2, limit);
+            st.setInt(3, (page - 1) * limit);
+
+            ResultSet rs = st.executeQuery();
+            while (rs.next()) {
+                Movie movie = new Movie();
+                movie.setId(rs.getInt("id"));
+                movie.setTitle(rs.getString("title"));
+                movie.setPosterPath(rs.getString("poster_path"));
+                movie.setReleaseDate(rs.getString("release_date"));
+                movies.add(movie);
+            }
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar filmes: " + e.getMessage(), e);
+        }
+
+        return movies;
     }
 }

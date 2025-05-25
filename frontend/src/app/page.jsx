@@ -17,7 +17,7 @@ import TinderCard from "react-tinder-card";
 import MovieMatchModal from "@/components/MovieMatchModal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-    fetchMovies,
+    fetchMoviesToRate,
     setMovieRate,
     getRecommendation,
     resetFeedbacks,
@@ -93,7 +93,7 @@ export default function Home() {
 
         setLoading(true);
         try {
-            const fetchedMovies = await fetchMovies(currentPage.current);
+            const fetchedMovies = await fetchMoviesToRate(currentPage.current);
             const reversed = [...fetchedMovies].reverse();
             const startIdx = reversed.length - 1;
 

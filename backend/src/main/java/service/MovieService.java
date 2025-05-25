@@ -1,6 +1,7 @@
 package service;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import com.google.gson.JsonObject;
 
@@ -98,4 +99,8 @@ public class MovieService {
         return movieDAO.exists(movieId);
     }
 
+    public List<Movie> search(String query, int page, int limit) throws Exception {
+        // Aqui pode colocar regras de negócio, logs, caching, validações...
+        return movieDAO.search(query, page, limit);
+    }
 }

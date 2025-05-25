@@ -5,7 +5,7 @@ const getToken = () => {
     return localStorage.getItem("token");
 };
 
-export const fetchMovies = async (page = 1) => {
+export const fetchMoviesToRate = async (page = 1) => {
     const token = getToken();
 
     // Usamos o token como chave do cache em vez do ID
@@ -622,6 +622,45 @@ export const fetchMovieById = async (movieId) => {
 
     } catch (error) {
         console.error(`❌ Erro ao buscar informações do filme ${movieId}:`, error);
+        throw error;
+    }
+};
+
+export const fetchMovies = async (query, page = 1, limit = 25) => {
+    const token = getToken();
+    console.log(`📡 Buscando filmes: query="${query}", página=${page}`);
+
+    try {
+        const params = new URLSearchParams({
+            query,
+            page: page.toString(),
+            limit: limit.toString(),
+        });
+
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/movies/search?${params.toString()}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+
+        const data = await res.json();
+
+        if (data.status === "ok" && Array.isArray(data.results)) {
+            console.log(`🔍 ${data.results.length} filmes encontrados`);
+            return data;
+        } else {
+            console.log("⚠️ Formato de resposta inesperado:", data);
+            return { results: [], total: 0 };
+        }
+    } catch (error) {
+        console.error("❌ Erro ao buscar filmes:", error);
         throw error;
     }
 };
