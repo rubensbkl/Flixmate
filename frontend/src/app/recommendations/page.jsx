@@ -27,15 +27,15 @@ export default function HistoricoPage() {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
         };
-        
+
         // Verificar no carregamento inicial
         checkMobile();
-        
+
         // Adicionar event listener para redimensionamento
-        window.addEventListener('resize', checkMobile);
-        
+        window.addEventListener("resize", checkMobile);
+
         // Limpar o event listener
-        return () => window.removeEventListener('resize', checkMobile);
+        return () => window.removeEventListener("resize", checkMobile);
     }, []);
 
     // Função toggleIcon para chamar a API
@@ -69,8 +69,12 @@ export default function HistoricoPage() {
                     success = await deleteMovie(movieId);
                     // Se deletar com sucesso, remove o filme da lista local
                     if (success) {
-                        setRecomendacoes(prev => prev.filter(movie => movie.id !== movieId));
-                        console.log(`Filme ${movieId} removido da lista após deleção.`);
+                        setRecomendacoes((prev) =>
+                            prev.filter((movie) => movie.id !== movieId)
+                        );
+                        console.log(
+                            `Filme ${movieId} removido da lista após deleção.`
+                        );
                     }
                     break;
                 default:
@@ -78,25 +82,38 @@ export default function HistoricoPage() {
                     // Reverte o estado se o tipo for inválido
                     setActiveIcons((prev) => ({
                         ...prev,
-                        [movieId]: { ...prev[movieId], [iconType]: previousIconsState },
+                        [movieId]: {
+                            ...prev[movieId],
+                            [iconType]: previousIconsState,
+                        },
                     }));
                     return;
             }
 
             // 4. Reverte o estado se a API falhar
-            if (!success && iconType !== 'trash') {
-                console.error(`Falha ao atualizar ${iconType} para o filme ${movieId}. Revertendo estado.`);
+            if (!success && iconType !== "trash") {
+                console.error(
+                    `Falha ao atualizar ${iconType} para o filme ${movieId}. Revertendo estado.`
+                );
                 setActiveIcons((prev) => ({
                     ...prev,
-                    [movieId]: { ...prev[movieId], [iconType]: previousIconsState },
+                    [movieId]: {
+                        ...prev[movieId],
+                        [iconType]: previousIconsState,
+                    },
                 }));
-            } else if (success && iconType !== 'trash') {
-                 console.log(`Ação '${iconType}' para filme ${movieId} realizada com sucesso.`);
+            } else if (success && iconType !== "trash") {
+                console.log(
+                    `Ação '${iconType}' para filme ${movieId} realizada com sucesso.`
+                );
             }
         } catch (err) {
-            console.error(`Erro na chamada da API para ${iconType} no filme ${movieId}:`, err);
+            console.error(
+                `Erro na chamada da API para ${iconType} no filme ${movieId}:`,
+                err
+            );
             // Reverte o estado em caso de erro inesperado na API
-             setActiveIcons((prev) => ({
+            setActiveIcons((prev) => ({
                 ...prev,
                 [movieId]: { ...prev[movieId], [iconType]: previousIconsState },
             }));
@@ -120,18 +137,20 @@ export default function HistoricoPage() {
                 console.log("Dados recebidos:", dados);
                 // Inicializa o estado activeIcons com base nos dados recebidos
                 const initialIcons = {};
-                dados.forEach(movie => {
+                dados.forEach((movie) => {
                     initialIcons[movie.id] = {
                         clock: movie.watched ?? false,
                         star: movie.favorite ?? false,
-                        trash: false
+                        trash: false,
                     };
                 });
                 setActiveIcons(initialIcons);
                 setError(null);
             } catch (err) {
                 console.error("Erro ao carregar recomendações:", err);
-                setError("Não foi possível carregar o histórico de recomendações.");
+                setError(
+                    "Não foi possível carregar o histórico de recomendações."
+                );
                 setRecomendacoes([]);
                 setActiveIcons({});
             } finally {
@@ -154,7 +173,9 @@ export default function HistoricoPage() {
                     <Header />
 
                     <div className="flex flex-col items-center w-full flex-1 overflow-y-auto px-2 md:px-4 scroll-container">
-                        <h1 className="text-xl md:text-2xl font-bold py-3 md:py-4">Histórico de Recomendações</h1>
+                        <h1 className="text-xl md:text-2xl text-white font-bold py-3 md:py-4">
+                            Histórico de Recomendações
+                        </h1>
 
                         {loading ? (
                             <div className="flex flex-1 justify-center items-center p-4 md:p-8">

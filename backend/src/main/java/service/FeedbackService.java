@@ -198,35 +198,55 @@ public class FeedbackService {
         }
     }
 
-    
-
-    /**
-     * Armazena ou atualiza a avaliação (rating) de um usuário para um filme.
-     * Se já existir um feedback para o usuário e filme informados, verifica se o valor do feedback é igual ao novo valor.
-     * Caso seja igual, não realiza nenhuma alteração e retorna false.
-     * Caso seja diferente, atualiza o feedback existente com o novo valor.
-     * Se não existir feedback, cria um novo registro de feedback.
-     *
-     * @param userId  o ID do usuário que está avaliando
-     * @param movieId o ID do filme a ser avaliado
-     * @param rating  o valor da avaliação (true para positivo, false para negativo)
-     * @return true se o feedback foi armazenado ou atualizado com sucesso, false caso contrário
-     */
+    // Correção no método storeOrUpdateRating para permitir remoção de rating
     public boolean storeOrUpdateRating(int userId, int movieId, boolean rating) {
         try {
+            System.out.println("=== INICIO storeOrUpdateRating ===");
+            System.out.println("Parâmetros: userId=" + userId + ", movieId=" + movieId + ", rating=" + rating);
+
             Feedback existingFeedback = feedbackDAO.getFeedback(userId, movieId);
+            System.out.println(
+                    "Feedback existente: " + (existingFeedback != null ? existingFeedback.getFeedback() : "null"));
+
             if (existingFeedback != null) {
+                // Se já existe o mesmo rating, REMOVE (toggle off)
                 if (existingFeedback.getFeedback() == rating) {
-                    System.err.println("Feedback já existe com o mesmo valor");
-                    return false;
+                    System.out.println("AÇÃO: Removendo rating existente (toggle off)");
+                    boolean deleteResult = feedbackDAO.removeFeedback(userId, movieId);
+                    System.out.println("Resultado do delete: " + deleteResult);
+                    return deleteResult;
                 }
-                existingFeedback.setFeedback(rating);
-                return feedbackDAO.update(existingFeedback);
+                // Se existe rating diferente, ATUALIZA
+                else {
+                    System.out.println("AÇÃO: Atualizando rating existente de " + existingFeedback.getFeedback()
+                            + " para " + rating);
+                    existingFeedback.setFeedback(rating);
+                    boolean updateResult = feedbackDAO.update(existingFeedback);
+                    System.out.println("Resultado do update: " + updateResult);
+                    return updateResult;
+                }
             } else {
-                return storeFeedback(userId, movieId, rating);
+                // Se não existe rating, CRIA novo
+                System.out.println("AÇÃO: Criando novo rating");
+                boolean createResult = storeFeedback(userId, movieId, rating);
+                System.out.println("Resultado do create: " + createResult);
+                return createResult;
             }
         } catch (Exception e) {
-            System.err.println("Erro ao armazenar ou atualizar feedback: " + e.getMessage());
+            System.err.println("ERRO em storeOrUpdateRating: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } finally {
+            System.out.println("=== FIM storeOrUpdateRating ===");
+        }
+    }
+
+    // Método adicional para remover rating completamente (opcional)
+    public boolean removeRating(int userId, int movieId) {
+        try {
+            return feedbackDAO.removeFeedback(userId, movieId);
+        } catch (Exception e) {
+            System.err.println("Erro ao remover feedback: " + e.getMessage());
             return false;
         }
     }
