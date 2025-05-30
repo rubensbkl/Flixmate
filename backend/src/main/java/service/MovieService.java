@@ -103,4 +103,8 @@ public class MovieService {
         // Aqui pode colocar regras de negócio, logs, caching, validações...
         return movieDAO.search(query, page, limit);
     }
+
+    public int countSearchResults(String query) {
+        return movieDAO.countSearchResults(query);
+    }
 }
