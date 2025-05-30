@@ -7,6 +7,7 @@ import Searchbar from '@/components/Searchbar';
 import { fetchUsers } from '@/lib/api'; // Importando a função que criamos
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { UserIcon } from "@heroicons/react/24/outline";
 
 export default function SearchPage() {
     const [users, setUsers] = useState([]);
@@ -98,7 +99,7 @@ export default function SearchPage() {
                                                     className="w-full h-full object-cover rounded-full"
                                                 />
                                             ) : (
-                                                <span className="text-primary text-xl">{user.firstName?.charAt(0)}</span>
+                                                <UserIcon className="h-8 w-8 text-primary"/>
                                             )}
                                         </div>
                                         <div>
