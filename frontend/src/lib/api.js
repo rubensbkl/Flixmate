@@ -34,7 +34,7 @@ export const fetchMoviesToRate = async (page = 1) => {
     const processed = movies.map((movie) => ({
         id: movie.id,
         title: movie.title,
-        image: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
+        image: `https://image.tmdb.org/t/p/original${movie.poster_path}`,
         description: movie.overview,
         release_date: movie.release_date,
         vote_average: movie.vote_average,
@@ -687,6 +687,7 @@ export const fetchMovieById = async (movieId) => {
     }
 };
 
+// movies/search
 export const fetchMovies = async (query, page = 1, limit = 25) => {
     const token = getToken();
     console.log(`📡 Buscando filmes: query="${query}", página=${page}`);

@@ -3,62 +3,42 @@ package model;
 public class Recommendation {
     private int userId;
     private int movieId;
-    private boolean watched;
-    private boolean favorite;
+    private double score;
 
     public Recommendation() {
-        this.userId = -1;
-        this.movieId = -1;
-        this.watched = false;
-        this.favorite = false;
+        this.userId = 0;
+        this.movieId = 0;
+        this.score = 0.0;
     }
 
-    public Recommendation(int userId, int movieId) {
+    public Recommendation(int userId, int movieId, double score) {
         this.userId = userId;
         this.movieId = movieId;
-        this.watched = false;
-        this.favorite = false;
-    }
-
-    public Recommendation(int userId, int movieId, boolean watched, boolean favorite) {
-        this.userId = userId;
-        this.movieId = movieId;
-        this.watched = watched;
-        this.favorite = favorite;
+        this.score = score;
     }
 
     public int getUserId() {
-        return userId;
+        return this.userId;
     }
 
-    public int setUserId(int userId) {
+    public void setUserId(int userId) {
         this.userId = userId;
-        return userId;
     }
 
     public int getMovieId() {
-        return movieId;
+        return this.movieId;
     }
 
-    public int setMovieId(int movieId) {
+    public void setMovieId(int movieId) {
         this.movieId = movieId;
-        return movieId;
     }
 
-    public boolean isWatched() {
-        return watched;
+    public double getScore() {
+        return this.score;
     }
-    
-    public void setWatched(boolean watched) {
-        this.watched = watched;
-    }
-    
-    public boolean isFavorite() {
-        return favorite;
-    }
-    
-    public void setFavorite(boolean favorite) {
-        this.favorite = favorite;
+
+    public void setScore(double score) {
+        this.score = score;
     }
 
     @Override
@@ -66,8 +46,7 @@ public class Recommendation {
         return "Recommendation{" +
                 "userId=" + userId +
                 ", movieId=" + movieId +
-                ", watched=" + watched +
-                ", favorite=" + favorite +
+                ", score=" + score +
                 '}';
     }
 

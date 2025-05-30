@@ -17,10 +17,10 @@ CREATE TABLE IF NOT EXISTS movies (
     id INTEGER PRIMARY KEY,
     title TEXT NOT NULL,
     overview TEXT,
-    rating DOUBLE PRECISION DEFAULT 0,
+    rating DOUBLE PRECISION NOT NULL,
     release_date VARCHAR(15) NOT NULL,
     original_language VARCHAR(10) NOT NULL,
-    popularity DOUBLE PRECISION DEFAULT 0,
+    popularity DOUBLE PRECISION NOT NULL,
     adult BOOLEAN DEFAULT FALSE,
     poster_path TEXT
 );
@@ -58,9 +58,7 @@ CREATE TABLE IF NOT EXISTS feedbacks (
 CREATE TABLE IF NOT EXISTS recommendations (
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     movie_id INTEGER REFERENCES movies(id) ON DELETE CASCADE NOT NULL,
-    -- Score de recomendação (0 a 1)
-    watched BOOLEAN DEFAULT FALSE NOT NULL,
-    favorite BOOLEAN DEFAULT FALSE NOT NULL,
+    score DOUBLE PRECISION NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, movie_id)
 );

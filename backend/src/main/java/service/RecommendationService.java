@@ -65,9 +65,8 @@ public class RecommendationService {
         return candidateMovies;
     }
 
-    public boolean storeRecommendation(int userId, int movieId) {
-        Recommendation rec = new Recommendation(userId, movieId);
-        return recommendationDAO.insert(rec);
+    public boolean storeRecommendation(int userId, int movieId, double score) {
+        return recommendationDAO.insert(userId, movieId, score);
     }
 
     public ArrayList<Recommendation> getRecommendationsByUserId(int userId) {
@@ -83,12 +82,6 @@ public class RecommendationService {
     public ArrayList<Recommendation> getWatchedByUserId(int movieId) {
         ArrayList<Recommendation> recommendations = recommendationDAO.getWatchedByUserId(movieId);
         return recommendations;
-    }
-
-  
-    public boolean updateRecommendation(int userId, int movieId, boolean watched, boolean favorite) {
-        Recommendation rec = new Recommendation(userId, movieId, watched, favorite);
-        return recommendationDAO.update(rec);
     }
 
     // getRecommendationByUserIdAndMovieId

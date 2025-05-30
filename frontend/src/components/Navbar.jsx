@@ -45,7 +45,9 @@ export default function Navbar() {
                 <Link
                     href="/"
                     className={`flex flex-col items-center justify-center p-2 ${
-                        pathname === "/" ? "text-secondary" : "text-primary"
+                        pathname === "/" 
+                            ? "text-accent"
+                            : "text-secondary"
                     }`}
                 >
                     <HomeIcon className="w-6 h-6" />
@@ -53,11 +55,11 @@ export default function Navbar() {
                 </Link>
 
                 <Link
-                    href="/search"
+                    href="/profile/search"
                     className={`flex flex-col items-center justify-center p-2 ${
-                        (pathname.startsWith("/profile/") || pathname === "/search") && !(pathname === "/profile/edit")
-                            ? "text-secondary"
-                            : "text-primary"
+                        (pathname.startsWith("/profile/")) && !(pathname === "/profile/edit")
+                            ? "text-accent"
+                            : "text-secondary"
                     }`}
                 >
                     <MagnifyingGlassIcon className="w-6 h-6" />
@@ -65,10 +67,10 @@ export default function Navbar() {
                 </Link>
 
                 <Link
-                    href="/recommendations"
+                    href="/movie/search"
                     className={`flex flex-col items-center justify-center p-2 ${
-                        pathname.startsWith("/recommendations")
-                            ? "text-primary"
+                        pathname.startsWith("/movie/search")
+                            ? "text-accent"
                             : "text-secondary"
                     }`}
                 >
@@ -80,7 +82,7 @@ export default function Navbar() {
                     href={`/profile`}
                     className={`flex flex-col items-center justify-center p-2 ${
                         pathname === "/profile" || pathname === "/profile/edit"
-                            ? "text-primary"
+                            ? "text-accent"
                             : "text-secondary"
                     }`}
                 >
@@ -113,14 +115,16 @@ export default function Navbar() {
                 <Link
                     href="/"
                     className={`flex items-center px-4 py-3 rounded-r-xl transition-colors ${
-                        pathname === "/" ? "text-primary bg-foreground font-bold" : "text-secondary hover:bg-foreground"
+                        pathname === "/"
+                            ? "text-primary bg-foreground font-bold"
+                            : "text-secondary hover:bg-foreground"
                     }`}
                 >
                     <HomeIcon className="w-5 h-5 mr-3" />
                     Home
                 </Link>
                 <Link
-                    href="/search"
+                    href="/profile/search"
                     className={
                         (pathname.startsWith("/profile/") || pathname == "/search") && !(pathname == "/profile/edit")
                             ? "flex items-center px-4 py-3 rounded-r-xl text-primary bg-foreground transition-colors"
@@ -131,15 +135,15 @@ export default function Navbar() {
                     Buscar
                 </Link>
                 <Link
-                    href={`/recommendations`}
+                    href={`/movie/search`}
                     className={
-                        pathname.startsWith("/recommendations")
+                        pathname.startsWith("/movie/search")
                             ? "flex items-center px-4 py-3 rounded-r-xl text-primary bg-foreground transition-colors"
                             : "flex items-center px-4 py-3 rounded-r-xl text-secondary hover:bg-foreground transition-colors"
                     }
                 >
                     <FilmIcon className="w-5 h-5 mr-3" />
-                    Recomendações
+                    Filmes
                 </Link>
                 <Link
                     href={`/profile`}
