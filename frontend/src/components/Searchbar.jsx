@@ -1,6 +1,4 @@
 import React from 'react';
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
 import SearchIcon from '@mui/icons-material/Search';
 
 const Searchbar = ({ onSearch }) => {
@@ -11,19 +9,13 @@ const Searchbar = ({ onSearch }) => {
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto">
-      <TextField
-        fullWidth
-        variant="outlined"
+    <div className="w-full max-w-lg mx-auto bg-foreground rounded-xl px-4 py-2 flex items-center gap-2">
+      <SearchIcon className="text-secondary" />
+      <input
+        type="text"
         placeholder="Buscar usuário..."
         onChange={handleInputChange}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
-        }}
+        className="w-full bg-transparent outline-none text-primary placeholder-secondary"
       />
     </div>
   );
