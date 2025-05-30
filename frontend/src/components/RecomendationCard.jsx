@@ -34,7 +34,7 @@ export default function MovieCard({
                 <img
                     src={
                         movie.poster_path
-                            ? `https://image.tmdb.org/t/p/w200${movie.poster_path}`
+                            ? `https://image.tmdb.org/t/p/original${movie.poster_path}`
                             : "/placeholder.jpg"
                     }
                     alt={movie.title}

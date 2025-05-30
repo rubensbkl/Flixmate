@@ -185,4 +185,31 @@ public class MovieDAO extends DAO {
         return movies;
     }
 
+    public int countSearchResults(String query) {
+        int total = 0;
+
+        String sql = "SELECT COUNT(*) AS total FROM movies " +
+                    "WHERE LOWER(title) LIKE ? AND adult = false";
+
+        try {
+            PreparedStatement st = conexao.prepareStatement(sql);
+            st.setString(1, "%" + query.toLowerCase() + "%");
+
+            ResultSet rs = st.executeQuery();
+            if (rs.next()) {
+                total = rs.getInt("total");
+            }
+
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao contar filmes: " + e.getMessage(), e);
+        }
+
+        System.out.println("Total de filmes encontrados: " + total);
+        return total;
+    }
+
+
+
 }

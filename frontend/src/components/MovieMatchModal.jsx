@@ -16,9 +16,9 @@ const MovieMatchModal = ({ isOpen, onClose, movie, onNavigate }) => {
 
       // Handle poster path - check different possible property names
       if (movie.posterPath) {
-        setPosterUrl(`https://image.tmdb.org/t/p/w500${movie.posterPath}`);
+        setPosterUrl(`https://image.tmdb.org/t/p/original${movie.posterPath}`);
       } else if (movie.poster_path) {
-        setPosterUrl(`https://image.tmdb.org/t/p/w500${movie.poster_path}`);
+        setPosterUrl(`https://image.tmdb.org/t/p/original${movie.poster_path}`);
       } else {
         setPosterUrl('');
       }

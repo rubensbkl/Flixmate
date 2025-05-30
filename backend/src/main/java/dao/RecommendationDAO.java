@@ -24,15 +24,14 @@ public class RecommendationDAO extends DAO {
      * @param recommendation A recomendação a ser inserida
      * @return true se a inserção foi bem-sucedida, false caso contrário
      */
-    public boolean insert(Recommendation recommendation) {
+    public boolean insert(int userId, int movieId, double score) {
         boolean status = false;
         try {
-            String sql = "INSERT INTO recommendations (user_id, movie_id, watched, favorite) VALUES (?, ?, ?, ?)";
+            String sql = "INSERT INTO recommendations (user_id, movie_id, score) VALUES (?, ?, ?)";
             PreparedStatement st = conexao.prepareStatement(sql);
-            st.setInt(1, recommendation.getUserId());
-            st.setInt(2, recommendation.getMovieId());
-            st.setBoolean(3, recommendation.isWatched());
-            st.setBoolean(4, recommendation.isFavorite());
+            st.setInt(1, userId);
+            st.setInt(2, movieId);
+            st.setDouble(3, score);
 
             int rowsAffected = st.executeUpdate();
             status = (rowsAffected > 0);
@@ -42,6 +41,7 @@ public class RecommendationDAO extends DAO {
         }
         return status;
     }
+
 
     /**
      * Obtém todas as recomendações para um usuário específico
@@ -59,10 +59,9 @@ public class RecommendationDAO extends DAO {
             ResultSet rs = st.executeQuery();
             while (rs.next()) {
                 int movieId = rs.getInt("movie_id");
-                boolean watched = rs.getBoolean("watched");
-                boolean favorite = rs.getBoolean("favorite");
+                double score = rs.getDouble("score");
 
-                Recommendation recommendation = new Recommendation(userId, movieId, watched, favorite);
+                Recommendation recommendation = new Recommendation(userId, movieId, score);
                 recommendations.add(recommendation);
             }
 
@@ -183,10 +182,9 @@ public class RecommendationDAO extends DAO {
             ResultSet rs = st.executeQuery();
             while (rs.next()) {
                 int movieId = rs.getInt("movie_id");
-                boolean watched = rs.getBoolean("watched");
-                boolean favorite = rs.getBoolean("favorite");
+                double score = rs.getDouble("score");
 
-                Recommendation recommendation = new Recommendation(userId, movieId, watched, favorite);
+                Recommendation recommendation = new Recommendation(userId, movieId, score);
                 recommendations.add(recommendation);
             }
 
@@ -208,10 +206,9 @@ public class RecommendationDAO extends DAO {
             ResultSet rs = st.executeQuery();
             while (rs.next()) {
                 int movieId = rs.getInt("movie_id");
-                boolean watched = rs.getBoolean("watched");
-                boolean favorite = rs.getBoolean("favorite");
+                double score = rs.getDouble("score");
 
-                Recommendation recommendation = new Recommendation(userId, movieId, watched, favorite);
+                Recommendation recommendation = new Recommendation(userId, movieId, score);
                 recommendations.add(recommendation);
             }
 
@@ -221,31 +218,6 @@ public class RecommendationDAO extends DAO {
             System.err.println("Erro ao obter recomendações: " + e.getMessage());
         }
         return recommendations;
-    }
-
-    /**
-     * Atualiza uma recomendação existente
-     * 
-     * @param recommendation A recomendação a ser atualizada
-     * @return true se a atualização foi bem-sucedida, false caso contrário
-     */
-    public boolean update(Recommendation recommendation) {
-        boolean status = false;
-        try {
-            String sql = "UPDATE recommendations SET watched = ?, favorite = ? WHERE user_id = ? AND movie_id = ?";
-            PreparedStatement st = conexao.prepareStatement(sql);
-            st.setBoolean(1, recommendation.isWatched());
-            st.setBoolean(2, recommendation.isFavorite());
-            st.setInt(3, recommendation.getUserId());
-            st.setInt(4, recommendation.getMovieId());
-
-            int rowsAffected = st.executeUpdate();
-            status = (rowsAffected > 0);
-            st.close();
-        } catch (SQLException e) {
-            System.err.println("Erro ao atualizar recomendação: " + e.getMessage());
-        }
-        return status;
     }
 
     // getRecommendationByUserIdAndMovieId
@@ -259,10 +231,9 @@ public class RecommendationDAO extends DAO {
 
             ResultSet rs = st.executeQuery();
             if (rs.next()) {
-                boolean watched = rs.getBoolean("watched");
-                boolean favorite = rs.getBoolean("favorite");
+                double score = rs.getDouble("score");
 
-                recommendation = new Recommendation(userId, movieId, watched, favorite);
+                recommendation = new Recommendation(userId, movieId, score);
             }
 
             rs.close();
