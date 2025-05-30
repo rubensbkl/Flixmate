@@ -6,44 +6,46 @@ import { fetchMovieById, getMovieRating, setMovieRate } from "@/lib/api";
 import {
     HandThumbDownIcon,
     HandThumbUpIcon,
+    ClockIcon,
+    StarIcon,
 } from "@heroicons/react/24/outline";
+
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
 export default function MovieProfilePage() {
     const { movieId } = useParams();
-
     const [movieInfo, setMovieInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [rating, setRating] = useState(null);
     const [ratingLoading, setRatingLoading] = useState(false);
+    const [watch, setWatch] = useState(false);
+    const [favorite, setFavorite] = useState(false);
+    const [backdropLoading, setBackdropLoading] = useState(true);
+    const [posterLoading, setPosterLoading] = useState(true);
 
     useEffect(() => {
         const loadMovie = async () => {
             try {
                 setLoading(true);
                 const { movie, rating: initialRating } = await fetchMovieById(movieId);
-                console.log("Dados do filme:", movie);
-                console.log("Rating inicial do filme:", initialRating);
 
                 if (!movie) {
                     setError("Filme não encontrado.");
                     return;
                 }
                 setMovieInfo(movie);
-                
-                // Buscar o rating atual do usuário para este filme
+
                 try {
                     const currentRating = await getMovieRating(movieId);
                     setRating(currentRating);
-                    console.log("Rating atual encontrado:", currentRating);
-                } catch (ratingError) {
-                    console.log("Nenhum rating encontrado para este filme");
+                } catch {
                     setRating(null);
                 }
-            } catch (err) {
-                console.error("Erro ao buscar filme:", err);
+            } catch {
                 setError("Não foi possível carregar os dados do filme.");
             } finally {
                 setLoading(false);
@@ -57,37 +59,18 @@ export default function MovieProfilePage() {
 
     const handleLike = async () => {
         if (ratingLoading) return;
-        
+
         try {
             setRatingLoading(true);
-            
-            console.log("Estado atual antes do like:", rating);
-            
-            // Sempre envia a requisição para o backend
             const response = await setMovieRate(movieId, true);
-            
-            console.log("Resposta do backend:", response);
-            
-            // Verifica se a resposta contém currentRating (mesmo que seja null)
-            if (response && ('currentRating' in response)) {
+            if (response && 'currentRating' in response) {
                 setRating(response.currentRating);
-                console.log("Novo estado após like:", response.currentRating);
-                console.log("Operação realizada:", response.operation);
-            } else {
-                console.error("Resposta do backend não contém currentRating");
-                console.error("Propriedades da resposta:", Object.keys(response || {}));
             }
-            
-        } catch (err) {
-            console.error("Erro ao processar like:", err);
-            // Em caso de erro, recarrega o estado atual do servidor
+        } catch {
             try {
                 const currentRating = await getMovieRating(movieId);
                 setRating(currentRating);
-                console.log("Estado recarregado após erro:", currentRating);
-            } catch (reloadError) {
-                console.error("Erro ao recarregar estado:", reloadError);
-            }
+            } catch { }
         } finally {
             setRatingLoading(false);
         }
@@ -95,50 +78,37 @@ export default function MovieProfilePage() {
 
     const handleDislike = async () => {
         if (ratingLoading) return;
-        
+
         try {
             setRatingLoading(true);
-            
-            console.log("Estado atual antes do dislike:", rating);
-            
-            // Sempre envia a requisição para o backend
             const response = await setMovieRate(movieId, false);
-            
-            console.log("Resposta do backend:", response);
-            
-            // Verifica se a resposta contém currentRating (mesmo que seja null)
-            if (response && ('currentRating' in response)) {
+            if (response && 'currentRating' in response) {
                 setRating(response.currentRating);
-                console.log("Novo estado após dislike:", response.currentRating);
-                console.log("Operação realizada:", response.operation);
-            } else {
-                console.error("Resposta do backend não contém currentRating");
-                console.error("Propriedades da resposta:", Object.keys(response || {}));
             }
-            
-        } catch (err) {
-            console.error("Erro ao processar dislike:", err);
-            // Em caso de erro, recarrega o estado atual do servidor
+        } catch {
             try {
                 const currentRating = await getMovieRating(movieId);
                 setRating(currentRating);
-                console.log("Estado recarregado após erro:", currentRating);
-            } catch (reloadError) {
-                console.error("Erro ao recarregar estado:", reloadError);
-            }
+            } catch { }
         } finally {
             setRatingLoading(false);
         }
     };
 
+    const handleWatch = async () => {
+    }
+
+    const handleFavorite = async () => {
+    }
+
     if (loading) {
         return (
-            <div className="flex min-h-screen">
+            <div className="flex flex-col md:flex-row min-h-screen">
                 <div className="md:w-64">
                     <Navbar />
                 </div>
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
+                <main className="flex-1 flex items-center justify-center overflow-y-auto">
+                    <div className="text-center px-4">
                         <div className="w-16 h-16 border-t-4 border-accent border-solid rounded-full animate-spin mx-auto mb-4"></div>
                         <p className="text-xl font-medium text-gray-700">
                             Carregando informações do filme...
@@ -151,12 +121,12 @@ export default function MovieProfilePage() {
 
     if (error || !movieInfo) {
         return (
-            <div className="flex min-h-screen">
+            <div className="flex flex-col md:flex-row min-h-screen">
                 <div className="md:w-64">
                     <Navbar />
                 </div>
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
+                <main className="flex-1 flex items-center justify-center overflow-y-auto">
+                    <div className="text-center px-4">
                         <div className="bg-red-100 p-4 rounded-lg mb-4">
                             <p className="text-red-600 font-medium">
                                 {error || "Filme não encontrado."}
@@ -170,74 +140,131 @@ export default function MovieProfilePage() {
 
     return (
         <ProtectedRoute>
-            <div className="flex flex-col md:flex-row h-screen overflow-hidden">
+            <div className="flex flex-col md:flex-row min-h-screen overflow-y-auto">
+                
                 <div className="md:w-64">
                     <Navbar />
                 </div>
-                <main className="flex-1">
-                    <div className="max-w-4xl mx-auto px-4 md:px-8 py-6">
-                        <div className="flex gap-6 flex-col md:flex-row">
-                            <div className="w-full md:w-1/3">
-                                <img
-                                    src={`https://image.tmdb.org/t/p/w500${movieInfo.posterPath}`}
-                                    alt={movieInfo.title}
-                                    className="rounded-2xl shadow-lg w-full"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <h1 className="text-3xl font-bold mb-6 text-primary">
-                                    {movieInfo.title}
-                                </h1>
-                                <p className="text-gray-200 mb-4">
-                                    {movieInfo.overview}
-                                </p>
-                                <p className="text-sm text-gray-400">
-                                    <strong>Gêneros:</strong>{" "}
-                                    {movieInfo.genres?.join(", ")}
-                                </p>
-                                <p className="text-sm text-gray-400">
-                                    <strong>Data de Lançamento:</strong>{" "}
-                                    {movieInfo.releaseDate}
-                                </p>
-                                <p className="text-sm text-gray-400">
-                                    <strong>Rating:</strong> {movieInfo.rating}
-                                </p>
+                
+                <main className="flex-1 overflow-y-auto">
+                    {/* Backdrop com overlay escuro */}
+                    <div className="relative w-full h-[350px] md:h-[450px]">
+                        {backdropLoading && (
+                            <div className="absolute inset-0 bg-foreground animate-pulse" />
+                        )}
+                        <Image
+                            src={`https://image.tmdb.org/t/p/original/8ZTVqvKDQ8emSGUEMjsS4yHAwrp.jpg`}
+                            alt={movieInfo.title}
+                            fill
+                            className={`object-cover transition-opacity duration-500 ${backdropLoading ? 'opacity-0' : 'opacity-100'}`}
+                            onLoadingComplete={() => setBackdropLoading(false)}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-background" />
+
+                        {/* Botão Voltar */}
+                        <button
+                            onClick={() => window.history.back()}
+                            className="absolute top-4 left-4 bg-black/60 hover:bg-black/80 text-white px-3 py-2 rounded-full shadow-md flex items-center gap-2"
+                        >
+                            <ArrowLeftIcon className="w-5 h-5" />
+                            <span className="hidden md:inline">Voltar</span>
+                        </button>
+                    </div>
+
+
+                    {/* Conteúdo Principal */}
+                    <div className="relative md:flex items-center -mt-48 px-6 max-w-5xl mx-auto gap-10">
+                        <div className="flex flex-col items-center md:flex-row gap-6 mb-10 md:mb-0 ">
+                            {/* Poster */}
+                            <div className="w-48 md:w-64 shrink-0 relative rounded-2xl overflow-hidden h-[288px] md:h-[384px]">
+                                {posterLoading && (
+                                    <div className="absolute inset-0 bg-foreground animate-pulse rounded-2xl" />
+                                )}
+
+                                {movieInfo.posterPath ? (
+                                    <Image
+                                        src={`https://image.tmdb.org/t/p/original${movieInfo.posterPath}`}
+                                        alt={movieInfo.title}
+                                        fill
+                                        priority
+                                        className={`object-cover rounded-2xl shadow-xl transition-opacity duration-500 ${posterLoading ? 'opacity-0' : 'opacity-100'}`}
+                                        onLoadingComplete={() => setPosterLoading(false)}
+                                    />
+                                ) : (
+                                    <div className="bg-gray-300 w-full h-full flex items-center justify-center rounded-2xl">
+                                        <span className="text-gray-500">Sem imagem</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    </div>
-                    <div className="flex space-x-4 py-4 md:py-2 justify-center mb-20 md:mb-4">
-                        <button
-                            onClick={handleDislike}
-                            disabled={ratingLoading}
-                            className={`w-14 h-14 flex items-center justify-center rounded-full shadow-lg hover:scale-105 transition ${
-                                rating === false ? "bg-accent" : "bg-foreground"
-                            } ${ratingLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                            title="Descurtir"
-                        >
-                            <HandThumbDownIcon
-                                className={`w-6 h-6 ${
-                                    rating === false
-                                        ? "text-foreground"
-                                        : "text-accent"
-                                }`}
-                            />
-                        </button>
-                        <button
-                            onClick={handleLike}
-                            disabled={ratingLoading}
-                            className={`w-14 h-14 flex items-center justify-center rounded-full shadow-lg hover:scale-105 transition ${
-                                rating === true ? "bg-accent" : "bg-foreground"
-                            } ${ratingLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                            title="Curtir"
-                        >
-                            <HandThumbUpIcon
-                                className={`w-6 h-6 ${
-                                    rating === true
-                                        ? "text-foreground"
-                                        : "text-accent"
-                                }`}
-                            />
-                        </button>
+
+                        {/* Informações */}
+                        <div className="flex-1">
+                            <h1 className="text-4xl font-bold text-primary mb-2">
+                                {movieInfo.title}
+                            </h1>
+                            
+                            {/* Rating */}
+                            <div className="flex items-center gap-2 text-secondary">
+                                {Array.from({ length: 5 }).map((_, index) => (
+                                    <span
+                                        key={index}
+                                        className="cursor-pointer hover:text-accent transition-colors duration-300"
+                                    >
+                                        {index < Math.round(movieInfo.rating / 2) ? "⭐" : "☆"}
+                                    </span>
+                                ))}
+                                <span className="text-muted text-primary">
+                                    ({movieInfo.rating.toFixed(1)})
+                                </span>
+                            </div>
+                            
+                            <p className="text-sm text-muted mb-2 text-secondary">
+                                {movieInfo.releaseDate} • {movieInfo.genres?.join(", ")}
+                            </p>
+                            <p className="text-primary mb-6">
+                                {movieInfo.overview}
+                            </p>
+
+                            {/* Botões de Ações */}
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={handleLike}
+                                    disabled={ratingLoading}
+                                    className={`w-12 h-12 flex items-center justify-center rounded-full shadow-md hover:scale-105 transition ${rating === true ? "bg-accent" : "bg-foreground"} ${ratingLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    title="Curtir"
+                                >
+                                    <HandThumbUpIcon className={`w-6 h-6 ${rating === true ? "text-foreground" : "text-accent"}`} />
+                                </button>
+
+                                <button
+                                    onClick={handleDislike}
+                                    disabled={ratingLoading}
+                                    className={`w-12 h-12 flex items-center justify-center rounded-full shadow-md hover:scale-105 transition ${rating === false ? "bg-accent" : "bg-foreground"} ${ratingLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    title="Descurtir"
+                                >
+                                    <HandThumbDownIcon className={`w-6 h-6 ${rating === false ? "text-foreground" : "text-accent"}`} />
+                                </button>
+
+                                <button
+                                    onClick={handleWatch}
+                                    disabled={ratingLoading}
+                                    className={`w-12 h-12 flex items-center justify-center rounded-full shadow-md hover:scale-105 transition ${watch ? "bg-accent" : "bg-foreground"} ${ratingLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    title="Assistir depois"
+                                >
+                                    <ClockIcon className={`w-6 h-6 ${watch ? "text-foreground" : "text-accent"}`} />
+                                </button>
+
+                                <button
+                                    onClick={handleFavorite}
+                                    disabled={ratingLoading}
+                                    className={`w-12 h-12 flex items-center justify-center rounded-full shadow-md hover:scale-105 transition ${favorite ? "bg-accent" : "bg-foreground"} ${ratingLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    title="Favoritar"
+                                >
+                                    <StarIcon className={`w-6 h-6 ${favorite ? "text-foreground" : "text-accent"}`} />
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </main>
             </div>

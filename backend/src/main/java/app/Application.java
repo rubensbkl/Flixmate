@@ -1269,20 +1269,15 @@ public class Application {
         // Endpoint seila
         get("/api/movies/search", (req, res) -> {
             try {
-                // Autenticação: você pode pegar o userId assim (se usar)
                 int userId = req.attribute("userId");
 
-                // Parâmetros da query
                 String query = req.queryParams("query");
-                System.out.println("Query: " + query);
-                System.out.println("UserId: " + userId);
-
-                if (query == null)
-                    query = "";
+                if (query == null) query = "";
                 query = query.trim();
 
                 int page = 1;
                 int limit = 25;
+
                 try {
                     page = Integer.parseInt(req.queryParams("page"));
                     limit = Integer.parseInt(req.queryParams("limit"));
@@ -1290,29 +1285,44 @@ public class Application {
                     // valores default se parsing falhar
                 }
 
-                if (page < 1)
-                    page = 1;
-                if (limit < 1 || limit > 100)
-                    limit = 25; // limite maximo 100
+                if (page < 1) page = 1;
+                if (limit < 1 || limit > 100) limit = 25;
 
                 // Busca paginada usando DAO
                 ArrayList<Movie> movies = movieService.search(query, page, limit);
 
+                // Contar total de resultados
+                int totalResults = movieService.countSearchResults(query);
+                int totalPages = (int) Math.ceil((double) totalResults / limit);
+
                 // Montar resposta simplificada
                 List<Map<String, Object>> results = new ArrayList<>();
                 for (Movie movie : movies) {
+                    List<Genre> genres = movieGenreService.buscarGenerosDoFilme(movie.getId());
+                    List<String> genreNames = genres.stream().map(Genre::getName).collect(Collectors.toList());
+
                     Map<String, Object> movieData = Map.of(
                             "id", movie.getId(),
                             "title", movie.getTitle(),
                             "poster_path", movie.getPosterPath(),
-                            "release_date", movie.getReleaseDate());
+                            "release_date", movie.getReleaseDate(),
+                            "genres", genreNames
+                    );
                     results.add(movieData);
                 }
 
-                res.type("application/json");
-                return gson.toJson(Map.of(
+                Map<String, Object> response = Map.of(
                         "status", "ok",
-                        "results", results));
+                        "page", page,
+                        "total_pages", totalPages,
+                        "total_results", totalResults,
+                        "results", results
+                );
+
+                res.type("application/json");
+                res.status(200);
+                return gson.toJson(response);
+                
             } catch (Exception e) {
                 e.printStackTrace();
                 res.status(500);

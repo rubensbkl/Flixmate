@@ -4,112 +4,189 @@ import Header from '@/components/Header';
 import Navbar from '@/components/Navbar';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Searchbar from '@/components/Searchbar';
-import { fetchUsers } from '@/lib/api'; // Importando a função que criamos
-import { useRouter } from 'next/navigation';
+import UserCard from '@/components/UserCard';
+import { fetchUsers } from '@/lib/api';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { UserIcon } from "@heroicons/react/24/outline";
 
-export default function SearchPage() {
+// Debounce hook (pode mover para um arquivo utils futuramente)
+function useDebounce(value, delay) {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+    useEffect(() => {
+        const handler = setTimeout(() => setDebouncedValue(value), delay);
+        return () => clearTimeout(handler);
+    }, [value, delay]);
+    return debouncedValue;
+}
+
+export default function ProfileSearch() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const [query, setQuery] = useState('');
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const router = useRouter();
+    const [page, setPage] = useState(1);
 
-    // Buscar todos os usuários ao carregar a página
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const [totalPages, setTotalPages] = useState(1);
+    const itemsPerPage = 20;
+
+    const debouncedQuery = useDebounce(query, 500);
+
+    const generatePageNumbers = () => {
+        const pages = [];
+        pages.push(1);
+        const start = Math.max(page - 1, 2);
+        const end = Math.min(page + 1, totalPages - 1);
+        for (let i = start; i <= end; i++) pages.push(i);
+        if (totalPages > 1) pages.push(totalPages);
+        return [...new Set(pages)];
+    };
+
+    useEffect(() => {
+        const paramQuery = searchParams.get('query') || '';
+        const paramPage = parseInt(searchParams.get('page')) || 1;
+        setQuery(paramQuery);
+        setPage(paramPage);
+    }, [searchParams]);
+
     useEffect(() => {
         const loadUsers = async () => {
+            setLoading(true);
+            setError(null);
             try {
-                setLoading(true);
-                const userData = await fetchUsers();
-                setUsers(userData);
-                setFilteredUsers(userData);
+                const allUsers = await fetchUsers();
+                setUsers(allUsers);
+
+                // Filtro por nome, sobrenome ou email
+                const filtered = debouncedQuery
+                    ? allUsers.filter(user =>
+                        `${user.firstName} ${user.lastName}`.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+                        user.email.toLowerCase().includes(debouncedQuery.toLowerCase())
+                    )
+                    : allUsers;
+
+                setFilteredUsers(filtered);
+
+                const calculatedPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+                setTotalPages(calculatedPages);
+                if (page > calculatedPages) {
+                    setPage(1);
+                    const params = new URLSearchParams();
+                    if (debouncedQuery) params.set('query', debouncedQuery);
+                    params.set('page', '1');
+                    router.push(`?${params.toString()}`);
+                }
             } catch (err) {
-                console.error('Erro ao buscar usuários:', err);
-                setError('Falha ao carregar usuários. Tente novamente mais tarde.');
+                console.error(err);
+                setError('Erro ao carregar usuários');
             } finally {
                 setLoading(false);
             }
         };
 
         loadUsers();
-    }, []);
+    }, [debouncedQuery, page]);
 
-    // Filtrar usuários com base na consulta
-    const handleSearch = (query) => {
-        if (!query) {
-            setFilteredUsers(users);
-            return;
+    const handleSearch = (newQuery) => {
+        const trimmed = newQuery.trim();
+        const params = new URLSearchParams();
+        if (trimmed) {
+            params.set('query', trimmed);
+            params.set('page', '1');
+            router.push(`?${params.toString()}`);
+        } else {
+            router.push(`/profile/search`);
         }
-
-        const filtered = users.filter(user =>
-            user.firstName?.toLowerCase().includes(query.toLowerCase()) ||
-            user.lastName?.toLowerCase().includes(query.toLowerCase()) ||
-            user.email?.toLowerCase().includes(query.toLowerCase())
-        );
-
-        setFilteredUsers(filtered);
     };
 
-    // Redirecionar para o perfil do usuário
-    const handleUserClick = (userId) => {
-        router.push(`/profile/${userId}`);
+    const handlePageChange = (newPage) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('query', query);
+        params.set('page', newPage);
+        router.push(`?${params.toString()}`);
     };
+
+    // Paginação dos usuários filtrados
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
 
     return (
         <ProtectedRoute>
             <div className="md:flex">
-                {/* Navbar */}
                 <div className="md:w-64 md:min-h-screen">
                     <Navbar />
                 </div>
 
-
                 <main className="flex-1 overflow-auto flex flex-col h-[calc(100vh-4rem)] md:h-screen">
                     <Header />
 
-                    {/* Barra de pesquisa */}
                     <section className="flex justify-center items-center p-4">
-                        <Searchbar onSearch={handleSearch} />
+                        <Searchbar
+                            onSearch={handleSearch}
+                            initialValue={query}
+                            placeholder="Buscar perfil..."
+                        />
                     </section>
 
-                    {/* Resultados da pesquisa */}
-                    <section className="flex-1 p-4">
-                        {loading ? (
-                            <div className="flex justify-center items-center h-full">
-                                <div className="w-12 h-12 border-t-4 border-accent border-solid rounded-full animate-spin"></div>
-                            </div>
-                        ) : error ? (
-                            <div className="text-red-500 text-center">{error}</div>
-                        ) : filteredUsers.length === 0 ? (
-                            <div className="text-center text-gray-500">Nenhum usuário encontrado</div>
-                        ) : (
-                            <div className="md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {filteredUsers.map(user => (
-                                    <div
-                                        key={user.id}
-                                        className="bg-foreground rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:bg-background transition"
-                                        onClick={() => handleUserClick(user.id)}
+                    <section className="flex-1 p-4 overflow-auto">
+                        <div className="max-w-4xl mx-auto">
+                            {loading && page === 1 ? (
+                                <div className="flex justify-center items-center h-full">
+                                    <div className="w-12 h-12 border-t-4 border-accent border-solid rounded-full animate-spin"></div>
+                                </div>
+                            ) : error ? (
+                                <div className="text-red-500 text-center">{error}</div>
+                            ) : paginatedUsers.length === 0 ? (
+                                <div className="text-center text-gray-500">Nenhum usuário encontrado</div>
+                            ) : (
+                                <div className="flex flex-col gap-4">
+                                    {paginatedUsers.map(user => (
+                                        <UserCard key={user.id} user={user} />
+                                    ))}
+                                </div>
+                            )}
+
+                            {filteredUsers.length > itemsPerPage && (
+                                <div className="flex justify-center mt-6 items-center gap-4">
+                                    <button
+                                        disabled={page === 1}
+                                        onClick={() => handlePageChange(page - 1)}
+                                        className={`p-2 rounded-full ${page === 1 ? 'text-secondary cursor-not-allowed' : 'text-primary hover:bg-primary-dark'
+                                            }`}
                                     >
-                                        <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-                                            {user.profileImage ? (
-                                                <img
-                                                    src={user.profileImage}
-                                                    alt={`${user.firstName} ${user.lastName}`}
-                                                    className="w-full h-full object-cover rounded-full"
-                                                />
-                                            ) : (
-                                                <UserIcon className="h-8 w-8 text-primary"/>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-medium">{user.firstName} {user.lastName}</h3>
-                                            <p className="text-sm text-secondary">{user.email}</p>
-                                        </div>
+                                        &#8592;
+                                    </button>
+
+                                    <div className="flex gap-2">
+                                        {generatePageNumbers().map((pageNumber, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => handlePageChange(pageNumber)}
+                                                className={`px-3 py-1 rounded ${pageNumber === page
+                                                        ? 'text-accent hover:bg-foreground'
+                                                        : 'text-primary hover:bg-foreground'
+                                                    }`}
+                                            >
+                                                {pageNumber}
+                                            </button>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                        )}
+
+                                    <button
+                                        disabled={page === totalPages}
+                                        onClick={() => handlePageChange(page + 1)}
+                                        className={`p-2 rounded-full ${page === totalPages ? 'text-secondary cursor-not-allowed' : 'text-primary hover:bg-primary-dark'
+                                            }`}
+                                    >
+                                        &#8594;
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </section>
                 </main>
             </div>

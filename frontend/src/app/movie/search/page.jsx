@@ -4,13 +4,12 @@ import Header from '@/components/Header';
 import Navbar from '@/components/Navbar';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Searchbar from '@/components/Searchbar';
-import { 
-    fetchMovies
-} from '@/lib/api';
+import MovieCard from "@/components/MovieCard";
+import { fetchMovies } from '@/lib/api';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-import { useEffect, useState, useCallback } from 'react';
-
-// Debounce para evitar muitas requisições rápido
+// Debounce hook
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
@@ -21,6 +20,9 @@ function useDebounce(value, delay) {
 }
 
 export default function SearchPage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
     const [query, setQuery] = useState('');
     const [movies, setMovies] = useState([]);
     const [page, setPage] = useState(1);
@@ -28,33 +30,58 @@ export default function SearchPage() {
     const [error, setError] = useState(null);
     const [hasMore, setHasMore] = useState(false);
 
-    // Debounce para search
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalResults, setTotalResults] = useState(0);
+
     const debouncedQuery = useDebounce(query, 500);
 
-    // Buscar filmes sempre que query ou página mudar
+    const generatePageNumbers = () => {
+        const pages = [];
+
+        // Sempre mostra a primeira página
+        pages.push(1);
+
+        // Define um range dinâmico ao redor da página atual
+        const start = Math.max(page - 1, 2);
+        const end = Math.min(page + 1, totalPages - 1);
+
+        for (let i = start; i <= end; i++) {
+            pages.push(i);
+        }
+
+        // Sempre mostra a última página, se não for já exibida
+        if (totalPages > 1) {
+            pages.push(totalPages);
+        }
+
+        return [...new Set(pages)];
+    };
+
     useEffect(() => {
-        console.log('Buscando filmes com a query:', debouncedQuery);
+        const paramQuery = searchParams.get('query') || '';
+        const paramPage = parseInt(searchParams.get('page')) || 1;
+
+        setQuery(paramQuery);
+        setPage(paramPage);
+    }, [searchParams]);
+
+    useEffect(() => {
         if (!debouncedQuery.trim()) {
             setMovies([]);
-            setHasMore(false);
-            setPage(1);
+            setTotalPages(1);
+            setTotalResults(0);
             return;
         }
 
         const loadMovies = async () => {
             setLoading(true);
             setError(null);
-            console.log('Carregando filmes...');
             try {
-                console.log('Buscando filmes na API...');
                 const data = await fetchMovies(debouncedQuery, page, 25);
-                console.log('Filmes encontrados:', data);
-                if (page === 1) {
-                    setMovies(data.results);
-                } else {
-                    setMovies(prev => [...prev, ...data.results]);
-                }
-                setHasMore(data.results.length === 25); // se retornou 25, pode ter mais
+                console.log(data);
+                setMovies(data.results);
+                setTotalPages(data.total_pages);
+                setTotalResults(data.total_results);
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -65,19 +92,25 @@ export default function SearchPage() {
         loadMovies();
     }, [debouncedQuery, page]);
 
-    // Resetar paginação ao mudar query
-    useEffect(() => {
-        setPage(1);
-    }, [debouncedQuery]);
 
-    // Quando muda o input do search bar
     const handleSearch = (newQuery) => {
-        setQuery(newQuery);
+        const trimmed = newQuery.trim();
+        const params = new URLSearchParams();
+
+        if (trimmed) {
+            params.set('query', trimmed);
+            params.set('page', '1');
+            router.push(`?${params.toString()}`);
+        } else {
+            router.push(`/movie/search`);
+        }
     };
 
-    // Carregar mais filmes
-    const loadMore = () => {
-        if (!loading && hasMore) setPage(prev => prev + 1);
+    const handlePageChange = (newPage) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('query', query);
+        params.set('page', newPage);
+        router.push(`?${params.toString()}`);
     };
 
     return (
@@ -91,55 +124,71 @@ export default function SearchPage() {
                     <Header />
 
                     <section className="flex justify-center items-center p-4">
-                        <Searchbar onSearch={handleSearch} />
+                        <Searchbar onSearch={handleSearch} initialValue={query} placeholder="Buscar filme..."/>
                     </section>
 
                     <section className="flex-1 p-4 overflow-auto">
-                        {loading && page === 1 ? (
-                            <div className="flex justify-center items-center h-full">
-                                <div className="w-12 h-12 border-t-4 border-accent border-solid rounded-full animate-spin"></div>
-                            </div>
-                        ) : error ? (
-                            <div className="text-red-500 text-center">{error}</div>
-                        ) : movies.length === 0 ? (
-                            <div className="text-center text-gray-500">Nenhum filme encontrado</div>
-                        ) : (
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {movies.map(movie => (
-                                    <div key={movie.id} className="bg-foreground rounded-xl p-4 flex flex-col cursor-pointer hover:bg-background transition">
-                                        {movie.poster_path ? (
-                                            <img
-                                                src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
-                                                alt={movie.title}
-                                                className="rounded-md mb-2 object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-48 bg-gray-300 rounded-md mb-2 flex items-center justify-center text-gray-500">
-                                                Sem imagem
-                                            </div>
-                                        )}
-                                        <h3 className="font-medium">{movie.title}</h3>
-                                        <p className="text-sm text-secondary">{movie.release_date?.slice(0,4)}</p>
+                        <div className="max-w-4xl mx-auto">
+                            {loading && page === 1 ? (
+                                <div className="flex justify-center items-center h-full">
+                                    <div className="w-12 h-12 border-t-4 border-accent border-solid rounded-full animate-spin"></div>
+                                </div>
+                            ) : error ? (
+                                <div className="text-red-500 text-center">{error}</div>
+                            ) : movies.length === 0 ? (
+                                <div className="text-center text-gray-500">Nenhum filme encontrado</div>
+                            ) : (
+                                <div className="flex flex-col gap-4">
+                                    {movies.map(movie => (
+                                        <MovieCard
+                                            key={movie.id}
+                                            movie={movie}
+                                            isMobile={false}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            {movies.length > 0 && totalPages > 1 && (
+                                <div className="flex justify-center mt-6 items-center gap-4">
+                                    {/* Botão Página Anterior */}
+                                    <button
+                                        disabled={page === 1}
+                                        onClick={() => handlePageChange(page - 1)}
+                                        className={`p-2 rounded-full ${page === 1 ? 'text-secondary cursor-not-allowed' : 'text-primary hover:bg-primary-dark'
+                                            }`}
+                                    >
+                                        &#8592;
+                                    </button>
+
+                                    {/* Lista de páginas */}
+                                    <div className="flex gap-2">
+                                        {generatePageNumbers().map((pageNumber, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => handlePageChange(pageNumber)}
+                                                className={`px-3 py-1 rounded ${pageNumber === page
+                                                        ? 'text-accent hover:bg-foreground'
+                                                        : 'text-primary hover:bg-foreground'
+                                                    }`}
+                                            >
+                                                {pageNumber}
+                                            </button>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                        {/* Botão carregar mais */}
-                        {hasMore && !loading && (
-                            <div className="flex justify-center mt-4">
-                                <button
-                                    onClick={loadMore}
-                                    className="px-4 py-2 rounded bg-primary text-white hover:bg-primary-dark transition"
-                                >
-                                    Carregar mais
-                                </button>
-                            </div>
-                        )}
-                        {loading && page > 1 && (
-                            <div className="flex justify-center mt-4">
-                                <div className="w-8 h-8 border-t-4 border-accent border-solid rounded-full animate-spin"></div>
-                            </div>
-                        )}
+
+                                    {/* Botão Próxima Página */}
+                                    <button
+                                        disabled={page === totalPages}
+                                        onClick={() => handlePageChange(page + 1)}
+                                        className={`p-2 rounded-full ${page === totalPages ? 'text-secondary cursor-not-allowed' : 'text-primary hover:bg-primary-dark'
+                                            }`}
+                                    >
+                                        &#8594;
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </section>
                 </main>
             </div>
