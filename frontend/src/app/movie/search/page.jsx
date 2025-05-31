@@ -4,7 +4,6 @@ import Header from '@/components/Header';
 import Navbar from '@/components/Navbar';
 import Searchbar from '@/components/Searchbar';
 import MovieCard from "@/components/MovieCard";
-import { fetchMovies } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -28,7 +27,6 @@ export default function SearchPage() {
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [hasMore, setHasMore] = useState(false);
 
     const [totalPages, setTotalPages] = useState(1);
     const [totalResults, setTotalResults] = useState(0);
@@ -143,7 +141,11 @@ export default function SearchPage() {
                     <Header />
 
                     <section className="flex justify-center items-center p-4">
-                        <Searchbar onSearch={handleSearch} initialValue={query} placeholder="Buscar filme..." />
+                        <Searchbar
+                            onSearch={handleSearch}
+                            initialValue={query}
+                            placeholder="Buscar filme..."
+                        />
                     </section>
 
                     <section className="flex-1 p-4 overflow-auto">

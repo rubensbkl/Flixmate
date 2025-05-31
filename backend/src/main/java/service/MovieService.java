@@ -97,18 +97,18 @@ public class MovieService {
     }
     
 
-/**
- * Busca os filmes mais populares do banco local
- * Ordena por popularidade (campo popularity) em ordem decrescente
- */
-public ArrayList<Movie> getMostPopularMovies(int page, int limit) {
-    return movieDAO.getMostPopularMovies(page, limit);
-}
+    /**
+     * Busca os filmes mais populares do banco local
+     * Ordena por popularidade (campo popularity) em ordem decrescente
+     */
+    public ArrayList<Movie> getMostPopularMovies(int page, int limit) {
+        return movieDAO.getMostPopularMovies(page, limit);
+    }
 
-/**
- * Conta o total de filmes no banco
- */
-public int getTotalMoviesCount() {
-    return movieDAO.getTotalMoviesCount();
-}
+    /**
+     * Conta o total de filmes no banco
+     */
+    public int getTotalMoviesCount() {
+        return movieDAO.getTotalMoviesCount();
+    }
 }

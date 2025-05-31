@@ -19,4 +19,17 @@ public class WatchLaterService {
     public ArrayList<Integer> getWatchLaterMovies(int userId) {
         return watchLaterDAO.getWatchLaterMovieIds(userId);
     }
+
+    public boolean toggleWatchLater(int userId, int movieId, boolean watched) {
+    if (watched) {
+        return watchLaterDAO.addToWatchLater(userId, movieId);
+    } else {
+        return watchLaterDAO.removeFromWatchLater(userId, movieId);
+    }
+}
+
+public boolean isInWatchLater(int userId, int movieId) {
+    return watchLaterDAO.isInWatchLater(userId, movieId);
+}
+
 }

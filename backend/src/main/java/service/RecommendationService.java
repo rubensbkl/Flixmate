@@ -107,4 +107,10 @@ public class RecommendationService {
         }
         return recommendedMoviesIds;
     }
+
+
+    public boolean isMovieRecommended(int userId, int movieId) {
+    return recommendationDAO.isMovieRecommended(userId, movieId);
+}
+
 }

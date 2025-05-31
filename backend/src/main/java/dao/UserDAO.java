@@ -186,4 +186,127 @@ public class UserDAO extends DAO {
         return user;
     }
 
+    public ArrayList<User> search(String query, int page, int limit) {
+        ArrayList<User> users = new ArrayList<>();
+
+        String sql = "SELECT id, first_name, last_name, email FROM users " +
+                    "WHERE LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(email) LIKE ? " +
+                    "ORDER BY first_name ASC " +
+                    "LIMIT ? OFFSET ?";
+
+        try {
+            PreparedStatement st = conexao.prepareStatement(sql);
+            String likeQuery = "%" + query.toLowerCase() + "%";
+            st.setString(1, likeQuery);
+            st.setString(2, likeQuery);
+            st.setString(3, likeQuery);
+            st.setInt(4, limit);
+            st.setInt(5, (page - 1) * limit);
+
+            ResultSet rs = st.executeQuery();
+            while (rs.next()) {
+                User user = new User();
+                user.setId(rs.getInt("id"));
+                user.setFirstName(rs.getString("first_name"));
+                user.setLastName(rs.getString("last_name"));
+                user.setEmail(rs.getString("email"));
+                users.add(user);
+            }
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar usuários: " + e.getMessage(), e);
+        }
+
+        return users;
+    }
+
+
+    public int countSearchResults(String query) {
+        int total = 0;
+
+        String sql = "SELECT COUNT(*) AS total FROM users " +
+                    "WHERE LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(email) LIKE ?";
+
+        try {
+            PreparedStatement st = conexao.prepareStatement(sql);
+            String likeQuery = "%" + query.toLowerCase() + "%";
+            st.setString(1, likeQuery);
+            st.setString(2, likeQuery);
+            st.setString(3, likeQuery);
+
+            ResultSet rs = st.executeQuery();
+            if (rs.next()) {
+                total = rs.getInt("total");
+            }
+
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao contar usuários: " + e.getMessage(), e);
+        }
+
+        return total;
+    }
+
+    public ArrayList<User> getAllUsers(int page, int limit) {
+        ArrayList<User> users = new ArrayList<>();
+
+        String sql = "SELECT id, first_name, last_name, email FROM users " +
+                    "ORDER BY first_name ASC " +
+                    "LIMIT ? OFFSET ?";
+
+        try {
+            PreparedStatement st = conexao.prepareStatement(sql);
+            st.setInt(1, limit);
+            st.setInt(2, (page - 1) * limit);
+
+            ResultSet rs = st.executeQuery();
+            while (rs.next()) {
+                User user = new User();
+                user.setId(rs.getInt("id"));
+                user.setFirstName(rs.getString("first_name"));
+                user.setLastName(rs.getString("last_name"));
+                user.setEmail(rs.getString("email"));
+                users.add(user);
+            }
+
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar usuários: " + e.getMessage(), e);
+        }
+
+        return users;
+    }
+
+
+
+    /**
+     * Conta o total de usuarios no banco de dados
+     * @return Número total de usuarios
+     */
+    public int getTotalUsersCount() {
+        int total = 0;
+
+        String sql = "SELECT COUNT(*) AS total FROM users";
+
+        try {
+            PreparedStatement st = conexao.prepareStatement(sql);
+            ResultSet rs = st.executeQuery();
+
+            if (rs.next()) {
+                total = rs.getInt("total");
+            }
+
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao contar usuários: " + e.getMessage(), e);
+        }
+
+        return total;
+    }
+
+
 }
