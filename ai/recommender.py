@@ -52,7 +52,9 @@ def load_movies():
     logger.info("🎬 Carregando filmes do banco de dados...")
 
     engine = create_engine(f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
-    query = """
+    
+    # Carregar filmes do banco de dados
+    query_movies = """
         SELECT
             id,
             rating,
@@ -61,19 +63,42 @@ def load_movies():
             original_language
         FROM movies
     """
+    df_movies = pd.read_sql(query_movies, engine)
+    df_movies['release_year'] = pd.to_datetime(df_movies['release_date']).dt.year
     
-    df = pd.read_sql(query, engine)
+    # Carregar gêneros dos filmes
+    query_genres = """
+        SELECT
+            mg.movie_id,
+            g.name as genre_name
+        FROM movie_genres mg
+        JOIN genres g ON mg.genre_id = g.id
+    """
+    df_genres = pd.read_sql(query_genres, engine)
 
-    df['release_year'] = pd.to_datetime(df['release_date']).dt.year
-    
-    return df.set_index('id').to_dict(orient='index')
+    # Mapear gêneros por filme
+    genres_map = df_genres.groupby('movie_id')['genre_name'].apply(list).to_dict()
+
+    # Montar dicionário final dos filmes
+    movie_dict = {}
+    for _, row in df_movies.iterrows():
+        movie_id = row['id']
+        movie_dict[movie_id] = {
+            'rating': row['rating'],
+            'popularity': row['popularity'],
+            'release_year': row['release_year'],
+            'original_language': row['original_language'],
+            'genres': genres_map.get(movie_id, [])
+        }
+
+    return movie_dict
 
 def clear_movies_cache():
     load_movies.cache_clear()
     logger.info("🧹 Cache de filmes limpo.")
 
 def movie_to_features(movie_id, user, movie):
-    return {
+    features = {
         'user': user,
         'movie': str(movie_id),
         'rating': float(movie.get('rating', 0)),
@@ -81,6 +106,13 @@ def movie_to_features(movie_id, user, movie):
         'release_year': int(movie.get('release_year', 2000)),
         'original_language': movie.get('original_language', 'unknown')
     }
+
+    # Adicionar gêneros como features binárias
+    genres = movie.get('genres', [])
+    for genre in genres:
+        features[f"genre_{genre.lower()}"] = True
+
+    return features
 
 def train_model(ratings, model, movie_dict):
     updated = False
@@ -145,3 +177,19 @@ def recommend(user, candidate_ids, top_n=1):
         return {"error": "❌ Nenhum filme candidato disponível para recomendação."}
 
     return {"recommended_movie": top[0][0], "score": top[0][1]}
+
+
+def recommend_without_candidates(user, top_n=10):
+    model = load_model()
+    movie_dict = load_movies()
+
+    top = model_recommend(user, model, movie_dict, top_n=top_n)
+
+    if not top:
+        return {"error": "❌ Nenhum filme disponível para recomendação."}
+
+    return {
+        "recommended_movies": [
+            {"movie_id": movie_id, "score": score} for movie_id, score in top
+        ]
+    }
