@@ -37,8 +37,8 @@ def importar_filmes(cursor):
         "release_date",
         "original_language",
         "popularity",
-        "adult",
         "poster_path",
+        "backdrop_path",
     ]
 
     # Mostrar os primeiros dados a serem inseridos

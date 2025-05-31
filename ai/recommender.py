@@ -58,15 +58,13 @@ def load_movies():
             rating,
             popularity,
             release_date,
-            original_language,
-            adult
+            original_language
         FROM movies
     """
     
     df = pd.read_sql(query, engine)
 
     df['release_year'] = pd.to_datetime(df['release_date']).dt.year
-    df['adult'] = df['adult'].map({'f': 0, 't': 1, False: 0, True: 1}).fillna(0).astype(int)
     
     return df.set_index('id').to_dict(orient='index')
 
@@ -81,8 +79,7 @@ def movie_to_features(movie_id, user, movie):
         'rating': float(movie.get('rating', 0)),
         'popularity': float(movie.get('popularity', 0)),
         'release_year': int(movie.get('release_year', 2000)),
-        'original_language': movie.get('original_language', 'unknown'),
-        'adult': int(movie.get('adult', 0)),
+        'original_language': movie.get('original_language', 'unknown')
     }
 
 def train_model(ratings, model, movie_dict):

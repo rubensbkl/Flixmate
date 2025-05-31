@@ -23,19 +23,17 @@ public class UserDAO extends DAO {
         close();
     }
 
-    // Insere um novo usuário (agora incluindo content_filter)
     public boolean insert(User user) {
         boolean status = false;
         String sql = "INSERT INTO users " +
-                     "(first_name, last_name, email, password, gender, content_filter) " +
-                     "VALUES (?, ?, ?, ?, ?, ?) RETURNING id;";
+                     "(first_name, last_name, email, password, gender) " +
+                     "VALUES (?, ?, ?, ?, ?) RETURNING id;";
         try (PreparedStatement st = conexao.prepareStatement(sql)) {
             st.setString(1, user.getFirstName());
             st.setString(2, user.getLastName());
             st.setString(3, user.getEmail());
             st.setString(4, PasswordUtil.hashPassword(user.getPassword()));
             st.setString(5, String.valueOf(user.getGender()));
-            st.setBoolean(6, !user.isAdult());
 
             try (ResultSet rs = st.executeQuery()) {
                 if (rs.next()) {
@@ -49,11 +47,9 @@ public class UserDAO extends DAO {
         return status;
     }
 
-    // Busca um usuário pelo ID (agora puxando content_filter)
     public User getById(int id) {
         User user = null;
-        String sql = "SELECT first_name, last_name, email, password, gender, content_filter " +
-                     "FROM users WHERE id = ?";
+        String sql = "SELECT first_name, last_name, email, password, gender FROM users WHERE id = ?";
         try (PreparedStatement st = conexao.prepareStatement(sql)) {
             st.setInt(1, id);
             try (ResultSet rs = st.executeQuery()) {
@@ -64,8 +60,7 @@ public class UserDAO extends DAO {
                         rs.getString("last_name"),
                         rs.getString("email"),
                         rs.getString("password"),
-                        rs.getString("gender").charAt(0),
-                        rs.getBoolean("content_filter")
+                        rs.getString("gender").charAt(0)
                     );
                 }
             }
@@ -75,10 +70,9 @@ public class UserDAO extends DAO {
         return user;
     }
 
-    // Retorna todos os usuários (incluindo content_filter)
     public List<User> getAll() {
         List<User> users = new ArrayList<>();
-        String sql = "SELECT id, first_name, last_name, email, password, gender, content_filter FROM users";
+        String sql = "SELECT id, first_name, last_name, email, password, gender FROM users";
         try (Statement st = conexao.createStatement();
              ResultSet rs = st.executeQuery(sql)) {
 
@@ -89,8 +83,7 @@ public class UserDAO extends DAO {
                     rs.getString("last_name"),
                     rs.getString("email"),
                     rs.getString("password"),
-                    rs.getString("gender").charAt(0),
-                    rs.getBoolean("content_filter")
+                    rs.getString("gender").charAt(0)
                 ));
             }
         } catch (SQLException e) {
@@ -99,7 +92,6 @@ public class UserDAO extends DAO {
         return users;
     }
 
-    // Atualiza um usuário (incluindo content_filter)
     public boolean update(User user) {
         boolean status = false;
         // Primeiro, mantém ou re-hash da senha
@@ -108,7 +100,7 @@ public class UserDAO extends DAO {
             ? user.getPassword()
             : PasswordUtil.hashPassword(user.getPassword());
         String sql = "UPDATE users SET " +
-                     "first_name = ?, last_name = ?, email = ?, password = ?, gender = ?, content_filter = ? " +
+                     "first_name = ?, last_name = ?, email = ?, password = ?, gender = ?" +
                      "WHERE id = ?";
         try (PreparedStatement st = conexao.prepareStatement(sql)) {
             st.setString(1, user.getFirstName());
@@ -116,8 +108,7 @@ public class UserDAO extends DAO {
             st.setString(3, user.getEmail());
             st.setString(4, senhaParaSalvar);
             st.setString(5, String.valueOf(user.getGender()));
-            st.setBoolean(6, !user.isAdult());
-            st.setInt(7, user.getId());
+            st.setInt(6, user.getId());
 
             status = st.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -174,7 +165,7 @@ public class UserDAO extends DAO {
     // Busca por email
     public User getByEmail(String email) {
         User user = null;
-        String sql = "SELECT id, first_name, last_name, password, gender, content_filter FROM users WHERE email = ?";
+        String sql = "SELECT id, first_name, last_name, password, gender FROM users WHERE email = ?";
         try (PreparedStatement st = conexao.prepareStatement(sql)) {
             st.setString(1, email);
             try (ResultSet rs = st.executeQuery()) {
@@ -185,8 +176,7 @@ public class UserDAO extends DAO {
                         rs.getString("last_name"),
                         email,
                         rs.getString("password"),
-                        rs.getString("gender").charAt(0),
-                        rs.getBoolean("content_filter")
+                        rs.getString("gender").charAt(0)
                     );
                 }
             }
@@ -196,32 +186,4 @@ public class UserDAO extends DAO {
         return user;
     }
 
-    // Recupera content_filter (sem alteração)
-    public boolean getContentFilter(int userId) {
-        boolean contentFilter = false;
-        String sql = "SELECT content_filter FROM users WHERE id = ?";
-        try (PreparedStatement st = conexao.prepareStatement(sql)) {
-            st.setInt(1, userId);
-            try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) contentFilter = rs.getBoolean("content_filter");
-            }
-        } catch (SQLException e) {
-            System.err.println("Erro ao buscar content filter: " + e.getMessage());
-        }
-        return contentFilter;
-    }
-
-    // Atualiza senha (sem alteração)
-    public boolean updatePassword(int userId, String newPassword) {
-        boolean status = false;
-        String sql = "UPDATE users SET password = ? WHERE id = ?";
-        try (PreparedStatement st = conexao.prepareStatement(sql)) {
-            st.setString(1, PasswordUtil.hashPassword(newPassword));
-            st.setInt(2, userId);
-            status = st.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Erro ao atualizar senha: " + e.getMessage());
-        }
-        return status;
-    }
 }

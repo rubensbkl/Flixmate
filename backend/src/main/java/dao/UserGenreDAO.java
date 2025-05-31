@@ -67,28 +67,6 @@ public class UserGenreDAO extends DAO {
     }
 
     /**
-     * Remove todos os gêneros preferidos de um usuário
-     * 
-     * @param userId ID do usuário
-     * @return true se a remoção foi bem-sucedida, false caso contrário
-     */
-    public boolean deleteAllForUser(int userId) {
-        boolean status = false;
-        try {
-            String sql = "DELETE FROM user_genres WHERE user_id = ?";
-            PreparedStatement st = conexao.prepareStatement(sql);
-            st.setInt(1, userId);
-
-            st.executeUpdate(); // Mesmo que não exclua nenhum registro, consideramos sucesso
-            status = true;
-            st.close();
-        } catch (SQLException e) {
-            System.err.println("Erro ao remover todos os gêneros preferidos: " + e.getMessage());
-        }
-        return status;
-    }
-
-    /**
      * Obtém todos os gêneros preferidos de um usuário com seus detalhes
      * 
      * @param userId ID do usuário

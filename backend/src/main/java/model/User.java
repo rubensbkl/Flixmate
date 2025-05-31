@@ -7,7 +7,6 @@ public class User {
     private String email;
     private String password;
     private char gender;
-    private boolean isAdult;
 
     public User() {
         this.id = -1;
@@ -16,7 +15,6 @@ public class User {
         this.email = "";
         this.password = "";
         this.gender = '\0';
-        this.isAdult = false;
     }
 
     public User(int id, String firstName, String lastName, String email, String password, char gender) {
@@ -26,18 +24,6 @@ public class User {
         this.email = email;
         this.password = password;
         this.gender = gender;
-        this.isAdult = false;
-    }
-
-    public User(int id, String firstName, String lastName, String email, String password, char gender,
-            boolean isAdult) {
-        this.id = id;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.password = password;
-        this.gender = gender;
-        this.isAdult = isAdult;
     }
 
     public int getId() {
@@ -88,16 +74,8 @@ public class User {
         this.gender = gender;
     }
 
-    public boolean isAdult() {
-        return isAdult;
-    }
-
-    public void setAdult(boolean isAdult) {
-        this.isAdult = isAdult;
-    }
-
     public String toString() {
         return "User [id=" + id + ", firstName=" + firstName + ", lastName=" + lastName + ", email=" + email
-                + ", gender=" + gender + ", birthdate=" + ", isAdult=" + isAdult + "]";
+                + ", gender=" + gender + ", birthdate=" + "]";
     }
 }

@@ -67,7 +67,7 @@ export default function LoginClient() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-white">
+        <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-background">
             <div className="w-full max-w-md">
                 <div className="flex items-center justify-center mb-8">
                     <img
@@ -77,21 +77,21 @@ export default function LoginClient() {
                     />
                 </div>
 
-                <h1 className="text-2xl font-bold text-center mb-2">
+                <h1 className="text-2xl text-primary font-bold text-center mb-2">
                     Entre em uma conta
                 </h1>
-                <p className="text-center text-gray-600 mb-8">
+                <p className="text-center text-secondary mb-8">
                     Utilize seu email para entrar no Flixmate
                 </p>
 
                 {successMessage && (
-                    <div className="bg-green-50 text-green-600 p-3 rounded-lg mb-4">
+                    <div className="bg-green-500/10 border border-green-500/50 text-green-400 p-3 rounded-lg mb-4">
                         {successMessage}
                     </div>
                 )}
 
                 {error && (
-                    <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4">
+                    <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-lg mb-4">
                         {error}
                     </div>
                 )}
@@ -106,7 +106,7 @@ export default function LoginClient() {
                         <input
                             type="email"
                             placeholder="Email"
-                            className="w-full p-3 border border-gray-300 rounded-lg"
+                            className="w-full p-3 text-primary bg-foreground border border-foreground rounded-lg placeholder-secondary focus:border-accent focus:outline-none transition-colors"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -118,7 +118,7 @@ export default function LoginClient() {
                         <input
                             type="password"
                             placeholder="Senha"
-                            className="w-full p-3 border border-gray-300 rounded-lg"
+                            className="w-full p-3 text-primary bg-foreground border border-foreground rounded-lg placeholder-secondary focus:border-accent focus:outline-none transition-colors"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -128,16 +128,16 @@ export default function LoginClient() {
 
                     <button
                         type="submit"
-                        className="w-full p-3 bg-black text-white rounded-lg font-medium"
+                        className="w-full p-3 bg-accent text-background rounded-lg font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isLoading}
                     >
                         {isLoading ? "Entrando..." : "Entrar"}
                     </button>
                 </form>
 
-                <p className="text-center mt-6 text-gray-600">
+                <p className="text-center mt-6 text-secondary">
                     Não tem uma conta?{" "}
-                    <Link href="/signup" className="text-blue-600 font-medium">
+                    <Link href="/signup" className="text-accent font-medium hover:text-accent/80 transition-colors">
                         Cadastre-se
                     </Link>
                 </p>

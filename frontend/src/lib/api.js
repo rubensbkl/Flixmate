@@ -40,7 +40,6 @@ export const fetchMoviesToRate = async (page = 1) => {
         vote_average: movie.vote_average,
         popularity: movie.popularity,
         original_language: movie.original_language,
-        adult: movie.adult,
     }));
 
     if (page === 1) movieCache.store(token, processed);
@@ -51,7 +50,7 @@ export const fetchMoviesToRate = async (page = 1) => {
 // Função para buscar o rating atual do usuário para um filme específico
 export const getMovieRating = async (movieId) => {
     const token = getToken();
-    
+
     try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rate/${movieId}`, {
             method: "GET",
@@ -82,7 +81,7 @@ export const getMovieRating = async (movieId) => {
 // Função corrigida para enviar rating
 export const setMovieRate = async (movieId, rating) => {
     const token = getToken();
-    
+
     try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rate`, {
             method: "POST",
@@ -114,7 +113,7 @@ export const setMovieRate = async (movieId, rating) => {
 // Função para remover rating (se você quiser implementar)
 export const removeMovieRating = async (movieId) => {
     const token = getToken();
-    
+
     try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rate/${movieId}`, {
             method: "DELETE",
@@ -160,7 +159,7 @@ export const getRecommendation = async () => {
 
         // Caso de erro, verifique o status da resposta
         if (data.erro === "Não há filmes não avaliados para recomendar.") {
-          
+
             return;
         } else if (!res.ok) {
             console.error("Erro na resposta da API:", data);
@@ -174,20 +173,19 @@ export const getRecommendation = async () => {
     }
 };
 
-export const fetchRecommendations = async () => {
+export const fetchRecommendations = async (userId) => {
     const token = getToken();
-    console.log("📡 Buscando histórico de recomendações");
+    console.log(`📡 Buscando histórico de recomendações para usuário ${userId}`);
 
     try {
         const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendations`,
+            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendations/${userId}`,
             {
-                method: "POST",
+                method: "GET",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({}),
+                }
             }
         );
 
@@ -390,13 +388,13 @@ export const fetchUserProfile = async (userId) => {
     }
 };
 
-export const fetchUserRecents = async (userId) => {
+export const fetchUserWatchList = async (userId) => {
     const token = getToken();
     console.log(`📡 Buscando filmes recentes do usuário: ${userId}`);
 
     try {
         const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/profile/${userId}/watched`,
+            `${process.env.NEXT_PUBLIC_API_URL}/api/profile/${userId}/watchlist`,
             {
                 method: "GET",
                 headers: {
@@ -456,46 +454,6 @@ export const fetchUserFavorites = async (userId) => {
     } catch (error) {
         console.error(
             `❌ Erro ao buscar filmes favoritos do usuário ${userId}:`,
-            error
-        );
-        return [];
-    }
-};
-
-export const fetchUserRecommended = async (userId) => {
-    const token = getToken();
-    console.log(`📡 Buscando filmes recomendados do usuário: ${userId}`);
-
-    try {
-        const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/profile/${userId}/recommended`,
-            {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            }
-        );
-
-        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
-
-        const data = await res.json();
-
-        console.log("Dados recebidos:", data); // Adicionei este log para depuração
-
-        if (data.status === "ok") {
-            console.log(
-                `🔍 Filmes recomendados do usuário ${userId} carregados`
-            );
-            return data.movies || [];
-        } else {
-            console.log("⚠️ Formato de resposta inesperado:", data);
-            return [];
-        }
-    } catch (error) {
-        console.error(
-            `❌ Erro ao buscar filmes recomendados do usuário ${userId}:`,
             error
         );
         return [];
@@ -609,44 +567,6 @@ export const deleteMovie = async (movieId) => {
     }
 };
 
-export const resetFeedbacks = async () => {
-    const token = getToken();
-    console.log("🗑️ Resetando todos os feedbacks do usuário");
-
-    try {
-        const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/feedbacks/reset`,
-            {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            }
-        );
-
-        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
-
-        const data = await res.json();
-
-        console.log("Dados recebidos:", data); // Adicionei este log para depuração
-
-        if (data.status === "ok") {
-            console.log("🔍 Feedbacks resetados com sucesso");
-            return "ok";
-        } else if (data.status === "no feedbacks") {
-            console.log("⚠️ Erro ao resetar feedbacks:", data.message);
-            return "no feedbacks";
-        } else {
-            console.log("⚠️ Formato de resposta inesperado:", data);
-            return "erro";
-        }
-    } catch (error) {
-        console.error("❌ Erro ao resetar feedbacks:", error);
-        return false;
-    }
-};
-
 export const fetchMovieById = async (movieId) => {
     const token = getToken();
     console.log(`📡 Buscando informações completas do filme: ${movieId}`);
@@ -726,3 +646,4 @@ export const fetchMovies = async (query, page = 1, limit = 25) => {
         throw error;
     }
 };
+

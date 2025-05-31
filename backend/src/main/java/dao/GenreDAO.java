@@ -138,31 +138,4 @@ public class GenreDAO extends DAO {
         return status;
     }
 
-    /**
-     * Busca gêneros pelo nome (pesquisa parcial)
-     * @param name Parte do nome do gênero
-     * @return Lista de gêneros que contêm o texto buscado no nome
-     */
-    public List<Genre> searchByName(String name) {
-        List<Genre> genres = new ArrayList<>();
-        try {
-            String sql = "SELECT * FROM genres WHERE name ILIKE ? ORDER BY name";
-            PreparedStatement st = conexao.prepareStatement(sql);
-            st.setString(1, "%" + name + "%");
-            ResultSet rs = st.executeQuery();
-
-            while (rs.next()) {
-                Genre genre = new Genre(
-                    rs.getInt("id"),
-                    rs.getString("name")
-                );
-                genres.add(genre);
-            }
-            rs.close();
-            st.close();
-        } catch (SQLException e) {
-            System.err.println("Erro ao buscar gêneros por nome: " + e.getMessage());
-        }
-        return genres;
-    }
 }
