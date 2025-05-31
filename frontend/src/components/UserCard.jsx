@@ -22,7 +22,7 @@ export default function UserCard({ user }) {
                 {user.profileImage ? (
                     <Image
                         src={user.profileImage}
-                        alt={`${user.firstName} ${user.lastName}`}
+                        alt={`${user.firstName} ${user.last_name}`}
                         width={48}
                         height={48}
                         className="rounded-full object-cover"
@@ -33,7 +33,7 @@ export default function UserCard({ user }) {
             </div>
             <div className="overflow-hidden">
                 <h3 className="font-medium text-primary truncate">
-                    {user.firstName} {user.lastName}
+                    {user.first_name} {user.last_name}
                 </h3>
                 <p className="text-sm text-secondary truncate">
                     {user.email}

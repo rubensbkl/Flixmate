@@ -9,7 +9,7 @@ import { fetchUsers } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-// Debounce hook (pode mover para um arquivo utils futuramente)
+// Debounce hook
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
@@ -24,95 +24,112 @@ export default function ProfileSearch() {
     const searchParams = useSearchParams();
 
     const [query, setQuery] = useState('');
-    const [users, setUsers] = useState([]);
-    const [filteredUsers, setFilteredUsers] = useState([]);
+    const [profiles, setProfiles] = useState([]);
     const [page, setPage] = useState(1);
-
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     const [totalPages, setTotalPages] = useState(1);
-    const itemsPerPage = 20;
+    const [totalResults, setTotalResults] = useState(0);
 
     const debouncedQuery = useDebounce(query, 500);
 
     const generatePageNumbers = () => {
         const pages = [];
+
+        // Sempre mostra a primeira página
         pages.push(1);
+
+        // Define um range dinâmico ao redor da página atual
         const start = Math.max(page - 1, 2);
         const end = Math.min(page + 1, totalPages - 1);
-        for (let i = start; i <= end; i++) pages.push(i);
-        if (totalPages > 1) pages.push(totalPages);
+
+        for (let i = start; i <= end; i++) {
+            pages.push(i);
+        }
+
+        // Sempre mostra a última página, se não for já exibida
+        if (totalPages > 1) {
+            pages.push(totalPages);
+        }
+
         return [...new Set(pages)];
+    };
+
+    // Função unificada para buscar usuarios (populares ou por query)
+    const fetchAllProfiles = async (searchQuery = '', currentPage = 1) => {
+        setLoading(true);
+        setError(null);
+        try {
+            // Montar URL com parâmetros
+            const params = new URLSearchParams();
+            if (searchQuery.trim()) {
+                params.set('query', searchQuery);
+            }
+            params.set('page', currentPage);
+            params.set('limit', '25');
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profiles/search?${params.toString()}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(searchQuery.trim() ? 'Erro ao buscar filmes' : 'Erro ao carregar filmes populares');
+            }
+
+            const data = await response.json();
+            setProfiles(data.results);
+            setTotalPages(data.total_pages);
+            setTotalResults(data.total_results);
+        } catch (err) {
+            setError(err.message || 'Erro ao carregar filmes');
+            console.error('Erro na busca:', err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
         const paramQuery = searchParams.get('query') || '';
         const paramPage = parseInt(searchParams.get('page')) || 1;
+
         setQuery(paramQuery);
         setPage(paramPage);
     }, [searchParams]);
 
     useEffect(() => {
-        const loadUsers = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const allUsers = await fetchUsers();
-                setUsers(allUsers);
-
-                // Filtro por nome, sobrenome ou email
-                const filtered = debouncedQuery
-                    ? allUsers.filter(user =>
-                        `${user.firstName} ${user.lastName}`.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
-                        user.email.toLowerCase().includes(debouncedQuery.toLowerCase())
-                    )
-                    : allUsers;
-
-                setFilteredUsers(filtered);
-
-                const calculatedPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
-                setTotalPages(calculatedPages);
-                if (page > calculatedPages) {
-                    setPage(1);
-                    const params = new URLSearchParams();
-                    if (debouncedQuery) params.set('query', debouncedQuery);
-                    params.set('page', '1');
-                    router.push(`?${params.toString()}`);
-                }
-            } catch (err) {
-                console.error(err);
-                setError('Erro ao carregar usuários');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadUsers();
+        // Usar a função unificada para buscar filmes
+        fetchAllProfiles(debouncedQuery, page);
     }, [debouncedQuery, page]);
 
     const handleSearch = (newQuery) => {
         const trimmed = newQuery.trim();
         const params = new URLSearchParams();
+
         if (trimmed) {
             params.set('query', trimmed);
             params.set('page', '1');
             router.push(`?${params.toString()}`);
         } else {
+            // Se limpar a busca, remove os parâmetros para mostrar populares
             router.push(`/profile/search`);
         }
     };
 
     const handlePageChange = (newPage) => {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('query', query);
-        params.set('page', newPage);
-        router.push(`?${params.toString()}`);
-    };
+        const params = new URLSearchParams();
 
-    // Paginação dos usuários filtrados
-    const startIndex = (page - 1) * itemsPerPage;
-    const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+        if (query.trim()) {
+            params.set('query', query);
+        }
+        params.set('page', newPage);
+
+        const paramString = params.toString();
+        router.push(paramString ? `?${paramString}` : `/profile/search?page=${newPage}`);
+    };
 
     return (
         <ProtectedRoute>
@@ -134,41 +151,64 @@ export default function ProfileSearch() {
 
                     <section className="flex-1 p-4 overflow-auto">
                         <div className="max-w-4xl mx-auto">
+                            {/* Título da seção */}
+                            <div className="mb-4">
+                                <h2 className="text-xl font-semibold text-primary">
+                                    {query.trim() ? `Resultados para "${query}"` : 'Filmes Populares'}
+                                </h2>
+                                {totalResults > 0 && (
+                                    <p className="text-secondary text-sm">
+                                        {totalResults} {totalResults === 1 ? 'resultado encontrado' : 'resultados encontrados'}
+                                    </p>
+                                )}
+                            </div>
+
                             {loading && page === 1 ? (
                                 <div className="flex justify-center items-center h-full">
                                     <div className="w-12 h-12 border-t-4 border-accent border-solid rounded-full animate-spin"></div>
                                 </div>
                             ) : error ? (
-                                <div className="text-red-500 text-center">{error}</div>
-                            ) : paginatedUsers.length === 0 ? (
-                                <div className="text-center text-gray-500">Nenhum usuário encontrado</div>
+                                <div className="text-red-400 text-center bg-red-500/10 border border-red-500/50 p-4 rounded-lg">
+                                    {error}
+                                </div>
+                            ) : profiles.length === 0 ? (
+                                <div className="text-center text-secondary p-8">
+                                    {query.trim() ? 'Nenhum filme encontrado para sua busca' : 'Nenhum filme disponível'}
+                                </div>
                             ) : (
                                 <div className="flex flex-col gap-4">
-                                    {paginatedUsers.map(user => (
-                                        <UserCard key={user.id} user={user} />
+                                    {profiles.map(profile => (
+                                        <UserCard
+                                            key={profile.id}
+                                            user={profile}
+                                        />
                                     ))}
                                 </div>
                             )}
 
-                            {filteredUsers.length > itemsPerPage && (
+                            {profiles.length > 0 && totalPages > 1 && (
                                 <div className="flex justify-center mt-6 items-center gap-4">
+                                    {/* Botão Página Anterior */}
                                     <button
                                         disabled={page === 1}
                                         onClick={() => handlePageChange(page - 1)}
-                                        className={`p-2 rounded-full ${page === 1 ? 'text-secondary cursor-not-allowed' : 'text-primary hover:bg-primary-dark'
+                                        className={`p-2 rounded-full transition-colors ${page === 1
+                                            ? 'text-secondary cursor-not-allowed'
+                                            : 'text-primary hover:bg-foreground'
                                             }`}
                                     >
                                         &#8592;
                                     </button>
 
+                                    {/* Lista de páginas */}
                                     <div className="flex gap-2">
                                         {generatePageNumbers().map((pageNumber, index) => (
                                             <button
                                                 key={index}
                                                 onClick={() => handlePageChange(pageNumber)}
-                                                className={`px-3 py-1 rounded ${pageNumber === page
-                                                        ? 'text-accent hover:bg-foreground'
-                                                        : 'text-primary hover:bg-foreground'
+                                                className={`px-3 py-1 rounded transition-colors ${pageNumber === page
+                                                    ? 'bg-accent text-background'
+                                                    : 'text-primary hover:bg-foreground'
                                                     }`}
                                             >
                                                 {pageNumber}
@@ -176,10 +216,13 @@ export default function ProfileSearch() {
                                         ))}
                                     </div>
 
+                                    {/* Botão Próxima Página */}
                                     <button
                                         disabled={page === totalPages}
                                         onClick={() => handlePageChange(page + 1)}
-                                        className={`p-2 rounded-full ${page === totalPages ? 'text-secondary cursor-not-allowed' : 'text-primary hover:bg-primary-dark'
+                                        className={`p-2 rounded-full transition-colors ${page === totalPages
+                                            ? 'text-secondary cursor-not-allowed'
+                                            : 'text-primary hover:bg-foreground'
                                             }`}
                                     >
                                         &#8594;

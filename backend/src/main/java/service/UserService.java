@@ -1,5 +1,6 @@
 package service;
 
+import java.util.ArrayList;
 import dao.UserDAO;
 import model.User;
 
@@ -73,5 +74,32 @@ public class UserService {
     public User getUserById(int id) {
         return userDAO.getById(id);
     }
+
+    public ArrayList<User> search(String query, int page, int limit) throws Exception {
+        return userDAO.search(query, page, limit);
+    }
+
+    public int countSearchResults(String query) {
+        return userDAO.countSearchResults(query);
+    }
+
+    /**
+     * Busca os filmes mais populares do banco local
+     * Ordena por popularidade (campo popularity) em ordem decrescente
+     */
+    public ArrayList<User> getAllUsers(int page, int limit) {
+        return userDAO.getAllUsers(page, limit);
+    }
+
+    /**
+     * Conta o total de usuarios no banco
+     */
+    public int getTotalUsersCount() {
+        return userDAO.getTotalUsersCount();
+    }
+
+    
+
+
 
 }

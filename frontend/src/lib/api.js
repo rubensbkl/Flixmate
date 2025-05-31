@@ -240,41 +240,6 @@ export const fetchUsers = async () => {
     }
 };
 
-export const fetchMe = async () => {
-    const token = getToken();
-    console.log(`📡 Buscando informações básicas do usuário:`);
-
-    try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/me`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
-
-        const data = await res.json();
-
-        console.log("Dados recebidos:", data); // Adicionei este log para depuração
-
-        if (data.status === "ok") {
-            console.log(`🔍 Informações básicas do usuário ${data} carregadas`);
-            return data.user;
-        } else {
-            console.log("⚠️ Formato de resposta inesperado:", data);
-            throw new Error("Formato de resposta inválido do servidor");
-        }
-    } catch (error) {
-        console.error(
-            `❌ Erro ao buscar informações do usuário ${data}:`,
-            error
-        );
-        throw error;
-    }
-};
-
 /**
  * Fetch user profile data
  * @returns {Promise<Object>} User data
@@ -460,6 +425,56 @@ export const fetchUserFavorites = async (userId) => {
     }
 };
 
+export const checkMovieWatchlist = async (movieId) => {
+    const token = getToken();
+    
+    try {
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/movie/${movieId}/watchlist`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                }
+            }
+        );
+        
+        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+        
+        const data = await res.json();
+        return data.isInWatchlist;
+    } catch (error) {
+        console.error("❌ Erro ao verificar watchlist:", error);
+        return false;
+    }
+};
+
+export const checkMovieFavorite = async (movieId) => {
+    const token = getToken();
+    
+    try {
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/movie/${movieId}/favorite`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                }
+            }
+        );
+        
+        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+        
+        const data = await res.json();
+        return data.isFavorite;
+    } catch (error) {
+        console.error("❌ Erro ao verificar favorito:", error);
+        return false;
+    }
+};
+
 export const updateWatchlistMovie = async (movieId, watched) => {
     const token = getToken();
     console.log(`📝 Adicionando filme à watchlist: ${movieId}`);
@@ -533,7 +548,7 @@ export const updatefavoriteMovie = async (movieId, favorite) => {
     }
 };
 
-export const deleteMovie = async (movieId) => {
+export const deleteMovieRecommendation = async (movieId) => {
     const token = getToken();
     console.log(`🗑️ Deletando filme: ${movieId}`);
 
@@ -647,3 +662,31 @@ export const fetchMovies = async (query, page = 1, limit = 25) => {
     }
 };
 
+
+export const checkMovieRecommended = async (movieId) => {
+    const token = getToken();
+    console.log(`📡 Verificando se filme ${movieId} está recomendado`);
+    
+    try {
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/movie/${movieId}/recommended`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                }
+            }
+        );
+        
+        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+        
+        const data = await res.json();
+        console.log(`🔍 Filme ${movieId} recomendado:`, data.isRecommended);
+        
+        return data.isRecommended;
+    } catch (error) {
+        console.error("❌ Erro ao verificar recomendação:", error);
+        return false;
+    }
+};

@@ -17,19 +17,13 @@ export default function Navbar() {
     const pathname = usePathname();
     const [isMobile, setIsMobile] = useState(false);
 
-    // Detect if we're on mobile
     useEffect(() => {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
         };
 
-        // Check on initial load
         checkMobile();
-
-        // Add event listener for window resize
         window.addEventListener("resize", checkMobile);
-
-        // Cleanup
         return () => window.removeEventListener("resize", checkMobile);
     }, []);
 
@@ -37,83 +31,83 @@ export default function Navbar() {
         logout();
     };
 
-    // Mobile bottom navigation
+    // Mobile bottom navigation - versão melhorada
     if (isMobile) {
         return (
-            <nav className="fixed flex bottom-0 left-0 right-0 bg-background border-t border-foreground justify-around items-center h-16 z-10 safe-area-bottom">
+            <>
+                <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-foreground flex justify-around items-center h-16 z-50 safe-area-pb">
+                    <Link
+                        href="/"
+                        className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${pathname === "/"
+                                ? "text-accent"
+                                : "text-secondary hover:text-accent"
+                            }`}
+                    >
+                        <HomeIcon className="w-5 h-5" />
+                        <span className="text-xs mt-1 font-medium">Home</span>
+                    </Link>
 
-                <Link
-                    href="/"
-                    className={`flex flex-col items-center justify-center p-2 ${pathname === "/"
-                        ? "text-accent"
-                        : "text-secondary"
-                        }`}
-                >
-                    <HomeIcon className="w-6 h-6" />
-                    <span className="text-xs mt-1">Home</span>
-                </Link>
+                    <Link
+                        href="/profile/search"
+                        className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${pathname.startsWith("/profile/") &&
+                                !pathname.startsWith(`/profile/${user?.id}`) &&
+                                !pathname.startsWith("/profile/edit")
+                                ? "text-accent"
+                                : "text-secondary hover:text-accent"
+                            }`}
+                    >
+                        <MagnifyingGlassIcon className="w-5 h-5" />
+                        <span className="text-xs mt-1 font-medium">Buscar</span>
+                    </Link>
 
-                <Link
-                    href="/profile/search"
-                    className={`flex flex-col items-center justify-center p-2 ${pathname.startsWith("/profile/") &&
-                        !pathname.startsWith(`/profile/${user?.id}`) && !pathname.startsWith("/profile/edit")
-                        ? "text-accent"
-                        : "text-secondary"
-                        }`}
-                >
-                    <MagnifyingGlassIcon className="w-6 h-6" />
-                    <span className="text-xs mt-1">Buscar</span>
-                </Link>
+                    <Link
+                        href="/movie/search"
+                        className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${pathname.startsWith("/movie/search")
+                                ? "text-accent"
+                                : "text-secondary hover:text-accent"
+                            }`}
+                    >
+                        <FilmIcon className="w-5 h-5" />
+                        <span className="text-xs mt-1 font-medium">Filmes</span>
+                    </Link>
 
-                <Link
-                    href="/movie/search"
-                    className={`flex flex-col items-center justify-center p-2 ${pathname.startsWith("/movie/search")
-                        ? "text-accent"
-                        : "text-secondary"
-                        }`}
-                >
-                    <FilmIcon className="w-6 h-6" />
-                    <span className="text-xs mt-1">Filmes</span>
-                </Link>
+                    <Link
+                        href={`/profile/${user?.id}`}
+                        className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${(pathname.startsWith(`/profile/${user?.id}`) || pathname === `/profile/edit`)
+                                ? "text-accent"
+                                : "text-secondary hover:text-accent"
+                            }`}
+                    >
+                        <UserIcon className="w-5 h-5" />
+                        <span className="text-xs mt-1 font-medium">Perfil</span>
+                    </Link>
 
-                <Link
-                    href={`/profile/${user?.id}`}
-                    className={`flex flex-col items-center justify-center p-2 ${(pathname.startsWith(`/profile/${user?.id}`) || pathname === `/profile/edit`)
-                        ? "text-accent"
-                        : "text-secondary"
-                        }`}
-                >
-                    <UserIcon className="w-6 h-6" />
-                    <span className="text-xs mt-1">Perfil</span>
-                </Link>
-                {/* Logout */}
-                <button
-                    onClick={handleLogout}
-                    className="flex text-red-700 flex-col items-center justify-center p-2 text-secondary hover:bg-foreground rounded-lg transition-colors"
-                >
-                    <ArrowLeftStartOnRectangleIcon className="w-6 h-6" />
-                    <span className="text-xs mt-1">Sair</span>
-                </button>
-            </nav>
+                    <button
+                        onClick={handleLogout}
+                        className="flex flex-col items-center justify-center p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                    >
+                        <ArrowLeftStartOnRectangleIcon className="w-5 h-5" />
+                        <span className="text-xs mt-1 font-medium">Sair</span>
+                    </button>
+                </nav>
+            </>
         );
     }
 
-    // Desktop sidebar
+    // Desktop sidebar (mantém como está)
     return (
         <aside className="w-64 h-full flex flex-col">
             <div className="p-4 pb-10">
                 <h1 className="text-xl font-bold text-primary">FlixMate</h1>
-                <p className="text-sm text-accent">
-                    Seu assistente de filmes
-                </p>
+                <p className="text-sm text-accent">Seu assistente de filmes</p>
             </div>
 
             <nav className="flex-1 space-y-2.5">
                 <Link
                     href="/"
                     className={`flex items-center px-4 py-3 rounded-r-xl transition-colors ${pathname === "/"
-                        ? "text-primary bg-foreground font-bold"
-                        : "text-secondary hover:bg-foreground"
+                            ? "text-primary bg-foreground font-bold"
+                            : "text-secondary hover:bg-foreground"
                         }`}
                 >
                     <HomeIcon className="w-5 h-5 mr-3" />
@@ -122,7 +116,9 @@ export default function Navbar() {
                 <Link
                     href="/profile/search"
                     className={
-                        pathname.startsWith("/profile/") && !pathname.startsWith(`/profile/${user?.id}`) && !pathname.startsWith("/profile/edit")
+                        pathname.startsWith("/profile/") &&
+                            !pathname.startsWith(`/profile/${user?.id}`) &&
+                            !pathname.startsWith("/profile/edit")
                             ? "flex items-center px-4 py-3 rounded-r-xl text-primary bg-foreground transition-colors"
                             : "flex items-center px-4 py-3 rounded-r-xl text-secondary hover:bg-foreground transition-colors"
                     }
