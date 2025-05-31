@@ -16,21 +16,11 @@ export default function UserCard({ user }) {
     return (
         <div
             onClick={handleClick}
-            className="bg-foreground rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:bg-background transition"
+            className="bg-foreground rounded-xl p-4 flex items-center gap-4 cursor-pointer transition-all hover:bg-accent/10 hover:shadow-lg"
         >
-            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center overflow-hidden">
-                {user.profileImage ? (
-                    <Image
-                        src={user.profileImage}
-                        alt={`${user.firstName} ${user.last_name}`}
-                        width={48}
-                        height={48}
-                        className="rounded-full object-cover"
-                    />
-                ) : (
-                    <UserIcon className="w-6 h-6 text-background" />
-                )}
-            </div>
+            <div className="h-12 w-12 rounded-full bg-foreground flex items-center justify-center border-2 border-accent/20 overflow-hidden">
+                                    <UserIcon className="h-6 w-6 text-secondary" />
+                                </div>
             <div className="overflow-hidden">
                 <h3 className="font-medium text-primary truncate">
                     {user.first_name} {user.last_name}

@@ -215,8 +215,8 @@ export default function SignUpPage() {
             <div className="w-full max-w-md">
                 <div className="flex items-center justify-center mb-8">
                     <img
-                        src="/flixmate-logo.svg"
-                        alt="Flixmate"
+                        src="flixmate-logo-teste1.svg"
+                        alt="Flixmate Logo"
                         className="h-12"
                     />
                 </div>

@@ -296,7 +296,7 @@ export default function MovieProfilePage() {
                     <Navbar />
                 </div>
 
-                <main className="flex-1 overflow-y-auto">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden">
                     {/* Backdrop com overlay escuro */}
                     <div className="relative w-full h-[350px] md:h-[450px]">
                         {backdropLoading && (
