@@ -20,7 +20,6 @@ import {
     fetchMoviesToRate,
     setMovieRate,
     getRecommendation,
-    resetFeedbacks,
 } from "@/lib/api";
 import { movieCache } from "@/lib/cache";
 import { clearSession, loadSession, saveSession } from "@/lib/session";
@@ -210,31 +209,9 @@ export default function Home() {
         console.log("Iniciando reset de matches...");
         // clearSession(); // Clear session immediately
 
-        try {
-            const data = await resetFeedbacks(); // Await the async call
+        setFeedbackCount(0); // Reset local count
+        currentPage.current = 1;
 
-            console.log("Feedbacks resetados:", data);
-            if (data == "ok") {
-                console.log("Feedbacks resetados com sucesso.");
-            } else {
-                console.log("Erro ao resetar feedbacks:", data);
-                setErrorMessage(
-                    "Erro ao reiniciar feedbacks. Tente novamente mais tarde."
-                );
-                setShowErrorModal(true);
-            }
-
-            setFeedbackCount(0); // Reset local count
-            currentPage.current = 1;
-            // movieCache.clear(localStorage.getItem("token"));
-            // await loadMovies(); // Reload movies
-        } catch (error) {
-            console.error("Falha na chamada para resetar feedbacks:", error);
-            setErrorMessage(
-                "Não foi possível conectar ao servidor para reiniciar as avaliações."
-            );
-            setShowErrorModal(true);
-        }
     };
 
     const surprise = async () => {
@@ -269,7 +246,7 @@ export default function Home() {
                     </div>
 
                     <main className="flex-1 flex flex-col items-center justify-center">
-                        <div className="text-xl font-semibold mb-4">
+                        <div className="text-xl font-semibold mb-4 text-primary">
                             Carregando filmes...
                         </div>
                         <div className="w-16 h-16 border-t-4 border-accent border-solid rounded-full animate-spin"></div>
@@ -434,7 +411,7 @@ export default function Home() {
                                 : "opacity-0 pointer-events-none"
                         }`}
                     >
-                        <div className="text-xl font-semibold">
+                        <div className="text-xl font-semibold text-primary">
                             Gerando recomendação...
                         </div>
                         <div className="mt-4 w-16 h-16 border-t-4 border-yellow-500 border-solid rounded-full animate-spin"></div>

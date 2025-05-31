@@ -159,8 +159,8 @@ def limpar_base_tmdb(arquivo_entrada, arquivo_saida):
         'release_date',
         'original_language',
         'popularity',
-        'adult',
-        'poster_path'
+        'poster_path',
+        'backdrop_path'
     ]].rename(columns={
         'vote_average': 'rating'
     })

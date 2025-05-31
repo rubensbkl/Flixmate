@@ -29,7 +29,7 @@ public class MovieDAO extends DAO {
         System.out.println("Inserting movie: " + movie.toString());
         boolean status = false;
         try {
-            String sql = "INSERT INTO movies (id, title, overview, rating, release_date, original_language, popularity, adult, poster_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO movies (id, title, overview, rating, release_date, original_language, popularity, poster_path, backdrop_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setInt(1, movie.getId());
             st.setString(2, movie.getTitle());
@@ -38,7 +38,7 @@ public class MovieDAO extends DAO {
             st.setString(5, movie.getReleaseDate());
             st.setString(6, movie.getOriginalLanguage());
             st.setDouble(7, movie.getPopularity());
-            st.setBoolean(8, movie.isAdult());
+            st.setString(8, movie.getPosterPath());
             st.setString(9, movie.getPosterPath());
             
             int rowsAffected = st.executeUpdate();
@@ -91,8 +91,8 @@ public class MovieDAO extends DAO {
                 movie.setReleaseDate(rs.getString("release_date"));
                 movie.setOriginalLanguage(rs.getString("original_language"));
                 movie.setPopularity(rs.getDouble("popularity"));
-                movie.setAdult(rs.getBoolean("adult"));
                 movie.setPosterPath(rs.getString("poster_path"));
+                movie.setBackdropPath(rs.getString("backdrop_path"));
             }
             rs.close();
             st.close();
@@ -111,14 +111,13 @@ public class MovieDAO extends DAO {
     public boolean update(Movie movie) {
         boolean status = false;
         try {
-            String sql = "UPDATE movies SET title = ?, release_date = ?, original_language = ?, popularity = ?, adult = ? WHERE id = ?";
+            String sql = "UPDATE movies SET title = ?, release_date = ?, original_language = ?, popularity = ? WHERE id = ?";
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setString(1, movie.getTitle());
             st.setString(2, movie.getReleaseDate());
             st.setString(3, movie.getOriginalLanguage());
             st.setDouble(4, movie.getPopularity());
-            st.setBoolean(5, movie.isAdult());
-            st.setInt(6, movie.getId());
+            st.setInt(5, movie.getId());
             
             int rowsAffected = st.executeUpdate();
             status = rowsAffected > 0;
@@ -151,7 +150,7 @@ public class MovieDAO extends DAO {
         ArrayList<Movie> movies = new ArrayList<>();
 
         String sql = "SELECT id, title, poster_path, release_date, popularity FROM movies " +
-                    "WHERE LOWER(title) LIKE ? AND adult = false " +
+                    "WHERE LOWER(title) LIKE ? " +
                     "ORDER BY popularity DESC " +
                     "LIMIT ? OFFSET ?";
 
@@ -166,9 +165,9 @@ public class MovieDAO extends DAO {
                 Movie movie = new Movie();
                 movie.setId(rs.getInt("id"));
                 movie.setTitle(rs.getString("title"));
-                movie.setPosterPath(rs.getString("poster_path"));
                 movie.setReleaseDate(rs.getString("release_date"));
-                movie.setPopularity(rs.getDouble("popularity")); // Corrigido aqui
+                movie.setPopularity(rs.getDouble("popularity")); 
+                movie.setPosterPath(rs.getString("poster_path"));
                 movies.add(movie);
             }
             rs.close();
@@ -189,7 +188,7 @@ public class MovieDAO extends DAO {
         int total = 0;
 
         String sql = "SELECT COUNT(*) AS total FROM movies " +
-                    "WHERE LOWER(title) LIKE ? AND adult = false";
+                    "WHERE LOWER(title) LIKE ?";
 
         try {
             PreparedStatement st = conexao.prepareStatement(sql);
@@ -210,6 +209,71 @@ public class MovieDAO extends DAO {
         return total;
     }
 
+    // Adicione estes métodos ao final da sua classe MovieDAO existente:
 
+/**
+ * Busca os filmes mais populares ordenados por popularidade
+ * @param page Página atual (começa em 1)
+ * @param limit Número de filmes por página
+ * @return Lista de filmes mais populares
+ */
+public ArrayList<Movie> getMostPopularMovies(int page, int limit) {
+    ArrayList<Movie> movies = new ArrayList<>();
+    
+    String sql = "SELECT id, title, poster_path, release_date, popularity FROM movies " +
+                "ORDER BY popularity DESC " +
+                "LIMIT ? OFFSET ?";
+    
+    try {
+        PreparedStatement st = conexao.prepareStatement(sql);
+        st.setInt(1, limit);
+        st.setInt(2, (page - 1) * limit);
+        
+        ResultSet rs = st.executeQuery();
+        while (rs.next()) {
+            Movie movie = new Movie();
+            movie.setId(rs.getInt("id"));
+            movie.setTitle(rs.getString("title"));
+            movie.setReleaseDate(rs.getString("release_date"));
+            movie.setPopularity(rs.getDouble("popularity")); 
+            movie.setPosterPath(rs.getString("poster_path"));
+            movies.add(movie);
+        }
+        rs.close();
+        st.close();
+    } catch (SQLException e) {
+        throw new RuntimeException("Erro ao buscar filmes populares: " + e.getMessage(), e);
+    }
+    
+    System.out.println("Filmes populares encontrados: " + movies.size());
+    return movies;
+}
+
+/**
+ * Conta o total de filmes no banco de dados
+ * @return Número total de filmes
+ */
+public int getTotalMoviesCount() {
+    int total = 0;
+    
+    String sql = "SELECT COUNT(*) AS total FROM movies";
+    
+    try {
+        PreparedStatement st = conexao.prepareStatement(sql);
+        ResultSet rs = st.executeQuery();
+        
+        if (rs.next()) {
+            total = rs.getInt("total");
+        }
+        
+        rs.close();
+        st.close();
+    } catch (SQLException e) {
+        throw new RuntimeException("Erro ao contar filmes: " + e.getMessage(), e);
+    }
+    
+    System.out.println("Total de filmes no banco: " + total);
+    return total;
+}
 
 }

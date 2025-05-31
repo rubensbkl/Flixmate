@@ -13,7 +13,6 @@ export default function EditProfilePage() {
     const [email, setEmail] = useState("");
     const [gender, setGender] = useState("");
     const [genres, setGenres] = useState([]); // IDs selecionados
-    const [contentFilter, setContentFilter] = useState(false);
     
     // Estados da UI
     const [loading, setLoading] = useState(true);
@@ -78,7 +77,6 @@ export default function EditProfilePage() {
                 setLastName(data.lastName || "");
                 setEmail(data.email || "");
                 setGender(data.gender || "");
-                setContentFilter(data.contentFilter ?? false);
                 
                 // Gêneros preferidos
                 if (data.genres && Array.isArray(data.genres)) {
@@ -190,7 +188,6 @@ export default function EditProfilePage() {
                 email,
                 gender,
                 genres,
-                contentFilter
             };
             
             console.log("Enviando dados:", userData);
@@ -383,34 +380,6 @@ export default function EditProfilePage() {
                                     <span className="text-red-500">(selecione pelo menos 1)</span>
                                 )}
                             </p>
-                        </div>
-
-                        {/* Filtro de Conteúdo */}
-                        <div className="mb-8 flex items-center space-x-3 p-3 rounded-md">
-                            <div className="flex-1">
-                                <label className="text-primary font-medium block mb-1">
-                                    Filtro de Conteúdo
-                                </label>
-                                <p className="text-sm text-secondary">
-                                    Ative para filtrar conteúdo adulto e violento
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setContentFilter(!contentFilter)}
-                                className={`w-14 h-7 rounded-full flex items-center transition ${
-                                    contentFilter ? "bg-accent" : "bg-foreground"
-                                }`}
-                                aria-pressed={contentFilter}
-                                role="switch"
-                            >
-                                <div
-                                    className={`w-6 h-6 bg-white rounded-full shadow-md transform transition ${
-                                        contentFilter
-                                            ? "translate-x-7"
-                                            : "translate-x-1"
-                                    }`}
-                                />
-                            </button>
                         </div>
 
                         {/* Botão de Salvar */}

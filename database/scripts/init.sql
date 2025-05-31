@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     gender CHAR(1) NOT NULL,
-    content_filter BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -21,8 +20,10 @@ CREATE TABLE IF NOT EXISTS movies (
     release_date VARCHAR(15) NOT NULL,
     original_language VARCHAR(10) NOT NULL,
     popularity DOUBLE PRECISION NOT NULL,
-    adult BOOLEAN DEFAULT FALSE,
-    poster_path TEXT
+    poster_path TEXT,
+    backdrop_path TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Criar tabela de gêneros (do TMDB)
@@ -63,6 +64,20 @@ CREATE TABLE IF NOT EXISTS recommendations (
     PRIMARY KEY (user_id, movie_id)
 );
 
+CREATE TABLE IF NOT EXISTS watchlater (
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    movie_id INTEGER REFERENCES movies(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, movie_id)
+);
+
+CREATE TABLE IF NOT EXISTS favorite (
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    movie_id INTEGER REFERENCES movies(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, movie_id)
+);
+
 -- Criar índices para melhorar performance
 CREATE INDEX IF NOT EXISTS idx_feedbacks_user_id ON feedbacks(user_id);
 CREATE INDEX IF NOT EXISTS idx_feedbacks_movie_id ON feedbacks(movie_id);
@@ -97,6 +112,6 @@ INSERT INTO genres (id, name) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- Inserir usuários de exemplo
-INSERT INTO users (first_name, last_name, email, password, gender, content_filter) VALUES
-('admin', 'admin', 'admin@admin.com', '$2a$12$DCtnqzWD9NIe1Gt2hfmUvOCe/YCH9gAhg2n9sD6jnKQ2V1qWDk.B.', 'M', false)
+INSERT INTO users (first_name, last_name, email, password, gender) VALUES
+('admin', 'admin', 'admin@admin.com', '$2a$12$DCtnqzWD9NIe1Gt2hfmUvOCe/YCH9gAhg2n9sD6jnKQ2V1qWDk.B.', 'M')
 ON CONFLICT (email) DO NOTHING;

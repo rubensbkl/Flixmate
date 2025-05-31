@@ -13,7 +13,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function Navbar() {
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
     const pathname = usePathname();
     const [isMobile, setIsMobile] = useState(false);
 
@@ -44,11 +44,10 @@ export default function Navbar() {
 
                 <Link
                     href="/"
-                    className={`flex flex-col items-center justify-center p-2 ${
-                        pathname === "/" 
-                            ? "text-accent"
-                            : "text-secondary"
-                    }`}
+                    className={`flex flex-col items-center justify-center p-2 ${pathname === "/"
+                        ? "text-accent"
+                        : "text-secondary"
+                        }`}
                 >
                     <HomeIcon className="w-6 h-6" />
                     <span className="text-xs mt-1">Home</span>
@@ -56,11 +55,11 @@ export default function Navbar() {
 
                 <Link
                     href="/profile/search"
-                    className={`flex flex-col items-center justify-center p-2 ${
-                        (pathname.startsWith("/profile/")) && !(pathname === "/profile/edit")
-                            ? "text-accent"
-                            : "text-secondary"
-                    }`}
+                    className={`flex flex-col items-center justify-center p-2 ${pathname.startsWith("/profile/") &&
+                        !pathname.startsWith(`/profile/${user?.id}`) && !pathname.startsWith("/profile/edit")
+                        ? "text-accent"
+                        : "text-secondary"
+                        }`}
                 >
                     <MagnifyingGlassIcon className="w-6 h-6" />
                     <span className="text-xs mt-1">Buscar</span>
@@ -68,23 +67,21 @@ export default function Navbar() {
 
                 <Link
                     href="/movie/search"
-                    className={`flex flex-col items-center justify-center p-2 ${
-                        pathname.startsWith("/movie/search")
-                            ? "text-accent"
-                            : "text-secondary"
-                    }`}
+                    className={`flex flex-col items-center justify-center p-2 ${pathname.startsWith("/movie/search")
+                        ? "text-accent"
+                        : "text-secondary"
+                        }`}
                 >
                     <FilmIcon className="w-6 h-6" />
                     <span className="text-xs mt-1">Filmes</span>
                 </Link>
 
                 <Link
-                    href={`/profile`}
-                    className={`flex flex-col items-center justify-center p-2 ${
-                        pathname === "/profile" || pathname === "/profile/edit"
-                            ? "text-accent"
-                            : "text-secondary"
-                    }`}
+                    href={`/profile/${user?.id}`}
+                    className={`flex flex-col items-center justify-center p-2 ${(pathname.startsWith(`/profile/${user?.id}`) || pathname === `/profile/edit`)
+                        ? "text-accent"
+                        : "text-secondary"
+                        }`}
                 >
                     <UserIcon className="w-6 h-6" />
                     <span className="text-xs mt-1">Perfil</span>
@@ -114,11 +111,10 @@ export default function Navbar() {
             <nav className="flex-1 space-y-2.5">
                 <Link
                     href="/"
-                    className={`flex items-center px-4 py-3 rounded-r-xl transition-colors ${
-                        pathname === "/"
-                            ? "text-primary bg-foreground font-bold"
-                            : "text-secondary hover:bg-foreground"
-                    }`}
+                    className={`flex items-center px-4 py-3 rounded-r-xl transition-colors ${pathname === "/"
+                        ? "text-primary bg-foreground font-bold"
+                        : "text-secondary hover:bg-foreground"
+                        }`}
                 >
                     <HomeIcon className="w-5 h-5 mr-3" />
                     Home
@@ -126,7 +122,7 @@ export default function Navbar() {
                 <Link
                     href="/profile/search"
                     className={
-                        (pathname.startsWith("/profile/") || pathname == "/search") && !(pathname == "/profile/edit")
+                        pathname.startsWith("/profile/") && !pathname.startsWith(`/profile/${user?.id}`) && !pathname.startsWith("/profile/edit")
                             ? "flex items-center px-4 py-3 rounded-r-xl text-primary bg-foreground transition-colors"
                             : "flex items-center px-4 py-3 rounded-r-xl text-secondary hover:bg-foreground transition-colors"
                     }
@@ -146,9 +142,9 @@ export default function Navbar() {
                     Filmes
                 </Link>
                 <Link
-                    href={`/profile`}
+                    href={`/profile/${user?.id}`}
                     className={
-                        pathname == "/profile" || pathname == "/profile/edit"
+                        pathname.startsWith(`/profile/${user?.id}`) || pathname === `/profile/edit`
                             ? "flex items-center px-4 py-3 rounded-r-xl text-primary bg-foreground transition-colors"
                             : "flex items-center px-4 py-3 rounded-r-xl text-secondary hover:bg-foreground transition-colors"
                     }

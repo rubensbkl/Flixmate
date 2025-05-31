@@ -99,28 +99,6 @@ public class RecommendationDAO extends DAO {
     }
 
     /**
-     * Remove todas as recomendações de um usuário
-     * 
-     * @param userId O ID do usuário
-     * @return true se a remoção foi bem-sucedida, false caso contrário
-     */
-    public boolean clearUserRecommendations(int userId) {
-        boolean status = false;
-        try {
-            String sql = "DELETE FROM recommendations WHERE user_id = ?";
-            PreparedStatement st = conexao.prepareStatement(sql);
-            st.setInt(1, userId);
-
-            st.executeUpdate(); // Mesmo que não exclua nenhum registro, consideramos sucesso
-            status = true;
-            st.close();
-        } catch (SQLException e) {
-            System.err.println("Erro ao limpar recomendações do usuário: " + e.getMessage());
-        }
-        return status;
-    }
-
-    /**
      * Verifica se um filme já foi recomendado para um usuário
      * 
      * @param userId  O ID do usuário
@@ -144,32 +122,6 @@ public class RecommendationDAO extends DAO {
             System.err.println("Erro ao verificar recomendação: " + e.getMessage());
         }
         return exists;
-    }
-
-    /**
-     * Conta o número de recomendações para um usuário
-     * 
-     * @param userId O ID do usuário
-     * @return O número de recomendações
-     */
-    public int countRecommendations(int userId) {
-        int count = 0;
-        try {
-            String sql = "SELECT COUNT(*) FROM recommendations WHERE user_id = ?";
-            PreparedStatement st = conexao.prepareStatement(sql);
-            st.setInt(1, userId);
-
-            ResultSet rs = st.executeQuery();
-            if (rs.next()) {
-                count = rs.getInt(1);
-            }
-
-            rs.close();
-            st.close();
-        } catch (SQLException e) {
-            System.err.println("Erro ao contar recomendações: " + e.getMessage());
-        }
-        return count;
     }
 
     public ArrayList<Recommendation> getFavoritesByUserId(int userId) {

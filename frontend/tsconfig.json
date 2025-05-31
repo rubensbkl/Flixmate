@@ -22,18 +22,22 @@
         "name": "next"
       }
     ],
-
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "src/*"
+      ]
     }
   },
   "include": [
     "next-env.d.ts",
     ".next/types/**/*.ts",
     "**/*.ts",
-    "**/*.tsx"
-, "src/app/movie/[movieId]/page.jsx", "src/lib/api.js"  ],
+    "**/*.tsx",
+    "src/app/movie/[movieId]/page.jsx",
+    "src/lib/api.js",
+    "src/app/middleware.js"
+  ],
   "exclude": [
     "node_modules"
   ]

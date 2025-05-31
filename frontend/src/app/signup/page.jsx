@@ -97,46 +97,68 @@ export default function SignUpPage() {
     };
 
     const nextStep = () => {
-        // Simple validation for first step
-        if (step === 1) {
-            if (
-                !formData.firstName ||
-                !formData.lastName ||
-                !formData.email ||
-                !formData.password ||
-                !formData.gender ||
-                !formData.birthdate
-            ) {
-                setError("Por favor, preencha todos os campos");
-                return;
-            }
-
-            // Email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(formData.email)) {
-                setError("Por favor, insira um email válido");
-                return;
-            }
-
-            // Password length validation
-            if (formData.password.length < 6) {
-                setError("A senha deve ter pelo menos 6 caracteres");
-                return;
-            }
-
-            // Password strength validation 
-            const passwordRegex =
-                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
-            if (!passwordRegex.test(formData.password)) {
-                setError(
-                    "A senha deve conter letras maiúsculas, minúsculas e números"
-                );
-                return;
-            }
+        // Verificação de campos obrigatórios
+        if (
+            !formData.firstName ||
+            !formData.lastName ||
+            !formData.email ||
+            !formData.password ||
+            !formData.gender ||
+            !formData.birthdate
+        ) {
+            setError("Por favor, preencha todos os campos");
+            return;
         }
 
-        setError(""); // Clear any errors
-        setStep(2);
+        // Validação de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+            setError("Por favor, insira um email válido");
+            return;
+        }
+
+        // Validação de comprimento mínimo da senha
+        if (formData.password.length < 6) {
+            setError("A senha deve ter pelo menos 6 caracteres");
+            return;
+        }
+
+        // Validação de força da senha (mín. 1 maiúscula, 1 minúscula e 1 número)
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
+        if (!passwordRegex.test(formData.password)) {
+            setError(
+                "A senha deve conter letras maiúsculas, minúsculas e números"
+            );
+            return;
+        }
+
+        // Validação da data de nascimento
+        const birthDate = new Date(formData.birthdate);
+        const today = new Date();
+        const minDate = new Date("1900-01-01");
+
+        // Remove horas para comparação exata (só data)
+        birthDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+
+        if (isNaN(birthDate.getTime())) {
+            setError("Data de nascimento inválida");
+            return;
+        }
+
+        if (birthDate > today) {
+            setError("A data de nascimento não pode ser no futuro");
+            return;
+        }
+
+        if (birthDate < minDate) {
+            setError("A data de nascimento não pode ser anterior a 1900");
+            return;
+        }
+
+        // Tudo certo
+        setError(""); // Limpa qualquer erro
+        setStep(2);   // Avança para o próximo passo
     };
 
     const prevStep = () => {
@@ -189,7 +211,7 @@ export default function SignUpPage() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-white">
+        <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-background">
             <div className="w-full max-w-md">
                 <div className="flex items-center justify-center mb-8">
                     <img
@@ -199,15 +221,17 @@ export default function SignUpPage() {
                     />
                 </div>
 
-                <h1 className="text-2xl font-bold text-center mb-2">
+                <h1 className="text-2xl text-primary font-bold text-center mb-2">
                     Crie uma conta
                 </h1>
-                <p className="text-center text-gray-600 mb-8">
+                <p className="text-center text-secondary text-gray-600 mb-8">
                     Utilize seu email para entrar no Flixmate
                 </p>
 
                 {error && (
-                    <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4">
+                    <div className="border border-yellow-500 text-yellow-400 p-3 rounded-lg mb-4"
+                        style={{ backgroundColor: 'rgba(234, 179, 8, 0.1)' }} // Tailwind yellow-500 + 10% opacity
+                    >
                         {error}
                     </div>
                 )}
@@ -222,7 +246,7 @@ export default function SignUpPage() {
                             type="text"
                             name="firstName"
                             placeholder="Nome"
-                            className="w-full p-3 border border-gray-300 rounded-lg"
+                            className="w-full p-3 text-primary border-none bg-foreground  rounded-lg placeholder-primary"
                             value={formData.firstName}
                             onChange={handleChange}
                             required
@@ -232,7 +256,7 @@ export default function SignUpPage() {
                             type="text"
                             name="lastName"
                             placeholder="Sobrenome"
-                            className="w-full p-3 border border-gray-300 rounded-lg"
+                            className="w-full p-3 text-primary border-none bg-foreground rounded-lg placeholder-primary"
                             value={formData.lastName}
                             onChange={handleChange}
                             required
@@ -242,7 +266,7 @@ export default function SignUpPage() {
                             type="email"
                             name="email"
                             placeholder="Email"
-                            className="w-full p-3 border border-gray-300 rounded-lg"
+                            className="w-full p-3 text-primary border-none bg-foreground rounded-lg placeholder-primary"
                             value={formData.email}
                             onChange={handleChange}
                             required
@@ -252,7 +276,7 @@ export default function SignUpPage() {
                             type="password"
                             name="password"
                             placeholder="Senha (mín. 6 caracteres)"
-                            className="w-full p-3 border border-gray-300 rounded-lg"
+                            className="w-full p-3 text-primary border-none bg-foreground rounded-lg placeholder-primary"
                             value={formData.password}
                             onChange={handleChange}
                             required
@@ -260,27 +284,29 @@ export default function SignUpPage() {
                             autoComplete="new-password"
                         />
 
-                        <div className="space-y-1">
+                        <div className="space-y-1 ">
                             <label
                                 htmlFor="birthdate"
-                                className="block text-sm text-gray-700 font-medium"
+                                className="block text-sm text-secondary font-medium"
                             >
-                                Data de Nascimento
+                               Data de Nascimento
                             </label>
                             <input
-                                type="date"
-                                id="birthdate"
-                                name="birthdate"
-                                className="w-full p-3 border border-gray-300 rounded-lg"
-                                value={formData.birthdate}
-                                onChange={handleChange}
-                                required
+                            type="date"
+                            id="birthdate"
+                            name="birthdate"
+                            className="w-full p-3 text-primary border-none bg-foreground rounded-lg placeholder-primary"
+                            value={formData.birthdate}
+                            onChange={handleChange}
+                            required
+                            min="1900-01-01" // ← impede datas muito antigas
+                            max={new Date().toISOString().split("T")[0]} // ← impede datas futuras
                             />
                         </div>
 
                         <select
                             name="gender"
-                            className="w-full p-3 border border-gray-300 rounded-lg"
+                            className="w-full p-3 text-primary border-none bg-foreground rounded-lg placeholder-primary"
                             value={formData.gender}
                             onChange={handleChange}
                             required
@@ -295,7 +321,7 @@ export default function SignUpPage() {
                         <button
                             type="button"
                             onClick={nextStep}
-                            className="w-full p-3 bg-black text-white rounded-lg font-medium"
+                            className="w-full p-3 bg-primary text-background rounded-lg font-medium"
                         >
                             Continuar
                         </button>
@@ -303,11 +329,11 @@ export default function SignUpPage() {
                 ) : (
                     <form
                         onSubmit={handleSubmit}
-                        className="space-y-4"
+                        className="space-y-4 "
                         key="signup-form-step2"
                         autoComplete="off"
                     >
-                        <div className="space-y-2">
+                        <div className="space-y-2 ">
                             <h2 className="text-lg font-medium">
                                 Gêneros favoritos
                             </h2>
@@ -362,13 +388,13 @@ export default function SignUpPage() {
                             <button
                                 type="button"
                                 onClick={prevStep}
-                                className="flex-1 p-3 border border-gray-300 text-gray-700 rounded-lg font-medium"
+                                className="flex-1 p-3 border-none bg-foreground text-gray-700 rounded-lg font-medium"
                             >
                                 Voltar
                             </button>
                             <button
                                 type="submit"
-                                className="flex-1 p-3 bg-black text-white rounded-lg font-medium"
+                                className="flex-1 p-3 bg-black text-primary rounded-lg font-medium"
                                 disabled={isLoading}
                             >
                                 {isLoading ? "Cadastrando..." : "Cadastrar"}
@@ -377,9 +403,9 @@ export default function SignUpPage() {
                     </form>
                 )}
 
-                <p className="text-center mt-6 text-gray-600">
+                <p className="text-center text-secondary mt-6 text-gray-600">
                     Já tem uma conta?{" "}
-                    <Link href="/login" className="text-blue-600 font-medium">
+                    <Link href="/login" className="text-accent font-medium">
                         Entre aqui
                     </Link>
                 </p>

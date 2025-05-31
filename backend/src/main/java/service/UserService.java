@@ -74,14 +74,4 @@ public class UserService {
         return userDAO.getById(id);
     }
 
-    /**
-     * Gets the content filter setting for a user.
-     *
-     * @param userId The ID of the user
-     * @return true if content filter is enabled, false otherwise
-     */
-    public boolean getContentFilter(int userId) {
-        return userDAO.getContentFilter(userId);
-    }
-
 }

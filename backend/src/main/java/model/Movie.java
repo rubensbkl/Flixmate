@@ -1,4 +1,5 @@
 package model;
+
 public class Movie {
     private int id;
     private String title;
@@ -7,8 +8,8 @@ public class Movie {
     private String releaseDate;
     private String originalLanguage;
     private double popularity;
-    private boolean adult;
-    private String poster_path;
+    private String posterPath;
+    private String backdropPath;
     
     public Movie() {
         this.id = 0;
@@ -18,23 +19,11 @@ public class Movie {
         this.releaseDate = "";
         this.originalLanguage = "";
         this.popularity = 0.0;
-        this.adult = false;
-        this.poster_path = "";
-    }
-
-    public Movie(int id, String title, String releaseDate, String originalLanguage, double popularity, boolean adult) {
-        this.id = id;
-        this.title = title;
-        this.overview = "";
-        this.rating = 0.0;
-        this.releaseDate = releaseDate;
-        this.originalLanguage = originalLanguage;
-        this.popularity = popularity;
-        this.adult = adult;
-        this.poster_path = "";
+        this.posterPath = "";
+        this.backdropPath = "";
     }
     
-    public Movie(int id, String title, String overview, double rating, String releaseDate, String originalLanguage, double popularity, boolean adult, String poster_path) {
+    public Movie(int id, String title, String overview, double rating, String releaseDate, String originalLanguage, double popularity, String posterPath, String backdropPath) {
         this.id = id;
         this.title = title;
         this.overview = overview;
@@ -42,8 +31,8 @@ public class Movie {
         this.releaseDate = releaseDate;
         this.originalLanguage = originalLanguage;
         this.popularity = popularity;
-        this.adult = adult;
-        this.poster_path = poster_path;
+        this.posterPath = posterPath;
+        this.backdropPath = backdropPath;
     }
     
     public int getId() {
@@ -101,21 +90,21 @@ public class Movie {
     public void setPopularity(double popularity) {
         this.popularity = popularity;
     }
-    
-    public boolean isAdult() {
-        return adult;
-    }
-    
-    public void setAdult(boolean adult) {
-        this.adult = adult;
-    }
 
     public String getPosterPath() {
-        return poster_path;
+        return posterPath;
     }
 
-    public void setPosterPath(String poster_path) {
-        this.poster_path = poster_path;
+    public void setPosterPath(String posterPath) {
+        this.posterPath = posterPath;
+    }
+
+    public String getBackdropPath() {
+        return backdropPath;
+    }
+
+    public void setBackdropPath(String backdropPath) {
+        this.backdropPath = backdropPath;
     }
     
     @Override
@@ -128,8 +117,8 @@ public class Movie {
                 ", releaseDate='" + releaseDate + '\'' +
                 ", originalLanguage='" + originalLanguage + '\'' +
                 ", popularity=" + popularity +
-                ", adult=" + adult +
-                ", poster_path='" + poster_path + '\'' +
+                ", poster_path='" + posterPath + '\'' +
+                ", backdrop_path='" + backdropPath + '\'' +
                 '}';
     }
 

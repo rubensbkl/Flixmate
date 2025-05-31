@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import { Ubuntu, Ubuntu_Sans_Mono } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
+import FastAuthGuard from '@/components/FastAuthGuard';
 
 const ubuntu = Ubuntu({
     variable: "--font-ubuntu",
@@ -26,7 +27,11 @@ export default function RootLayout({ children }) {
             <body
                 className={`${ubuntu.variable} ${ubuntuMono.variable} antialiased bg-background`}
             >
-                <AuthProvider>{children}</AuthProvider>
+                <AuthProvider>
+                    <FastAuthGuard>
+                            {children}
+                    </FastAuthGuard>
+                </AuthProvider>
             </body>
         </html>
     );

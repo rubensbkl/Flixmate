@@ -8,6 +8,7 @@ import {
     HandThumbUpIcon,
     ClockIcon,
     StarIcon,
+    TrashIcon
 } from "@heroicons/react/24/outline";
 
 import { useParams } from "next/navigation";
@@ -101,40 +102,62 @@ export default function MovieProfilePage() {
     const handleFavorite = async () => {
     }
 
+    const languageMap = {
+        en: "Inglês",
+        pt: "Português",
+        es: "Espanhol",
+        fr: "Francês",
+        ja: "Japonês",
+        ko: "Coreano",
+        de: "Alemão",
+        zh: "Chinês",
+        it: "Italiano",
+        hi: "Hindi",
+        // adicione mais conforme necessário
+    };
+
+    function convertLanguageCode(code) {
+        return languageMap[code] || code;
+    }
+
     if (loading) {
         return (
-            <div className="flex flex-col md:flex-row min-h-screen">
-                <div className="md:w-64">
-                    <Navbar />
-                </div>
-                <main className="flex-1 flex items-center justify-center overflow-y-auto">
-                    <div className="text-center px-4">
-                        <div className="w-16 h-16 border-t-4 border-accent border-solid rounded-full animate-spin mx-auto mb-4"></div>
-                        <p className="text-xl font-medium text-gray-700">
-                            Carregando informações do filme...
-                        </p>
+            <ProtectedRoute>
+                <div className="flex flex-col md:flex-row min-h-screen">
+                    <div className="md:w-64">
+                        <Navbar />
                     </div>
-                </main>
-            </div>
+                    <main className="flex-1 flex items-center justify-center overflow-y-auto">
+                        <div className="text-center px-4">
+                            <div className="w-16 h-16 border-t-4 border-accent border-solid rounded-full animate-spin mx-auto mb-4"></div>
+                            <p className="text-xl font-medium text-gray-700">
+                                Carregando informações do filme...
+                            </p>
+                        </div>
+                    </main>
+                </div>
+            </ProtectedRoute>
         );
     }
 
     if (error || !movieInfo) {
         return (
-            <div className="flex flex-col md:flex-row min-h-screen">
-                <div className="md:w-64">
-                    <Navbar />
-                </div>
-                <main className="flex-1 flex items-center justify-center overflow-y-auto">
-                    <div className="text-center px-4">
-                        <div className="bg-red-100 p-4 rounded-lg mb-4">
-                            <p className="text-red-600 font-medium">
-                                {error || "Filme não encontrado."}
-                            </p>
-                        </div>
+            <ProtectedRoute>
+                <div className="flex flex-col md:flex-row min-h-screen">
+                    <div className="md:w-64">
+                        <Navbar />
                     </div>
-                </main>
-            </div>
+                    <main className="flex-1 flex items-center justify-center overflow-y-auto">
+                        <div className="text-center px-4">
+                            <div className="bg-red-100 p-4 rounded-lg mb-4">
+                                <p className="text-red-600 font-medium">
+                                    {error || "Filme não encontrado."}
+                                </p>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </ProtectedRoute>
         );
     }
 
@@ -153,7 +176,7 @@ export default function MovieProfilePage() {
                             <div className="absolute inset-0 bg-foreground animate-pulse" />
                         )}
                         <Image
-                            src={`https://image.tmdb.org/t/p/original/8ZTVqvKDQ8emSGUEMjsS4yHAwrp.jpg`}
+                            src={`https://image.tmdb.org/t/p/original${movieInfo.backdropPath}`}
                             alt={movieInfo.title}
                             fill
                             className={`object-cover transition-opacity duration-500 ${backdropLoading ? 'opacity-0' : 'opacity-100'}`}
@@ -220,7 +243,7 @@ export default function MovieProfilePage() {
                             </div>
                             
                             <p className="text-sm text-muted mb-2 text-secondary">
-                                {movieInfo.releaseDate} • {movieInfo.genres?.join(", ")}
+                                {movieInfo.releaseDate} • {movieInfo.genres?.join(", ")} • {convertLanguageCode(movieInfo.originalLanguage)}
                             </p>
                             <p className="text-primary mb-6">
                                 {movieInfo.overview}
@@ -262,6 +285,15 @@ export default function MovieProfilePage() {
                                     title="Favoritar"
                                 >
                                     <StarIcon className={`w-6 h-6 ${favorite ? "text-foreground" : "text-accent"}`} />
+                                </button>
+
+                                <button
+                                    onClick={handleFavorite}
+                                    disabled={ratingLoading}
+                                    className={`w-12 h-12 flex items-center justify-center rounded-full shadow-md hover:scale-105 transition ${favorite ? "bg-accent" : "bg-foreground"} ${ratingLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    title="Favoritar"
+                                >
+                                    <TrashIcon className={`w-6 h-6 ${favorite ? "text-foreground" : "text-accent"}`} />
                                 </button>
                             </div>
                         </div>

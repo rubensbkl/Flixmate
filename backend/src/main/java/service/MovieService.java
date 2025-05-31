@@ -35,15 +35,15 @@ public class MovieService {
             String releaseDate = movieObj.has("release_date") ? movieObj.get("release_date").getAsString() : null;
             String originalLanguage = movieObj.has("original_language") ? movieObj.get("original_language").getAsString() : null;
             double popularity = movieObj.has("popularity") ? movieObj.get("popularity").getAsDouble() : 0.0;
-            boolean adult = movieObj.has("adult") && movieObj.get("adult").getAsBoolean();
             String posterPath = movieObj.has("poster_path") ? movieObj.get("poster_path").getAsString() : null;
-            
+            String backdropPath = movieObj.has("backdrop_path") ? movieObj.get("backdrop_path").getAsString() : null;
+
             if (movieDAO.exists(movieId)) {
                 System.out.println("Filme já existe no banco: " + movieId + " - " + title);
                 return true;
             }
 
-            Movie movie = new Movie(movieId, title, overview, rating, releaseDate, originalLanguage, popularity, adult, posterPath);
+            Movie movie = new Movie(movieId, title, overview, rating, releaseDate, originalLanguage, popularity, posterPath, backdropPath);
             if (!movieDAO.insert(movie)) {
                 System.err.println("Falha ao inserir filme no banco: " + movieId + " - " + title);
                 return false;
@@ -57,17 +57,6 @@ public class MovieService {
             e.printStackTrace();
             return false;
         }
-    }
-
-    public Movie jsonObjectToMovie(JsonObject movieObj) {
-        int movieId = movieObj.get("id").getAsInt();
-        String title = movieObj.get("title").getAsString();
-        String releaseDate = movieObj.has("release_date") ? movieObj.get("release_date").getAsString() : null;
-        String originalLanguage = movieObj.has("original_language") ? movieObj.get("original_language").getAsString() : null;
-        double popularity = movieObj.has("popularity") ? movieObj.get("popularity").getAsDouble() : 0.0;
-        boolean adult = movieObj.has("adult") && movieObj.get("adult").getAsBoolean();
-
-        return new Movie(movieId, title, releaseDate, originalLanguage, popularity, adult);
     }
 
     /**
@@ -100,11 +89,26 @@ public class MovieService {
     }
 
     public ArrayList<Movie> search(String query, int page, int limit) throws Exception {
-        // Aqui pode colocar regras de negócio, logs, caching, validações...
         return movieDAO.search(query, page, limit);
     }
 
     public int countSearchResults(String query) {
         return movieDAO.countSearchResults(query);
     }
+    
+
+/**
+ * Busca os filmes mais populares do banco local
+ * Ordena por popularidade (campo popularity) em ordem decrescente
+ */
+public ArrayList<Movie> getMostPopularMovies(int page, int limit) {
+    return movieDAO.getMostPopularMovies(page, limit);
+}
+
+/**
+ * Conta o total de filmes no banco
+ */
+public int getTotalMoviesCount() {
+    return movieDAO.getTotalMoviesCount();
+}
 }
