@@ -71,7 +71,7 @@ export default function LoginClient() {
             <div className="w-full max-w-md">
                 <div className="flex items-center justify-center mb-8">
                     <img
-                        src="/flixmate-logo.svg"
+                        src="/flixmate-logo-teste1.svg"
                         alt="Flixmate Logo"
                         className="h-12"
                     />

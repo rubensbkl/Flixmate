@@ -14,7 +14,7 @@ export default function MovieCard({ movie, isMobile }) {
 
     return (
         <div
-            className={`flex items-center bg-foreground shadow-sm md:shadow-md rounded-lg ${padding} movie-card`}
+            className={`flex items-center bg-foreground shadow-sm md:shadow-md rounded-lg ${padding} movie-card transition-all hover:bg-accent/10 hover:shadow-lg`}
         >
             <Link className="flex items-center flex-1 min-w-0 overflow-hidden group" href={`/movie/${movie.id}`}>
                 {/* Poster do filme */}

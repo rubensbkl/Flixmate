@@ -33,8 +33,7 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [isAnimating, setIsAnimating] = useState(false);
     const [swipeDirection, setSwipeDirection] = useState(null);
-    const [isLoadingRecommendation, setIsLoadingRecommendation] =
-        useState(false);
+    const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const router = useRouter();
 
@@ -70,7 +69,7 @@ export default function Home() {
     }, []);
 
     const navigateToRecommendations = () => {
-        router.push("/recommendations");
+        router.push(`/profile/${user?.id}`);
     };
 
     const handleCloseErrorModal = () => {

@@ -46,7 +46,7 @@ export default function UserProfilePage() {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
         };
-        
+
         checkMobile();
         window.addEventListener("resize", checkMobile);
         return () => window.removeEventListener("resize", checkMobile);
@@ -58,11 +58,11 @@ export default function UserProfilePage() {
             try {
                 setLoadingUser(true);
                 setLoadingCounts(true);
-                
+
                 // Carregar perfil do usuário
                 const userProfile = await fetchUserProfile(userId);
                 setUserInfo(userProfile);
-                
+
                 // Carregar TODOS os dados em paralelo para os contadores
                 const [recommendations, watchlist, favorites] = await Promise.all([
                     fetchRecommendations(userId).catch(err => {
@@ -103,7 +103,7 @@ export default function UserProfilePage() {
         if (newTab !== activeTab) {
             setLoadingContent(true);
             setActiveTab(newTab);
-            
+
             // Simular um pequeno delay para smooth transition
             setTimeout(() => {
                 setLoadingContent(false);
@@ -205,37 +205,23 @@ export default function UserProfilePage() {
                     <Navbar />
                 </div>
 
-                <main className="flex-1 overflow-x-hidden">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden">
                     <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
 
                         {/* Header do Perfil - Estilo Instagram */}
-                        <div className="md:flex mb-8 justify-around items-center">
+                        <div className="md:flex mb-4 justify-around items-center">
                             <div className="flex items-center">
                                 {/* Foto de Perfil */}
-                                <div className="relative h-24 w-24">
-                                    <div className="h-24 w-24 rounded-full bg-foreground flex items-center justify-center border-2 border-accent/20 overflow-hidden">
-                                        {userInfo.profileImage ? (
-                                            <img
-                                                src={userInfo.profileImage}
-                                                alt="Foto de perfil"
-                                                className="h-full w-full object-cover rounded-full"
-                                                style={{
-                                                    borderRadius: '50%',
-                                                    clipPath: 'circle(50%)'
-                                                }}
-                                            />
-                                        ) : (
-                                            <UserIcon className="h-12 w-12 text-secondary" />
-                                        )}
-                                    </div>
+                                <div className="h-20 w-20 ml-3 md:h-24 md:w-24 rounded-full bg-foreground flex items-center justify-center border-2 border-accent/20 overflow-hidden">
+                                    <UserIcon className="h-8 w-8 md:h-12 md:w-12 text-secondary" />
                                 </div>
 
                                 {/* Informações do Usuário */}
                                 <div className="ml-6">
-                                    <h1 className="text-2xl font-semibold text-primary mb-1">
+                                    <h1 className="text-xl font-semibold text-primary mb-1">
                                         {userInfo.firstName} {userInfo.lastName}
                                     </h1>
-                                    <p className="text-secondary">{userInfo.email}</p>
+                                    <p className="text-secondary text-sm">{userInfo.email}</p>
                                 </div>
                             </div>
 
@@ -282,11 +268,10 @@ export default function UserProfilePage() {
                             {/* Aba Recomendados */}
                             <button
                                 onClick={() => handleTabChange('recommended')}
-                                className={`flex items-center md:gap-2 py-3 transition-colors ${
-                                    activeTab === 'recommended'
+                                className={`flex items-center md:gap-2 py-3 transition-colors ${activeTab === 'recommended'
                                         ? 'text-accent border-b-2 border-accent'
                                         : 'text-secondary hover:text-primary'
-                                }`}
+                                    }`}
                             >
                                 {activeTab === 'recommended' ? (
                                     <FilmIconSolid className="h-6 w-6" />
@@ -301,11 +286,10 @@ export default function UserProfilePage() {
                             {/* Aba Assistir Depois */}
                             <button
                                 onClick={() => handleTabChange('watchlater')}
-                                className={`flex items-center md:gap-2 py-3 transition-colors ${
-                                    activeTab === 'watchlater'
+                                className={`flex items-center md:gap-2 py-3 transition-colors ${activeTab === 'watchlater'
                                         ? 'text-accent border-b-2 border-accent'
                                         : 'text-secondary hover:text-primary'
-                                }`}
+                                    }`}
                             >
                                 {activeTab === 'watchlater' ? (
                                     <BookmarkIconSolid className="h-6 w-6" />
@@ -320,11 +304,10 @@ export default function UserProfilePage() {
                             {/* Aba Favoritos */}
                             <button
                                 onClick={() => handleTabChange('favorites')}
-                                className={`flex items-center md:gap-2 py-3 transition-colors ${
-                                    activeTab === 'favorites'
+                                className={`flex items-center md:gap-2 py-3 transition-colors ${activeTab === 'favorites'
                                         ? 'text-accent border-b-2 border-accent'
                                         : 'text-secondary hover:text-primary'
-                                }`}
+                                    }`}
                             >
                                 {activeTab === 'favorites' ? (
                                     <StarIconSolid className="h-6 w-6" />
