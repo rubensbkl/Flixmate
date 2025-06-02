@@ -6,7 +6,6 @@ import Searchbar from '@/components/Searchbar';
 import MovieCard from "@/components/MovieCard";
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import ProtectedRoute from '@/components/ProtectedRoute';
 
 // Debounce hook
 function useDebounce(value, delay) {
@@ -131,7 +130,6 @@ export default function SearchPage() {
     };
 
     return (
-        <ProtectedRoute>
             <div className="md:flex">
                 <div className="md:w-64 md:min-h-screen">
                     <Navbar />
@@ -233,6 +231,6 @@ export default function SearchPage() {
                     </section>
                 </main>
             </div>
-        </ProtectedRoute>
+        
     );
 }

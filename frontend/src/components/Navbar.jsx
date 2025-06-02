@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, useUserId } from "@/contexts/AuthContext";
 import {
     ArrowLeftStartOnRectangleIcon,
     FilmIcon,
@@ -17,7 +17,11 @@ export default function Navbar() {
     const pathname = usePathname();
     const [isMobile, setIsMobile] = useState(false);
 
+    
+    const userId = useUserId(); // ← Sempre funciona!
+
     useEffect(() => {
+
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
         };
@@ -50,7 +54,7 @@ export default function Navbar() {
                     <Link
                         href="/profile/search"
                         className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${pathname.startsWith("/profile/") &&
-                                !pathname.startsWith(`/profile/${user?.id}`) &&
+                                !pathname.startsWith(`/profile/${userId}`) &&
                                 !pathname.startsWith("/profile/edit")
                                 ? "text-accent"
                                 : "text-secondary hover:text-accent"
@@ -72,8 +76,8 @@ export default function Navbar() {
                     </Link>
 
                     <Link
-                        href={`/profile/${user?.id}`}
-                        className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${(pathname.startsWith(`/profile/${user?.id}`) || pathname === `/profile/edit`)
+                        href={`/profile/${userId}`}
+                        className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${(pathname.startsWith(`/profile/${userId}`) || pathname === `/profile/edit`)
                                 ? "text-accent"
                                 : "text-secondary hover:text-accent"
                             }`}
@@ -117,7 +121,7 @@ export default function Navbar() {
                     href="/profile/search"
                     className={
                         pathname.startsWith("/profile/") &&
-                            !pathname.startsWith(`/profile/${user?.id}`) &&
+                            !pathname.startsWith(`/profile/${userId}`) &&
                             !pathname.startsWith("/profile/edit")
                             ? "flex items-center px-4 py-3 rounded-r-xl text-primary bg-foreground transition-colors"
                             : "flex items-center px-4 py-3 rounded-r-xl text-secondary hover:bg-foreground transition-colors"
@@ -138,9 +142,9 @@ export default function Navbar() {
                     Filmes
                 </Link>
                 <Link
-                    href={`/profile/${user?.id}`}
+                    href={`/profile/${userId}`}
                     className={
-                        pathname.startsWith(`/profile/${user?.id}`) || pathname === `/profile/edit`
+                        pathname.startsWith(`/profile/${userId}`) || pathname === `/profile/edit`
                             ? "flex items-center px-4 py-3 rounded-r-xl text-primary bg-foreground transition-colors"
                             : "flex items-center px-4 py-3 rounded-r-xl text-secondary hover:bg-foreground transition-colors"
                     }

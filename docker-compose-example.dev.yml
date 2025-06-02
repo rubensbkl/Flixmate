@@ -1,4 +1,23 @@
 services:
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=cinematch
+      - POSTGRES_PASSWORD=cinematch
+      - POSTGRES_DB=cinematch
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - dev-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U cinematch" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     image: maven:3.8.8-eclipse-temurin-17
     working_dir: /app
@@ -22,6 +41,9 @@ services:
       - AZURE_OPENAI_DEPLOYMENT_NAME=your_azure_openai_deployment_name_here
     networks:
       - dev-network
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   frontend:
     image: node:20-alpine
@@ -33,12 +55,37 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:6789
+      - NEXT_PUBLIC_API_URL=http://localhost:6789
       - NODE_ENV=development
     depends_on:
       - backend
     networks:
       - dev-network
 
+  ai:
+    build:
+      context: ./ai
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./ai:/app
+      - ai-model-data:/app/model_data
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=cinematch
+      - DB_USER=cinematch
+      - DB_PASSWORD=cinematch
+    networks:
+      - dev-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 networks:
   dev-network:
+
+volumes:
+  postgres-data:
+  ai-model-data:

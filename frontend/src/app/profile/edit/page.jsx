@@ -1,7 +1,6 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
-import ProtectedRoute from "@/components/ProtectedRoute";
 import { fetchPrivate, updateMyProfile } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -217,7 +216,6 @@ export default function EditProfilePage() {
     // Renderização durante o carregamento
     if (loading) {
         return (
-            <ProtectedRoute>
                 <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
                     <div className="md:w-64 md:min-h-screen">
                         <Navbar />
@@ -229,12 +227,10 @@ export default function EditProfilePage() {
                         </div>
                     </main>
                 </div>
-            </ProtectedRoute>
         );
     }
 
     return (
-        <ProtectedRoute>
             <div className="flex flex-col md:flex-row min-h-screen">
                 <div className="md:w-64 md:min-h-screen">
                     <Navbar />
@@ -403,6 +399,5 @@ export default function EditProfilePage() {
                     </div>
                 </main>
             </div>
-        </ProtectedRoute>
     );
 }

@@ -2,67 +2,52 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useContext, useEffect, useState } from 'react';
+import {
+    decodeToken,
+    getToken,
+    getCurrentUser,
+    isAuthenticated,
+    clearAuth,
+    saveToken
+} from '@/lib/auth';
 
 const AuthContext = createContext();
-
-// Funções helper para cookies (mais rápidas)
-const setCookie = (name, value, days = 7) => {
-    if (typeof document === 'undefined') return;
-    const expires = new Date();
-    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
-};
-
-const getCookie = (name) => {
-    if (typeof document === 'undefined') return null;
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return null;
-};
-
-const deleteCookie = (name) => {
-    if (typeof document === 'undefined') return;
-    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-};
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isInitialized, setIsInitialized] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    // Verificação INSTANTÂNEA no primeiro carregamento
+    // Inicialização SÍNCRONA no client
     useEffect(() => {
-        const quickCheck = () => {
-            // Verificar se está no browser
-            if (typeof window === 'undefined') {
-                setLoading(false);
-                return;
-            }
-
-            // Aguardar hidratação completa
-            const timer = setTimeout(() => {
-                const token = localStorage.getItem('token') || getCookie('token');
-                
-                if (token) {
-                    // Se tem token, assumir autenticado temporariamente
-                    // A verificação real acontece de forma assíncrona
-                    setUser({ quickAuth: true, token }); // Estado temporário
-                    verifyTokenAsync(token); // Verificação real em background
+        const initAuth = () => {
+            try {
+                const userData = getCurrentUser();
+                if (userData) {
+                    console.log('✅ Usuário autenticado:', userData);
+                    setUser(userData);
                 } else {
-                    setLoading(false);
+                    console.log('❌ Nenhum usuário autenticado');
+                    setUser(null);
                 }
-            }, 0);
-
-            return () => clearTimeout(timer);
+            } catch (error) {
+                console.error('Erro na inicialização da auth:', error);
+                setUser(null);
+            } finally {
+                setLoading(false);
+                setIsInitialized(true);
+            }
         };
 
-        quickCheck();
+        // Aguardar hidratação do React
+        const timer = setTimeout(initAuth, 0);
+        return () => clearTimeout(timer);
     }, []);
 
-    // Verificação assíncrona real (em background)
-    const verifyTokenAsync = async (token) => {
+    // Verificação assíncrona opcional (para validar com servidor)
+    const verifyWithServer = async (token) => {
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/verify`, {
                 method: 'GET',
@@ -75,73 +60,103 @@ export function AuthProvider({ children }) {
             const data = await response.json();
 
             if (response.ok && data.valid) {
-                // Token válido - atualizar com dados reais do usuário
-                setUser(data.user);
-                setCookie('token', token);
-                localStorage.setItem('token', token);
+                // Token válido no servidor, atualizar dados se necessário
+                const serverUser = data.user;
+                const localUser = getCurrentUser();
+
+                // Combinar dados locais (do JWT) com dados do servidor
+                const combinedUser = {
+                    ...localUser,
+                    ...serverUser,
+                    userId: localUser.userId, // Manter o userId do JWT
+                };
+
+                setUser(combinedUser);
+                return true;
             } else {
-                // Token inválido - fazer logout
-                console.warn('Token inválido ou expirado');
+                // Token inválido no servidor
+                console.warn('Token rejeitado pelo servidor');
                 logout();
+                return false;
             }
         } catch (error) {
-            console.error('Erro ao verificar token:', error);
-            // Em caso de erro de rede, manter usuário logado temporariamente
-            // mas marcar como erro para retry posterior
-            setUser(prev => ({ ...prev, verificationError: true }));
-        } finally {
-            setLoading(false);
+            console.error('Erro ao verificar com servidor:', error);
+            // Em caso de erro de rede, manter autenticação local
+            return null; // null = erro de rede
         }
     };
 
-    const login = (userData, token) => {
-        // Armazenar em ambos os locais
-        localStorage.setItem('token', token);
-        setCookie('token', token);
-        setUser(userData);
-        setLoading(false);
-        
-        // Verificar se há um redirect pendente
-        const redirectTo = searchParams.get('redirect') || '/';
-        router.replace(redirectTo);
+    const login = async (userData, token) => {
+        try {
+            // Salvar token
+            saveToken(token);
+
+            // Decodificar e obter dados completos
+            const decodedUser = decodeToken(token);
+            if (!decodedUser) {
+                throw new Error('Token inválido');
+            }
+
+            // Combinar dados do login com dados do JWT
+            const fullUser = {
+                ...userData,
+                userId: decodedUser.userId,
+                email: decodedUser.email || userData.email,
+            };
+
+            setUser(fullUser);
+            setLoading(false);
+
+            console.log('✅ Login realizado:', fullUser);
+
+            // Verificar com servidor em background
+            verifyWithServer(token);
+
+            // Redirecionar
+            const redirectTo = searchParams.get('redirect') || '/';
+            router.replace(redirectTo);
+
+        } catch (error) {
+            console.error('Erro no login:', error);
+            logout();
+        }
     };
 
     const logout = () => {
-        // Limpar tudo
-        localStorage.removeItem('token');
-        localStorage.removeItem('session_data');
-        deleteCookie('token');
+        clearAuth();
         setUser(null);
         setLoading(false);
-        
-        // Redirecionar para login
+        console.log('👋 Logout realizado');
         router.replace('/login');
     };
 
-    // Função para retry da verificação em caso de erro de rede
-    const retryVerification = () => {
-        const token = localStorage.getItem('token') || getCookie('token');
-        if (token && user?.verificationError) {
-            verifyTokenAsync(token);
-        }
+    // Função para refrescar dados do usuário
+    const refreshUser = () => {
+        const userData = getCurrentUser();
+        setUser(userData);
+        return userData;
     };
 
-    const isAuthenticated = !!user && !user.quickAuth;
-    const hasValidToken = !!user; // Inclui quickAuth
+    // Função para obter userId de forma segura
+    const getUserId = () => {
+        return user?.userId || getCurrentUser()?.userId || null;
+    };
+
+    const value = {
+        user,
+        userId: getUserId(), // Sempre disponível
+        isAuthenticated: !!user,
+        loading,
+        isInitialized,
+        login,
+        logout,
+        refreshUser,
+        verifyWithServer,
+        getUserId,
+    };
 
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                isAuthenticated,
-                hasValidToken,
-                login,
-                logout,
-                loading,
-                verifyTokenAsync,
-                retryVerification,
-            }}
-        >
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );
@@ -149,8 +164,20 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
     const context = useContext(AuthContext);
-    if (context === undefined) {
+    if (!context) {
         throw new Error('useAuth deve ser usado dentro de um AuthProvider');
     }
     return context;
+}
+
+// Hook para garantir que o userId está sempre disponível
+export function useUserId() {
+    const { userId, getUserId } = useAuth();
+
+    // Se não tem no state, tenta pegar diretamente do token
+    if (!userId) {
+        return getUserId();
+    }
+
+    return userId;
 }

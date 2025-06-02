@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.Collections;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -436,7 +437,6 @@ public class Application {
                     ArrayList<Genre> movieGenres = new ArrayList<>();
                     for (Integer genreId : movieGenresIds) {
                         Genre genre = genreService.getGenreById(genreId);
-                        System.out.println("Gênero: " + genre);
                         if (genre != null) {
                             movieGenres.add(genre);
                         }
@@ -899,7 +899,6 @@ get("/api/profile/:userId/favorites", (req, res) -> {
 
             JsonObject requestBody = gson.fromJson(req.body(), JsonObject.class);
             int page = requestBody.has("page") ? requestBody.get("page").getAsInt() : 1;
-            System.out.println("Page: " + page);
             try {
                 // DAO de preferências
                 List<Genre> preferredGenresList = userGenreDAO.getPreferredGenres(userId);
@@ -959,8 +958,7 @@ get("/api/profile/:userId/favorites", (req, res) -> {
                 List<JsonObject> topMovies = allMovies.stream().limit(moviesToReturn).toList();
 
                 // Log para debug
-                System.out.println("Total de filmes após remover duplicatas e aplicar filtros: " + totalMovies);
-                System.out.println("Enviando " + moviesToReturn + " filmes para o cliente");
+                System.out.println("[🎞️:🟣] MOVIES GET SUCCESS: [total: " + totalMovies + ", retornado: " + moviesToReturn +"]");
 
                 return gson.toJson(Map.of("status", "ok", "movies", topMovies));
             } catch (Exception e) {
@@ -1011,7 +1009,6 @@ get("/api/profile/:userId/favorites", (req, res) -> {
                 
                 if (success) {
                     boolean currentStatus = favoriteService.isInFavorites(userId, movieId);
-                    System.out.println("Favorito atualizado: " + currentStatus);
                     flixAi.train(userId, movieId, currentStatus);
                     return gson.toJson(Map.of(
                         "status", "ok",
@@ -1082,26 +1079,19 @@ get("/api/profile/:userId/favorites", (req, res) -> {
         // AI - Artificial Intelligence Endpoints //
         // ========================================//
 
-        // Endpoint 1 POST corrigido
+        // Endpoint 1
         post("/api/rate", (req, res) -> {
             try {
                 int userId = req.attribute("userId");
                 JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
                 int movieId = bodyObj.get("movieId").getAsInt();
                 boolean ratingValue = bodyObj.get("rating").getAsBoolean();
-
-                System.out.println("=== PROCESSANDO RATING ===");
-                System.out.println("Usuário: " + userId);
-                System.out.println("Filme: " + movieId);
-                System.out.println("Rating solicitado: " + ratingValue);
-
-                // Busca feedback atual ANTES da operação
-                Feedback feedbackAntes = feedbackService.getFeedback(userId, movieId);
-                System.out.println("Feedback antes: " + (feedbackAntes != null ? feedbackAntes.getFeedback() : "null"));
+                
 
                 // Verifica se o filme existe
                 boolean movieExists = movieService.movieExists(movieId);
                 if (!movieExists) {
+                    System.out.println("[🎬:⁉️] MOVIE NOT FOUND: [movieId: " + movieId + "]");
                     JsonObject movieObj = tmdb.getMovieDetails(movieId);
                     if (movieObj == null) {
                         res.status(404);
@@ -1113,66 +1103,61 @@ get("/api/profile/:userId/favorites", (req, res) -> {
                 }
 
                 // Executa a operação
-                boolean result = feedbackService.storeOrUpdateRating(userId, movieId, ratingValue);
-                // Substitua a partir desta linha:
-                if (result) {
-                    // Busca o estado final após a operação
-                    Feedback feedbackDepois = feedbackService.getFeedback(userId, movieId);
-                    System.out.println(
-                            "Feedback depois: " + (feedbackDepois != null ? feedbackDepois.getFeedback() : "null"));
+                int result = feedbackService.storeOrUpdateRating(userId, movieId, ratingValue);
 
-                    // Determina qual operação foi realizada
-                    String operation;
-                    if (feedbackAntes == null && feedbackDepois != null) {
-                        operation = "CREATE";
-                    } else if (feedbackAntes != null && feedbackDepois == null) {
-                        operation = "REMOVE";
-                    } else if (feedbackAntes != null && feedbackDepois != null) {
-                        operation = "UPDATE";
-                    } else {
-                        operation = "UNKNOWN";
-                    }
-
-                    System.out.println("Operação realizada: " + operation);
-
-                    // Só treina se ainda existe feedback (não foi removido)
-                    if (feedbackDepois != null) {
-                        flixAi.train(userId, movieId, feedbackDepois.getFeedback());
-                    }
-
-                    res.status(200);
-
-                    // Monta resposta com estado final
-                    Map<String, Object> response = new HashMap<>();
-                    response.put("success", true);
-                    response.put("operation", operation);
-
-                    // SEMPRE incluir currentRating na resposta - FORÇANDO A INCLUSÃO
-                    if (feedbackDepois != null) {
-                        Boolean ratingValue2 = feedbackDepois.getFeedback();
-                        response.put("currentRating", ratingValue2);
-                        response.put("message", "Rating " + (operation.equals("CREATE") ? "criado" : "atualizado"));
-                        System.out.println("Incluindo currentRating: " + ratingValue2);
-                    } else {
-                        response.put("currentRating", "null");
-                        response.put("message", "Rating removido");
-                        System.out.println("Incluindo currentRating: null");
-                    }
-
-                    System.out.println("Resposta sendo enviada: " + gson.toJson(response));
-                    return gson.toJson(response);
-                } else {
-                    System.out.println("Falha na operação de rating");
-                    res.status(500);
-                    return gson.toJson(Map.of("error", "Erro ao processar rating"));
+                // Treina a IA se rating for criado ou atualizado
+                if (result == 1 || result == 2) {
+                    flixAi.train(userId, movieId, ratingValue);
                 }
+
+                String operation;
+                String message;
+                Boolean currentRating = null;
+
+                switch (result) {
+                    case 1 -> { // CREATE
+                        operation = "CREATE";
+                        message = "Rating criado";
+                        currentRating = ratingValue;
+                        flixAi.train(userId, movieId, ratingValue);
+                    }
+                    case 2 -> { // UPDATE
+                        operation = "UPDATE";
+                        message = "Rating atualizado";
+                        currentRating = ratingValue;
+                        flixAi.train(userId, movieId, ratingValue);
+                    }
+                    case 3 -> { // REMOVE
+                        operation = "REMOVE";
+                        message = "Rating removido";
+                    }
+                    case 0 -> {
+                        res.status(500);
+                        return gson.toJson(Map.of("error", "Erro ao processar rating"));
+                    }
+                    default -> {
+                        res.status(500);
+                        return gson.toJson(Map.of("error", "Erro desconhecido"));
+                    }
+                }
+
+                res.status(200);
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("operation", operation);
+                response.put("currentRating", currentRating);
+                response.put("message", message);
+
+                return gson.toJson(response);
+
             } catch (Exception e) {
-                System.err.println("Erro no endpoint de rating:");
+                System.err.println("[🏅:🔴] RATING ERROR: Endpoint - " + e.getMessage());
                 e.printStackTrace();
                 res.status(500);
                 return gson.toJson(Map.of("error", "Erro no servidor: " + e.getMessage()));
             }
         });
+
 
         // Endpoint 2
         get("/api/recommendation", (req, res) -> {
@@ -1187,32 +1172,48 @@ get("/api/profile/:userId/favorites", (req, res) -> {
                 res.status(400);
                 return "{\"erro\": \"Não há filmes disponíveis para recomendar.\"}";
             }
+            
+            final int NUM_CANDIDATOS = 500; // Pode ser configurável futuramente
 
             List<Integer> candidatos = allMovies.stream()
                     .filter(id -> !recommendedMovies.contains(id))
-                    .limit(100)
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toCollection(ArrayList::new));
+
             System.out.println("Filmes candidatos: " + candidatos.size());
             if (candidatos.isEmpty()) {
-                // res.status(400);
+                res.status(404);
                 return "{\"erro\": \"Não há filmes não avaliados para recomendar.\"}";
             }
 
+            Collections.shuffle(candidatos);
+
+            candidatos = candidatos.subList(0, Math.min(NUM_CANDIDATOS, candidatos.size()));
+    
             // Imprimir Candidatos
             System.out.println("Candidatos: " + candidatos);
 
             JsonObject recomendacao = flixAi.recommend(userId, candidatos);
 
-            System.out.println("Recomendação (JSON): " + recomendacao.toString());
+            System.out.println("Recomendação recebida: " + recomendacao);
 
-            if (recomendacao == null || !recomendacao.has("recommended_movie")) {
-                // res.status(404);
+            JsonArray recommendedMoviesJSON = recomendacao.getAsJsonArray("recommended_movies");
+
+
+            if (recommendedMoviesJSON.size() == 0) {
+                res.status(404);
                 return "{\"erro\": \"Não há filmes não avaliados para recomendar.\"}";
+            } else {
+                System.out.println("Filmes recomendados: " + recommendedMoviesJSON.size());
             }
 
-            int melhorFilmeId = recomendacao.get("recommended_movie").getAsInt();
+            JsonObject firstMovie = recommendedMoviesJSON.get(0).getAsJsonObject();
 
-            double score = recomendacao.get("score").getAsDouble();
+
+
+            int melhorFilmeId = firstMovie.get("id").getAsInt();
+            double score = firstMovie.get("score").getAsDouble();
+
+            System.out.println("Melhor filme recomendado: " + melhorFilmeId + " com score " + score);
 
             boolean stored = recommendationService.storeRecommendation(userId, melhorFilmeId, score);
             if (!stored) {
@@ -1228,6 +1229,7 @@ get("/api/profile/:userId/favorites", (req, res) -> {
 
             res.type("application/json");
             return movie.toString();
+            
         });
 
         // =====================//
@@ -1277,7 +1279,6 @@ get("/api/profile/:userId/favorites", (req, res) -> {
                         return gson.toJson(response);
                     }
                     
-                    // Contar total de filmes no banco para calcular paginação
                     int totalMoviesInDb = movieService.getTotalMoviesCount();
                     int totalPages = (int) Math.ceil((double) totalMoviesInDb / limit);
                     
@@ -1304,6 +1305,8 @@ get("/api/profile/:userId/favorites", (req, res) -> {
                         "total_results", totalMoviesInDb,
                         "results", results
                     );
+
+                    System.out.println("[🎬:🟢] MOVIE GET SUCCESS: [total: " + totalMoviesInDb + "]");
                     
                     res.type("application/json");
                     res.status(200);
@@ -1341,6 +1344,8 @@ get("/api/profile/:userId/favorites", (req, res) -> {
                         "total_results", totalResults,
                         "results", results
                 );
+
+                System.out.println("[🎬:🟢] MOVIE GET SUCCESS: [total: " + totalResults + "query: " + query + "]");
 
                 res.type("application/json");
                 res.status(200);
@@ -1414,6 +1419,8 @@ get("/api/profile/:userId/favorites", (req, res) -> {
                             "results", results
                     );
 
+                    System.out.println("[👤:🟢] PROFILE GET SUCCESS: [total: " + totalUsers + "]");
+
                     res.type("application/json");
                     res.status(200);
                     return gson.toJson(response);
@@ -1443,6 +1450,8 @@ get("/api/profile/:userId/favorites", (req, res) -> {
                         "total_results", totalResults,
                         "results", results
                 );
+
+                System.out.println("[👤:🟢] PROFILE GET SUCCESS: [total: " + totalResults + "query: " + query + "]");
 
                 res.type("application/json");
                 res.status(200);

@@ -2,7 +2,6 @@
 
 import Header from '@/components/Header';
 import Navbar from '@/components/Navbar';
-import ProtectedRoute from '@/components/ProtectedRoute';
 import Searchbar from '@/components/Searchbar';
 import UserCard from '@/components/UserCard';
 import { fetchUsers } from '@/lib/api';
@@ -132,7 +131,6 @@ export default function ProfileSearch() {
     };
 
     return (
-        <ProtectedRoute>
             <div className="md:flex">
                 <div className="md:w-64 md:min-h-screen">
                     <Navbar />
@@ -233,6 +231,5 @@ export default function ProfileSearch() {
                     </section>
                 </main>
             </div>
-        </ProtectedRoute>
     );
 }

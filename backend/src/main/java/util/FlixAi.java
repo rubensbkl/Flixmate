@@ -43,7 +43,8 @@ public class FlixAi {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         } catch (Exception e) {
-            System.err.println("Erro ao enviar dados para IA local: " + e.getMessage());
+            System.err.println("❌ Erro ao enviar dados para IA: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -71,9 +72,25 @@ public class FlixAi {
 
         if (response.statusCode() != 200) {
             System.err.println("Erro na resposta IA recommend: " + response.body());
-            return null;
+            throw new RuntimeException("Erro na recomendação: " + response.body());
         }
 
-        return JsonParser.parseString(response.body()).getAsJsonObject();
+        JsonObject responseJson = JsonParser.parseString(response.body()).getAsJsonObject();
+
+        JsonArray recommendedMoviesJson = new JsonArray();
+        if (responseJson.has("all_recommendations")) {
+            for (var item : responseJson.getAsJsonArray("all_recommendations")) {
+                JsonArray pair = item.getAsJsonArray();
+                JsonObject obj = new JsonObject();
+                obj.addProperty("id", pair.get(0).getAsInt());
+                obj.addProperty("score", pair.get(1).getAsDouble());
+                recommendedMoviesJson.add(obj);
+            }
+        }
+
+        JsonObject result = new JsonObject();
+        result.add("recommended_movies", recommendedMoviesJson);
+
+        return result;
     }
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
-import ProtectedRoute from "@/components/ProtectedRoute";
 import {
     fetchMovieById,
     getMovieRating,
@@ -53,12 +52,12 @@ export default function MovieProfilePage() {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
         };
-        
+
         checkMobile();
         window.addEventListener("resize", checkMobile);
         return () => window.removeEventListener("resize", checkMobile);
     }, []);
-    
+
 
     useEffect(() => {
         const loadMovie = async () => {
@@ -249,27 +248,24 @@ export default function MovieProfilePage() {
 
     if (loading) {
         return (
-            <ProtectedRoute>
-                <div className="flex flex-col md:flex-row min-h-screen bg-background">
-                    <div className="md:w-64">
-                        <Navbar />
-                    </div>
-                    <main className="flex-1 flex items-center justify-center overflow-y-auto">
-                        <div className="text-center px-4">
-                            <div className="w-16 h-16 border-t-4 border-accent border-solid rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-xl font-medium text-primary">
-                                Carregando informações do filme...
-                            </p>
-                        </div>
-                    </main>
+            <div className="flex flex-col md:flex-row min-h-screen bg-background">
+                <div className="md:w-64">
+                    <Navbar />
                 </div>
-            </ProtectedRoute>
+                <main className="flex-1 flex items-center justify-center overflow-y-auto">
+                    <div className="text-center px-4">
+                        <div className="w-16 h-16 border-t-4 border-accent border-solid rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="text-xl font-medium text-primary">
+                            Carregando informações do filme...
+                        </p>
+                    </div>
+                </main>
+            </div>
         );
     }
 
     if (error || !movieInfo) {
         return (
-            <ProtectedRoute>
                 <div className="flex flex-col md:flex-row min-h-screen bg-background">
                     <div className="md:w-64">
                         <Navbar />
@@ -284,14 +280,14 @@ export default function MovieProfilePage() {
                         </div>
                     </main>
                 </div>
-            </ProtectedRoute>
+
         );
     }
 
     return (
-        <ProtectedRoute>
+        <>
             <div className={`flex flex-col md:flex-row min-h-screen overflow-y-auto bg-background ${isMobile ? 'pb-20' : ''}`}>
-                  
+
                 <div className="md:w-64">
                     <Navbar />
                 </div>
@@ -433,8 +429,8 @@ export default function MovieProfilePage() {
             {toast.show && (
                 <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
                     <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-sm ${toast.type === 'success'
-                            ? 'bg-green-500/10 border border-green-500/20 text-green-400'
-                            : 'bg-red-500/10 border border-red-500/20 text-red-400'
+                        ? 'bg-green-500/10 border border-green-500/20 text-green-400'
+                        : 'bg-red-500/10 border border-red-500/20 text-red-400'
                         }`}>
                         {toast.type === 'success' ? (
                             <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -449,6 +445,6 @@ export default function MovieProfilePage() {
                     </div>
                 </div>
             )}
-        </ProtectedRoute>
+        </>
     );
 }
