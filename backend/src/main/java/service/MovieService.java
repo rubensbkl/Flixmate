@@ -49,7 +49,7 @@ public class MovieService {
                 return false;
             }
             
-            System.out.println("Filme armazenado com sucesso: " + movieId + " - " + title);
+            System.out.println("[🎬:🟢] MOVIE CREATE SUCCESS: [movieId: " + movieId + ", title: " + title + "]");
             return true;
         
         } catch (Exception e) {

@@ -1,14 +1,33 @@
 import { movieCache } from "./cache";
+import { getToken, getCurrentUser } from "./auth";
 
 // Função auxiliar para obter o token
-const getToken = () => {
-    return localStorage.getItem("token");
+const getAuthToken = () => {
+    return getToken();
+};
+
+// Função auxiliar para obter userId
+const getUserId = () => {
+    const user = getCurrentUser();
+    return user?.userId || null;
+};
+
+// Headers padrão para requisições autenticadas
+const getAuthHeaders = () => {
+    const token = getAuthToken();
+    return {
+        "Content-Type": "application/json",
+        ...(token && { "Authorization": `Bearer ${token}` }),
+    };
 };
 
 export const fetchMoviesToRate = async (page = 1) => {
-    const token = getToken();
+    const token = getAuthToken();
+    if (!token) {
+        throw new Error('Token não encontrado');
+    }
 
-    // Usamos o token como chave do cache em vez do ID
+    // Usamos o token como chave do cache
     if (page === 1) {
         const cached = movieCache.get(token);
         if (cached) {
@@ -21,10 +40,7 @@ export const fetchMoviesToRate = async (page = 1) => {
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ page }),
     });
 
@@ -47,24 +63,17 @@ export const fetchMoviesToRate = async (page = 1) => {
     return processed;
 };
 
-// Função para buscar o rating atual do usuário para um filme específico
 export const getMovieRating = async (movieId) => {
-    const token = getToken();
-
     try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rate/${movieId}`, {
             method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
+            headers: getAuthHeaders(),
         });
 
         if (res.ok) {
             const data = await res.json();
-            return data.currentRating; // retorna true, false ou null
+            return data.currentRating;
         } else if (res.status === 404) {
-            // Usuário ainda não avaliou este filme
             return null;
         } else {
             const err = await res.json();
@@ -77,18 +86,11 @@ export const getMovieRating = async (movieId) => {
     }
 };
 
-
-// Função corrigida para enviar rating
 export const setMovieRate = async (movieId, rating) => {
-    const token = getToken();
-
     try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rate`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
                 movieId: parseInt(movieId),
                 rating: rating,
@@ -110,17 +112,11 @@ export const setMovieRate = async (movieId, rating) => {
     }
 };
 
-// Função para remover rating (se você quiser implementar)
 export const removeMovieRating = async (movieId) => {
-    const token = getToken();
-
     try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rate/${movieId}`, {
             method: "DELETE",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
+            headers: getAuthHeaders(),
         });
 
         if (res.ok) {
@@ -138,7 +134,6 @@ export const removeMovieRating = async (movieId) => {
 };
 
 export const getRecommendation = async () => {
-    const token = getToken();
     console.log("🔁 Gerando surpresa...");
 
     try {
@@ -146,27 +141,20 @@ export const getRecommendation = async () => {
             `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(),
             }
         );
 
-        console.log("Resposta da API:", res); // Adicionei este log para depuração
-
         const data = await res.json();
 
-        // Caso de erro, verifique o status da resposta
         if (data.erro === "Não há filmes não avaliados para recomendar.") {
-
             return;
         } else if (!res.ok) {
             console.error("Erro na resposta da API:", data);
             throw new Error(data.error || "Erro ao gerar recomendação");
         }
 
-        return data; // não use data.recomendacao
+        return data;
     } catch (error) {
         console.error("Erro ao buscar recomendação:", error);
         throw error;
@@ -174,18 +162,20 @@ export const getRecommendation = async () => {
 };
 
 export const fetchRecommendations = async (userId) => {
-    const token = getToken();
-    console.log(`📡 Buscando histórico de recomendações para usuário ${userId}`);
+    // Se userId não for fornecido, pegar do token
+    const targetUserId = userId || getUserId();
+    if (!targetUserId) {
+        throw new Error('UserId não encontrado');
+    }
+
+    console.log(`📡 Buscando histórico de recomendações para usuário ${targetUserId}`);
 
     try {
         const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendations/${userId}`,
+            `${process.env.NEXT_PUBLIC_API_URL}/api/recommendations/${targetUserId}`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                }
+                headers: getAuthHeaders(),
             }
         );
 
@@ -208,7 +198,6 @@ export const fetchRecommendations = async (userId) => {
 };
 
 export const fetchUsers = async () => {
-    const token = getToken();
     console.log("📡 Buscando usuários da plataforma");
 
     try {
@@ -216,10 +205,7 @@ export const fetchUsers = async () => {
             `${process.env.NEXT_PUBLIC_API_URL}/api/users`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(),
             }
         );
 
@@ -240,12 +226,7 @@ export const fetchUsers = async () => {
     }
 };
 
-/**
- * Fetch user profile data
- * @returns {Promise<Object>} User data
- */
 export const fetchPrivate = async () => {
-    const token = getToken();
     console.log(`📡 Buscando informações do usuário`);
 
     try {
@@ -253,10 +234,7 @@ export const fetchPrivate = async () => {
             `${process.env.NEXT_PUBLIC_API_URL}/api/private`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(),
             }
         );
 
@@ -267,15 +245,12 @@ export const fetchPrivate = async () => {
         const data = await res.json();
 
         if (data.status === "ok") {
-            // Handle different API response formats
             let userData = {};
 
-            // If user data is directly in the response
             if (data.user) {
                 userData = { ...data.user };
             }
 
-            // If we have preferred genres as objects, extract and add to userData
             if (data.preferredGenres && Array.isArray(data.preferredGenres)) {
                 userData.genres = data.preferredGenres.map((genre) => genre.id);
                 userData.preferredGenres = data.preferredGenres;
@@ -292,18 +267,16 @@ export const fetchPrivate = async () => {
         throw error;
     }
 };
+
 export const updateMyProfile = async (profileData) => {
-    const token = getToken();
-    console.log(`📝 Atualizando perfil do usuário`)
-    console.log("Dados do perfil:", profileData); // Adicionei este log para depuração
+    console.log(`📝 Atualizando perfil do usuário`);
+    console.log("Dados do perfil:", profileData);
+    
     const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/profile/update`,
         {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(profileData),
         }
     );
@@ -314,7 +287,6 @@ export const updateMyProfile = async (profileData) => {
 };
 
 export const fetchUserProfile = async (userId) => {
-    const token = getToken();
     console.log(`📡 Buscando informações básicas do usuário: ${userId}`);
 
     try {
@@ -322,10 +294,7 @@ export const fetchUserProfile = async (userId) => {
             `${process.env.NEXT_PUBLIC_API_URL}/api/profile/${userId}`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(),
             }
         );
 
@@ -333,28 +302,20 @@ export const fetchUserProfile = async (userId) => {
 
         const data = await res.json();
 
-        console.log("Dados recebidos:", data); // Adicionei este log para depuração
-
         if (data.status === "ok") {
-            console.log(
-                `🔍 Informações básicas do usuário ${userId} carregadas`
-            );
+            console.log(`🔍 Informações básicas do usuário ${userId} carregadas`);
             return data.user;
         } else {
             console.log("⚠️ Formato de resposta inesperado:", data);
             throw new Error("Formato de resposta inválido do servidor");
         }
     } catch (error) {
-        console.error(
-            `❌ Erro ao buscar informações do usuário ${userId}:`,
-            error
-        );
+        console.error(`❌ Erro ao buscar informações do usuário ${userId}:`, error);
         throw error;
     }
 };
 
 export const fetchUserWatchList = async (userId) => {
-    const token = getToken();
     console.log(`📡 Buscando filmes recentes do usuário: ${userId}`);
 
     try {
@@ -362,10 +323,7 @@ export const fetchUserWatchList = async (userId) => {
             `${process.env.NEXT_PUBLIC_API_URL}/api/profile/${userId}/watchlist`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(),
             }
         );
 
@@ -381,16 +339,12 @@ export const fetchUserWatchList = async (userId) => {
             return [];
         }
     } catch (error) {
-        console.error(
-            `❌ Erro ao buscar filmes recentes do usuário ${userId}:`,
-            error
-        );
+        console.error(`❌ Erro ao buscar filmes recentes do usuário ${userId}:`, error);
         return [];
     }
 };
 
 export const fetchUserFavorites = async (userId) => {
-    const token = getToken();
     console.log(`📡 Buscando filmes favoritos do usuário: ${userId}`);
 
     try {
@@ -398,10 +352,7 @@ export const fetchUserFavorites = async (userId) => {
             `${process.env.NEXT_PUBLIC_API_URL}/api/profile/${userId}/favorites`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(),
             }
         );
 
@@ -417,26 +368,18 @@ export const fetchUserFavorites = async (userId) => {
             return [];
         }
     } catch (error) {
-        console.error(
-            `❌ Erro ao buscar filmes favoritos do usuário ${userId}:`,
-            error
-        );
+        console.error(`❌ Erro ao buscar filmes favoritos do usuário ${userId}:`, error);
         return [];
     }
 };
 
 export const checkMovieWatchlist = async (movieId) => {
-    const token = getToken();
-    
     try {
         const res = await fetch(
             `${process.env.NEXT_PUBLIC_API_URL}/api/movie/${movieId}/watchlist`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                }
+                headers: getAuthHeaders(),
             }
         );
         
@@ -451,17 +394,12 @@ export const checkMovieWatchlist = async (movieId) => {
 };
 
 export const checkMovieFavorite = async (movieId) => {
-    const token = getToken();
-    
     try {
         const res = await fetch(
             `${process.env.NEXT_PUBLIC_API_URL}/api/movie/${movieId}/favorite`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                }
+                headers: getAuthHeaders(),
             }
         );
         
@@ -476,7 +414,6 @@ export const checkMovieFavorite = async (movieId) => {
 };
 
 export const updateWatchlistMovie = async (movieId, watched) => {
-    const token = getToken();
     console.log(`📝 Adicionando filme à watchlist: ${movieId}`);
 
     try {
@@ -484,10 +421,7 @@ export const updateWatchlistMovie = async (movieId, watched) => {
             `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation/watched`,
             {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ movieId, watched }),
             }
         );
@@ -497,25 +431,19 @@ export const updateWatchlistMovie = async (movieId, watched) => {
         const data = await res.json();
 
         if (data.status === "ok") {
-            console.log(
-                `🔍 Filme ${movieId} adicionado à watchlist com sucesso`
-            );
+            console.log(`🔍 Filme ${movieId} adicionado à watchlist com sucesso`);
             return true;
         } else {
             console.log("⚠️ Formato de resposta inesperado:", data);
             return false;
         }
     } catch (error) {
-        console.error(
-            `❌ Erro ao adicionar filme ${movieId} à watchlist:`,
-            error
-        );
+        console.error(`❌ Erro ao adicionar filme ${movieId} à watchlist:`, error);
         return false;
     }
 };
 
 export const updatefavoriteMovie = async (movieId, favorite) => {
-    const token = getToken();
     console.log(`⭐ Favoritando filme: ${movieId}`);
 
     try {
@@ -523,10 +451,7 @@ export const updatefavoriteMovie = async (movieId, favorite) => {
             `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation/favorite`,
             {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ movieId, favorite }),
             }
         );
@@ -549,7 +474,6 @@ export const updatefavoriteMovie = async (movieId, favorite) => {
 };
 
 export const deleteMovieRecommendation = async (movieId) => {
-    const token = getToken();
     console.log(`🗑️ Deletando filme: ${movieId}`);
 
     try {
@@ -557,10 +481,7 @@ export const deleteMovieRecommendation = async (movieId) => {
             `${process.env.NEXT_PUBLIC_API_URL}/api/recommendation/delete`,
             {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ movieId }),
             }
         );
@@ -583,7 +504,6 @@ export const deleteMovieRecommendation = async (movieId) => {
 };
 
 export const fetchMovieById = async (movieId) => {
-    const token = getToken();
     console.log(`📡 Buscando informações completas do filme: ${movieId}`);
 
     try {
@@ -591,10 +511,7 @@ export const fetchMovieById = async (movieId) => {
             `${process.env.NEXT_PUBLIC_API_URL}/api/movie/${movieId}/details`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(),
             }
         );
 
@@ -604,7 +521,6 @@ export const fetchMovieById = async (movieId) => {
 
         console.log("📦 Dados recebidos da API:", data);
 
-        // Aqui não usamos mais data.status === "ok"
         if (data.movieData) {
             return {
                 movie: data.movieData,
@@ -622,9 +538,7 @@ export const fetchMovieById = async (movieId) => {
     }
 };
 
-// movies/search
 export const fetchMovies = async (query, page = 1, limit = 25) => {
-    const token = getToken();
     console.log(`📡 Buscando filmes: query="${query}", página=${page}`);
 
     try {
@@ -638,10 +552,7 @@ export const fetchMovies = async (query, page = 1, limit = 25) => {
             `${process.env.NEXT_PUBLIC_API_URL}/api/movies/search?${params.toString()}`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getAuthHeaders(),
             }
         );
 
@@ -662,9 +573,7 @@ export const fetchMovies = async (query, page = 1, limit = 25) => {
     }
 };
 
-
 export const checkMovieRecommended = async (movieId) => {
-    const token = getToken();
     console.log(`📡 Verificando se filme ${movieId} está recomendado`);
     
     try {
@@ -672,10 +581,7 @@ export const checkMovieRecommended = async (movieId) => {
             `${process.env.NEXT_PUBLIC_API_URL}/api/movie/${movieId}/recommended`,
             {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                }
+                headers: getAuthHeaders(),
             }
         );
         

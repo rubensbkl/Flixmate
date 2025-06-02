@@ -61,15 +61,8 @@ public class MovieGenreService {
     public List<Integer> getGenreIdsForMovie(int movieId) {
         List<Integer> genreIds = new ArrayList<>();
         ArrayList<Genre> genres = movieGenreDAO.getGenresByMovieId(movieId);
-        System.out.println("Gêneros associados ao filme " + movieId + ": " + genres);
         for (Genre genre : genres) {
             genreIds.add(genre.getId());
-        }
-
-        if (genreIds.isEmpty()) {
-            System.out.println("Nenhum gênero encontrado para o filme " + movieId);
-        } else {
-            System.out.println("Gêneros encontrados para o filme " + movieId + ": " + genreIds);
         }
 
         return genreIds;

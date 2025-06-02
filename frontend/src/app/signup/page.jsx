@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { DateInputWithPlaceholder } from "@/components/DateInputWithPlaceholder";
 
 export default function SignUpPage() {
     const { login } = useAuth();
@@ -246,7 +247,7 @@ export default function SignUpPage() {
                             type="text"
                             name="firstName"
                             placeholder="Nome"
-                            className="w-full p-3 text-primary border-none bg-foreground  rounded-lg placeholder-primary"
+                            className="w-full p-3 text-primary bg-foreground border border-foreground bg-foreground rounded-lg placeholder-secondary focus:border-accent focus:outline-none transition-colors"
                             value={formData.firstName}
                             onChange={handleChange}
                             required
@@ -256,7 +257,7 @@ export default function SignUpPage() {
                             type="text"
                             name="lastName"
                             placeholder="Sobrenome"
-                            className="w-full p-3 text-primary border-none bg-foreground rounded-lg placeholder-primary"
+                            className="w-full p-3 text-primary bg-foreground border border-foreground bg-foreground rounded-lg placeholder-secondary focus:border-accent focus:outline-none transition-colors"
                             value={formData.lastName}
                             onChange={handleChange}
                             required
@@ -266,7 +267,7 @@ export default function SignUpPage() {
                             type="email"
                             name="email"
                             placeholder="Email"
-                            className="w-full p-3 text-primary border-none bg-foreground rounded-lg placeholder-primary"
+                            className="w-full p-3 text-primary bg-foreground border border-foreground bg-foreground rounded-lg placeholder-secondary focus:border-accent focus:outline-none transition-colors"
                             value={formData.email}
                             onChange={handleChange}
                             required
@@ -276,7 +277,7 @@ export default function SignUpPage() {
                             type="password"
                             name="password"
                             placeholder="Senha (mín. 6 caracteres)"
-                            className="w-full p-3 text-primary border-none bg-foreground rounded-lg placeholder-primary"
+                            className="w-full p-3 text-primary bg-foreground border border-foreground bg-foreground rounded-lg placeholder-secondary focus:border-accent focus:outline-none transition-colors"
                             value={formData.password}
                             onChange={handleChange}
                             required
@@ -284,29 +285,22 @@ export default function SignUpPage() {
                             autoComplete="new-password"
                         />
 
-                        <div className="space-y-1 ">
-                            <label
-                                htmlFor="birthdate"
-                                className="block text-sm text-secondary font-medium"
-                            >
-                               Data de Nascimento
-                            </label>
-                            <input
-                            type="date"
-                            id="birthdate"
-                            name="birthdate"
-                            className="w-full p-3 text-primary border-none bg-foreground rounded-lg placeholder-primary"
+                        <DateInputWithPlaceholder
+                            placeholder="Data de Nascimento"
                             value={formData.birthdate}
                             onChange={handleChange}
+                            name="birthdate"
                             required
-                            min="1900-01-01" // ← impede datas muito antigas
-                            max={new Date().toISOString().split("T")[0]} // ← impede datas futuras
-                            />
-                        </div>
+                            min="1900-01-01"
+                            max={new Date().toISOString().split("T")[0]}
+                        />
+
+
 
                         <select
                             name="gender"
-                            className="w-full p-3 text-primary border-none bg-foreground rounded-lg placeholder-primary"
+                            className={`w-full p-3 bg-foreground border border-foreground rounded-lg focus:border-accent focus:outline-none transition-colors ${formData.gender === "" ? "text-secondary" : "text-primary"
+                                }`}
                             value={formData.gender}
                             onChange={handleChange}
                             required
@@ -321,7 +315,7 @@ export default function SignUpPage() {
                         <button
                             type="button"
                             onClick={nextStep}
-                            className="w-full p-3 bg-primary text-background rounded-lg font-medium"
+                            className="w-full p-3 bg-accent text-background rounded-lg font-medium"
                         >
                             Continuar
                         </button>
@@ -334,7 +328,7 @@ export default function SignUpPage() {
                         autoComplete="off"
                     >
                         <div className="space-y-2 ">
-                            <h2 className="text-lg font-medium">
+                            <h2 className="text-lg font-medium text-primary">
                                 Gêneros favoritos
                             </h2>
                             <p className="text-sm text-gray-600 mb-3">
@@ -349,29 +343,44 @@ export default function SignUpPage() {
                                         className="flex items-start"
                                     >
                                         <div className="flex items-center h-5">
-                                            <input
-                                                id={`genre-${genre.id}`}
-                                                type="checkbox"
-                                                checked={formData.favoriteGenres.includes(
-                                                    genre.id
-                                                )}
-                                                onChange={() =>
-                                                    handleGenreToggle(genre.id)
-                                                }
-                                                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                                disabled={
-                                                    !formData.favoriteGenres.includes(
-                                                        genre.id
-                                                    ) &&
-                                                    formData.favoriteGenres
-                                                        .length >= 5
-                                                }
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    id={`genre-${genre.id}`}
+                                                    type="checkbox"
+                                                    checked={formData.favoriteGenres.includes(genre.id)}
+                                                    onChange={() => handleGenreToggle(genre.id)}
+                                                    className="sr-only" // esconde o checkbox padrão
+                                                    disabled={
+                                                        !formData.favoriteGenres.includes(genre.id) &&
+                                                        formData.favoriteGenres.length >= 5
+                                                    }
+                                                />
+                                                <label
+                                                    htmlFor={`genre-${genre.id}`}
+                                                    className={`
+            flex items-center justify-center w-4 h-4 border-2 rounded cursor-pointer transition-all duration-200
+            ${formData.favoriteGenres.includes(genre.id)
+                                                            ? 'bg-accent border-accent text-background'
+                                                            : 'bg-foreground border-secondary hover:border-accent'
+                                                        }
+            ${(!formData.favoriteGenres.includes(genre.id) && formData.favoriteGenres.length >= 5)
+                                                            ? 'opacity-50 cursor-not-allowed'
+                                                            : 'hover:scale-105'
+                                                        }
+        `}
+                                                >
+                                                    {formData.favoriteGenres.includes(genre.id) && (
+                                                        <svg className="w-3 h-3 text-background" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    )}
+                                                </label>
+                                            </div>
                                         </div>
                                         <div className="ml-2 text-sm">
                                             <label
                                                 htmlFor={`genre-${genre.id}`}
-                                                className="text-gray-700"
+                                                className="text-secondary"
                                             >
                                                 {genre.name}
                                             </label>
@@ -388,13 +397,13 @@ export default function SignUpPage() {
                             <button
                                 type="button"
                                 onClick={prevStep}
-                                className="flex-1 p-3 border-none bg-foreground text-gray-700 rounded-lg font-medium"
+                                className="flex-1 p-3 border-none bg-foreground text-primary rounded-lg font-medium"
                             >
                                 Voltar
                             </button>
                             <button
                                 type="submit"
-                                className="flex-1 p-3 bg-black text-primary rounded-lg font-medium"
+                                className="flex-1 p-3 bg-accent text-backgrou rounded-lg font-medium"
                                 disabled={isLoading}
                             >
                                 {isLoading ? "Cadastrando..." : "Cadastrar"}

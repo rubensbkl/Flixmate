@@ -140,7 +140,7 @@ const MovieMatchModal = ({ isOpen, onClose, movie, onNavigate }) => {
                         onClick={onNavigate}
                         className="w-full py-3 bg-accent text-background border border-accent hover:bg-accent/90 font-bold rounded-lg transition-colors"
                       >
-                        Ir para as recomendações
+                        Ir para o filme
                       </button>
                     </div>
                   </div>

@@ -199,45 +199,37 @@ public class FeedbackService {
     }
 
     // Correção no método storeOrUpdateRating para permitir remoção de rating
-    public boolean storeOrUpdateRating(int userId, int movieId, boolean rating) {
+    public int storeOrUpdateRating(int userId, int movieId, boolean rating) {
         try {
-            System.out.println("=== INICIO storeOrUpdateRating ===");
-            System.out.println("Parâmetros: userId=" + userId + ", movieId=" + movieId + ", rating=" + rating);
-
-            Feedback existingFeedback = feedbackDAO.getFeedback(userId, movieId);
-            System.out.println(
-                    "Feedback existente: " + (existingFeedback != null ? existingFeedback.getFeedback() : "null"));
-
-            if (existingFeedback != null) {
-                // Se já existe o mesmo rating, REMOVE (toggle off)
-                if (existingFeedback.getFeedback() == rating) {
-                    System.out.println("AÇÃO: Removendo rating existente (toggle off)");
-                    boolean deleteResult = feedbackDAO.removeFeedback(userId, movieId);
-                    System.out.println("Resultado do delete: " + deleteResult);
-                    return deleteResult;
-                }
-                // Se existe rating diferente, ATUALIZA
-                else {
-                    System.out.println("AÇÃO: Atualizando rating existente de " + existingFeedback.getFeedback()
-                            + " para " + rating);
-                    existingFeedback.setFeedback(rating);
-                    boolean updateResult = feedbackDAO.update(existingFeedback);
-                    System.out.println("Resultado do update: " + updateResult);
-                    return updateResult;
+            Feedback feedback = feedbackDAO.getFeedback(userId, movieId);
+            if (feedback != null) {
+                if (feedback.getFeedback() == rating) {
+                    System.out.println("[🏅:⚪] RATING IGNORED: [userId: " + rating + ", movieId: " + userId + ", rating: " + rating + "]");
+                    return 3;
+                } else {
+                    feedback.setFeedback(rating);
+                    boolean updated = feedbackDAO.update(feedback);
+                    if (updated) {
+                        System.out.println("[🏅:🔵] RATING UPDATE SUCCESS: [userId: " + rating + ", movieId: " + userId + ", rating: " + rating + "]");
+                    } else {
+                        System.out.println("[🏅:🔴] RATING UPDATE ERROR: [userId: " + rating + ", movieId: " + userId + ", rating: " + rating + "]");
+                    }
+                    return updated ? 2 : 0;
                 }
             } else {
-                // Se não existe rating, CRIA novo
-                System.out.println("AÇÃO: Criando novo rating");
-                boolean createResult = storeFeedback(userId, movieId, rating);
-                System.out.println("Resultado do create: " + createResult);
-                return createResult;
+                feedback = new Feedback(userId, movieId, rating);
+                boolean created = feedbackDAO.insert(feedback);
+                if (created) {
+                    System.out.println("[🏅:🟢] RATING CREATE SUCCESS: [userId: " + rating + ", movieId: " + userId + ", rating: " + rating + "]");
+                } else {
+                    System.out.println("[🏅:🔴] RATING CREATE ERROR: [userId: " + rating + ", movieId: " + userId + ", rating: " + rating + "]");
+                }
+                return created ? 1 : 0;
             }
         } catch (Exception e) {
-            System.err.println("ERRO em storeOrUpdateRating: " + e.getMessage());
+            System.err.println("[🏅:🔴] RATING ERROR: storeOrUpdateRating - " + e.getMessage());
             e.printStackTrace();
-            return false;
-        } finally {
-            System.out.println("=== FIM storeOrUpdateRating ===");
+            return 0;
         }
     }
 

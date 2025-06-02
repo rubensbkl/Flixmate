@@ -1,7 +1,6 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
-import ProtectedRoute from "@/components/ProtectedRoute";
 import MovieGrid from "@/components/MovieGrid";
 import {
     fetchUserFavorites,
@@ -199,7 +198,6 @@ export default function UserProfilePage() {
     const activeMovies = getActiveTabData();
 
     return (
-        <ProtectedRoute>
             <div className={`flex md:flex-row min-h-screen bg-background ${isMobile ? 'pb-20' : ''}`}>
                 <div className="md:w-64 md:min-h-screen">
                     <Navbar />
@@ -332,6 +330,6 @@ export default function UserProfilePage() {
                     </div>
                 </main>
             </div>
-        </ProtectedRoute>
+        
     );
 }

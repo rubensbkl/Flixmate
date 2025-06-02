@@ -26,7 +26,6 @@ public class MovieDAO extends DAO {
      * @return true se a inserção foi bem-sucedida, false caso contrário
      */
     public boolean insert(Movie movie) {
-        System.out.println("Inserting movie: " + movie.toString());
         boolean status = false;
         try {
             String sql = "INSERT INTO movies (id, title, overview, rating, release_date, original_language, popularity, poster_path, backdrop_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -245,7 +244,6 @@ public class MovieDAO extends DAO {
             throw new RuntimeException("Erro ao buscar filmes populares: " + e.getMessage(), e);
         }
         
-        System.out.println("Filmes populares encontrados: " + movies.size());
         return movies;
     }
 
@@ -271,8 +269,7 @@ public class MovieDAO extends DAO {
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao contar filmes: " + e.getMessage(), e);
         }
-        
-        System.out.println("Total de filmes no banco: " + total);
+
         return total;
     }
 

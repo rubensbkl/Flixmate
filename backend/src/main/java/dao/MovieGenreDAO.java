@@ -113,11 +113,6 @@ public class MovieGenreDAO extends DAO {
                 genres.add(new Genre(genreId, name));
             }
 
-            System.out.println("Gêneros associados ao filme com ID " + movieId + ":");
-            for (Genre genre : genres) {
-                System.out.println("ID: " + genre.getId() + ", Nome: " + genre.getName());
-            }
-
             rs.close();
             st.close();
         } catch (SQLException e) {
