@@ -20,7 +20,7 @@ WORKDIR /app
 COPY --from=builder /app/target/cinematch-0.0.1-SNAPSHOT.jar app.jar
 
 # Copia a pasta public para dentro do container
-COPY public /app/public
+#COPY public /app/public
 
 # Define o comando para executar a aplicação
 CMD ["java", "-jar", "app.jar"]
