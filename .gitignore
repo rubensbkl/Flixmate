@@ -148,6 +148,7 @@ next-env.d.ts
 
 
 *.csv
+*.dat
 *.pkl
 __pycache__/
 venv/
