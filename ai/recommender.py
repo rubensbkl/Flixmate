@@ -6,7 +6,6 @@ import pickle
 import threading
 import warnings
 from datetime import datetime, timedelta
-from functools import lru_cache
 
 warnings.filterwarnings('ignore', message='.*Downcasting object dtype arrays.*')
 
@@ -16,7 +15,7 @@ from scipy.sparse import csr_matrix
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 
 # Redis import with fallback
 try:
@@ -52,7 +51,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Diretório e caminhos do modelo
-MODEL_DIR = "/app/model_data"
+MODEL_DIR = os.getenv("MODEL_DIR", "./model_data")
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_PATH = f"{MODEL_DIR}/hybrid_model.pkl"
 
@@ -121,10 +120,13 @@ class RedisCache:
         # Limpar cache antigo
         if self.available:
             try:
-                old_keys = self.client.keys("*:v*")
-                if old_keys:
-                    deleted = self.client.delete(*old_keys)
-                    logger.info(f"🗑️ Removidas {deleted} chaves antigas")
+                cursor = '0'
+                deleted = 0
+                while cursor != 0:
+                    cursor, keys = self.client.scan(cursor=cursor, match='*:v*', count=500)
+                    if keys:
+                        deleted += self.client.delete(*keys)
+                logger.info(f"🗑️ Removidas {deleted} chaves antigas")
             except Exception as e:
                 logger.warning(f"⚠️ Erro ao limpar cache antigo: {e}")
     
@@ -546,26 +548,18 @@ class HybridRecommender:
         return profile
 
     def get_content_similarity(self, movie_idx1, movie_idx2):
-        """Calcula similaridade com cache Redis"""
         if self.content_matrix is None:
             return 0.0
-
-        # Cache de similaridade
-        similarity = cache.get("similarity", movie_idx1, movie_idx2)
-        if similarity is not None:
-            return similarity
 
         try:
             vec1 = self.content_matrix[movie_idx1]
             vec2 = self.content_matrix[movie_idx2]
             similarity = cosine_similarity(vec1, vec2)[0][0]
-            
-            # Cachear similaridade permanentemente
-            cache.set("similarity", movie_idx1, movie_idx2, value=similarity, ttl=86400)
             return similarity
         except Exception as e:
             logger.warning(f"⚠️ Erro ao calcular similaridade: {e}")
             return 0.0
+
 
     def get_content_recommendations(self, user_id, candidate_movies, top_n=10):
         """Recomendações baseadas em conteúdo com tratamento robusto"""
@@ -851,42 +845,35 @@ class HybridRecommender:
 # Instância global
 recommender = HybridRecommender()
 
-def load_model():
-    """Carrega modelo com cache Redis e tratamento robusto"""
+def load_model(force_model=True):
+    """Carrega modelo salvo. Se não encontrar, decide se cria um novo com base no parâmetro force_model."""
     global recommender
 
     with model_lock:
         try:
-            # Tentar carregar modelo salvo
             if os.path.exists(MODEL_PATH):
                 with open(MODEL_PATH, "rb") as f:
                     loaded_recommender = pickle.load(f)
-                    
-                # Verificar se o modelo carregado é válido
+
                 if hasattr(loaded_recommender, 'movies_df'):
                     recommender = loaded_recommender
-                    logger.info("✅ Modelo carregado do arquivo")
+                    logger.info("✅ Modelo carregado com sucesso do arquivo")
                     return recommender
-            
-            # Se não conseguiu carregar, criar novo modelo
-            logger.info("🆕 Criando novo modelo...")
-            recommender = HybridRecommender()
-            
-            # Tentar treinar com dados existentes
-            try:
-                recommender.train()
-                logger.info("✅ Novo modelo treinado com sucesso")
-            except Exception as train_error:
-                logger.warning(f"⚠️ Erro no treinamento inicial: {train_error}")
-                # Mesmo com erro no treinamento, retornar o modelo
-                # para que a API funcione (mesmo que com funcionalidade limitada)
-                
-        except Exception as e:
-            logger.error(f"❌ Erro ao carregar modelo: {e}")
-            # Como último recurso, criar modelo básico
-            recommender = HybridRecommender()
+                else:
+                    raise Exception("❌ Arquivo de modelo inválido ou corrompido.")
 
-    return recommender
+            elif force_model:
+                logger.critical("❌ Arquivo de modelo NÃO encontrado e force_model=True. Abortando.")
+                raise FileNotFoundError(f"Arquivo de modelo não encontrado em {MODEL_PATH}")
+
+            else:
+                logger.warning("⚠️ Arquivo de modelo não encontrado. Criando modelo vazio (modo dev ou retrain).")
+                recommender = HybridRecommender()
+                return recommender
+
+        except Exception as e:
+            logger.critical(f"❌ Erro ao carregar modelo: {e}")
+            raise e
 
 def save_model():
     """Salva modelo com tratamento de erro"""

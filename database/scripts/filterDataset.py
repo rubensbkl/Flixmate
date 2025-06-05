@@ -1,243 +1,191 @@
 import re
-
-import numpy as np
 import pandas as pd
+from typing import Optional
 
 
-def limpar_base_tmdb(arquivo_entrada, arquivo_saida):
-    """
-    Função para filtrar e limpar base de dados do TMDB
-    """
-    print("Carregando dados...")
-    df = pd.read_csv(arquivo_entrada)
-    print(f"Dados originais: {len(df)} filmes")
+# ====================
+# Constantes
+# ====================
 
-    # 1. Remover filmes pornográficos
-    df = df[df["adult"] == False]
-    print(f"Após remover filmes pornográficos: {len(df)} filmes")
+GENEROS_VALIDOS = {
+    'Action', 'Adventure', 'Animation', 'Comedy', 'Crime',
+    'Drama', 'Family', 'Fantasy', 'History',
+    'Horror', 'Music', 'Mystery', 'Romance', 'Science Fiction',
+    'Thriller', 'War', 'Western'
+}
 
-    # 2. Remover filmes sem título ou com título vazio/nulo
-    df = df.dropna(subset=["title"])
-    df = df[df["title"].str.strip() != ""]
-    print(f"Após remover filmes sem título: {len(df)} filmes")
+IDIOMAS_VALIDOS = {"en", "pt", "es", "fr", "it", "de"}
 
-    # 3. Remover filmes sem poster
-    df = df.dropna(subset=["poster_path"])
-    df = df[df["poster_path"].str.strip() != ""]
-    print(f"Após remover filmes sem poster: {len(df)} filmes")
+PALAVRAS_SUSPEITAS_TITULO = {
+    "xxx", "porn", "sex tape", "hentai", "amateur", "webcam", "cam girl",
+    "gangbang", "bukkake", "creampie", "big tits", "big ass", "milf porn",
+    "teen porn", "barely legal", "hardcore", "softcore"
+}
 
-    # 4. Remover filmes sem overview (descrição)
-    df = df.dropna(subset=["overview"])
-    df = df[df["overview"].str.strip() != ""]
-    print(f"Após remover filmes sem descrição: {len(df)} filmes")
+VOTE_AVERAGE_MIN = 4.0
+POPULARITY_MIN = 15.0
 
-    # 5. Remover filmes sem gêneros
-    def tem_generos_validos(generos_str):
-        if pd.isna(generos_str) or str(generos_str).strip() == "":
-            return False
-        
-        # Lista de gêneros válidos em inglês (do TMDB)
-        generos_validos = {
-            'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 
-            'Documentary', 'Drama', 'Family', 'Fantasy', 'History', 
-            'Horror', 'Music', 'Mystery', 'Romance', 'Science Fiction', 
-            'TV Movie', 'Thriller', 'War', 'Western'
-        }
-        
-        try:
-            # Gêneros vêm como string separada por vírgula
-            generos_lista = [g.strip() for g in str(generos_str).split(',')]
-            
-            # Verificar se pelo menos um gênero é válido
-            for genero in generos_lista:
-                if genero in generos_validos:
-                    return True
-            
-            return False
-        except:
-            return False
 
-    df_antes_generos = len(df)
-    df = df[df["genres"].apply(tem_generos_validos)]
-    print(f"Após remover filmes sem gêneros válidos: {len(df)} filmes")
-    print(f"  -> Removidos: {df_antes_generos - len(df)} filmes sem gêneros")
+# ====================
+# Funções auxiliares
+# ====================
 
-    # 6. Manter todos os idiomas (comentado para permitir diversidade)
-    # idiomas_permitidos = [...]
-    # df = df[df['original_language'].isin(idiomas_permitidos)]
-    print(f"Mantendo todos os idiomas: {len(df)} filmes")
+def titulo_valido(titulo: Optional[str]) -> bool:
+    if pd.isna(titulo):
+        return False
 
-    # 7. Filtrar por rating mínimo (mais flexível)
-    df = df[df["vote_average"] >= 2.0]  # Corrigido: vote_average em vez de rating
-    print(f"Após filtrar rating mínimo (2.0): {len(df)} filmes")
+    titulo = str(titulo).strip().lower()
 
-    # 8. Filtrar por popularidade mínima (mais flexível)
-    df = df[df["popularity"] >= 3.0]
-    print(f"Após filtrar popularidade mínima (3.0): {len(df)} filmes")
+    if not (2 <= len(titulo) <= 250):
+        return False
 
-    # 9. Remover títulos suspeitos/bizarros
-    def titulo_valido(titulo):
-        if pd.isna(titulo):
-            return False
+    if re.fullmatch(r"[\d\W]+", titulo):
+        return False
 
-        titulo = str(titulo).strip()
+    if re.search(r"[^\w\s]{3,}", titulo):
+        return False
 
-        # Muito curto ou muito longo
-        if len(titulo) < 2 or len(titulo) > 250:
-            return False
+    if any(p in titulo for p in PALAVRAS_SUSPEITAS_TITULO):
+        return False
 
-        # Só números ou caracteres especiais
-        if re.match(r"^[\d\W]+$", titulo):
-            return False
+    return True
 
-        # Muitos caracteres especiais consecutivos
-        if re.search(r"[^\w\s]{3,}", titulo):
-            return False
 
-        # Palavras claramente pornográficas
-        palavras_suspeitas = [
-            "xxx",
-            "porn",
-            "sex tape",
-            "hentai",
-            "amateur",
-            "webcam",
-            "cam girl",
-            "gangbang",
-            "bukkake",
-            "creampie",
-            "big tits",
-            "big ass",
-            "milf porn",
-            "teen porn",
-            "barely legal",
-            "hardcore",
-            "softcore",
-        ]
+def tem_genero_valido(generos_str: Optional[str]) -> bool:
+    if pd.isna(generos_str) or not generos_str.strip():
+        return False
 
-        titulo_lower = titulo.lower()
-        for palavra in palavras_suspeitas:
-            if palavra in titulo_lower:
-                return False
+    generos = {g.strip() for g in generos_str.split(",")}
+    return bool(generos & GENEROS_VALIDOS)
 
-        return True
 
-    df = df[df["title"].apply(titulo_valido)]
-    print(f"Após filtrar títulos suspeitos: {len(df)} filmes")
+def data_valida(data: Optional[str]) -> bool:
+    if pd.isna(data):
+        return False
 
-    # 10. Remover duplicatas por título (manter o mais popular)
-    print("Removendo duplicatas...")
-    df_duplicatas_antes = len(df)
-    df = df.sort_values("popularity", ascending=False)
-    df = df.drop_duplicates(subset=["title"], keep="first")
-    print(f"Duplicatas removidas: {df_duplicatas_antes - len(df)}")
-    print(f"Após remover duplicatas: {len(df)} filmes")
+    try:
+        ano = int(str(data)[:4])
+        return 1950 <= ano <= 2025
+    except (ValueError, TypeError):
+        return False
 
-    # 11. Validar e limpar datas
-    def validar_data(data):
-        if pd.isna(data):
-            return False
-        try:
-            ano = int(str(data)[:4])
-            return 1900 <= ano <= 2025
-        except:
-            return False
 
-    df = df[df["release_date"].apply(validar_data)]
-    print(f"Após validar datas: {len(df)} filmes")
+# ====================
+# Função principal
+# ====================
 
-    # 12. Remover linhas com dados faltantes críticos
-    df = df.dropna(subset=["id", "title", "vote_average", "release_date"])
-    print(f"Após remover dados faltantes críticos: {len(df)} filmes")
+def limpar_base_tmdb(entrada: str, saida: str) -> pd.DataFrame:
+    print(f"\n📥 Carregando dados de '{entrada}'...")
+    df = pd.read_csv(entrada)
+    print(f"📊 Filmes na base original: {len(df)}")
 
-    # 13. Selecionar e renomear as colunas para o formato final
-    df_final = df[[
-        'id',
-        'title',
-        'overview',
-        'vote_average',
-        'release_date',
-        'original_language',
-        'popularity',
-        'poster_path',
-        'backdrop_path'
-    ]].rename(columns={
-        'vote_average': 'rating'
-    })
+    print("\n🔍 Iniciando limpeza...")
 
-    # 14. Ordenar por popularidade (sem resetar índice para manter IDs originais)
-    df_final = df_final.sort_values(["popularity", "rating"], ascending=[False, False])
+    # Ordenar por popularidade para priorizar filmes mais relevantes
+    df = df.sort_values(by="popularity", ascending=False).drop_duplicates(subset="id")
+    print(f"✅ Remoção de duplicatas por ID: {len(df)}")
 
-    # 15. Salvar resultado
-    df_final.to_csv(arquivo_saida, index=False)
-    print(f"\nDados limpos salvos em '{arquivo_saida}'")
-    print(f"Total final: {len(df_final)} filmes")
+    # Aplicação dos filtros
+    filtros = (
+        df["title"].apply(titulo_valido) &
+        df["vote_average"].ge(VOTE_AVERAGE_MIN) &
+        df["popularity"].ge(POPULARITY_MIN) &
+        df["release_date"].apply(data_valida) &
+        df["original_language"].isin(IDIOMAS_VALIDOS) &
+        (df["adult"] == False) &
+        df["genres"].apply(tem_genero_valido)
+    )
+    df = df[filtros]
+    print(f"✅ Dados após aplicar todos os filtros: {len(df)}")
 
-    # 16. Relatório estatístico
-    print("\n=== RELATÓRIO FINAL ===")
-    print(f"Rating médio: {df_final['rating'].mean():.2f}")
-    print(f"Popularidade média: {df_final['popularity'].mean():.2f}")
-    print(f"Idiomas mais comuns:")
-    print(df_final["original_language"].value_counts().head(10))
+    # Remoção de dados críticos faltantes
+    colunas_criticas = [
+        "id", "title", "overview", "vote_average",
+        "release_date", "original_language",
+        "popularity", "poster_path", "backdrop_path"
+    ]
+    df = df.dropna(subset=colunas_criticas)
+    print(f"✅ Dados após remoção de campos críticos faltantes: {len(df)}")
+
+    # Seleção e ordenação final
+    df_final = (
+        df[colunas_criticas]
+        .rename(columns={"vote_average": "rating"})
+        .sort_values(by=["popularity", "rating"], ascending=[False, False])
+        .reset_index(drop=True)
+    )
+
+    # Salvamento
+    df_final.to_csv(saida, index=False)
+    print(f"\n💾 Dados limpos salvos em '{saida}'")
+    print(f"🎬 Total final de filmes: {len(df_final)}")
+
+    # Relatório final
+    print("\n📑 RELATÓRIO FINAL")
+    print(f"⭐ Rating médio: {df_final['rating'].mean():.2f}")
+    print(f"🔥 Popularidade média: {df_final['popularity'].mean():.2f}")
+    print("\n🗣️ Idiomas mais comuns:")
+    print(df_final['original_language'].value_counts().head(10))
 
     return df_final
 
-def analise_rapida(arquivo):
-    """
-    Função para fazer uma análise rápida dos dados
-    """
+
+# ====================
+# Análise rápida
+# ====================
+
+def analise_rapida(arquivo: str) -> None:
     df = pd.read_csv(arquivo)
 
-    print("\n=== ANÁLISE DOS DADOS ===")
+    print(f"\n📊 Analisando '{arquivo}'...")
     print(f"Total de filmes: {len(df)}")
-    print(f"Colunas: {list(df.columns)}")
-    print(f"\nDados faltantes por coluna:")
-    for col in df.columns:
-        faltantes = df[col].isnull().sum()
-        if faltantes > 0:
-            print(f"  {col}: {faltantes} ({faltantes/len(df)*100:.1f}%)")
+    print(f"Colunas disponíveis: {list(df.columns)}")
 
-    print(f"\nFaixa de rating: {df['vote_average'].min():.1f} - {df['vote_average'].max():.1f}")
-    print(f"Faixa de popularidade: {df['popularity'].min():.1f} - {df['popularity'].max():.1f}")
+    print("\n🚩 Dados faltantes por coluna:")
+    faltantes = df.isnull().sum()
+    for col, val in faltantes.items():
+        if val > 0:
+            print(f"  • {col}: {val} ({val/len(df)*100:.1f}%)")
 
-    # Verificar duplicatas
+    rating_col = "vote_average" if "vote_average" in df.columns else "rating"
+    print(f"\n⭐ Faixa de rating: {df[rating_col].min():.1f} - {df[rating_col].max():.1f}")
+    print(f"🔥 Faixa de popularidade: {df['popularity'].min():.1f} - {df['popularity'].max():.1f}")
+
     duplicatas = df.duplicated(subset=["title"]).sum()
-    print(f"Títulos duplicados: {duplicatas}")
+    print(f"📄 Títulos duplicados: {duplicatas}")
 
-    # Verificar filmes adultos
-    adultos = df["adult"].sum() if "adult" in df.columns else 0
-    print(f"Filmes adultos: {adultos}")
+    if "adult" in df.columns:
+        adultos = df["adult"].sum()
+        print(f"🔞 Filmes adultos: {adultos}")
 
-    # Verificar filmes sem gêneros
     if "genres" in df.columns:
-        sem_generos = df["genres"].isnull().sum()
-        generos_vazios = (df["genres"] == "").sum()
-        print(f"Filmes sem gêneros: {sem_generos + generos_vazios}")
+        sem_genero = df["genres"].isnull().sum() + (df["genres"] == "").sum()
+        print(f"🎭 Filmes sem gêneros: {sem_genero}")
 
-# ===== EXECUÇÃO PRINCIPAL =====
+
+# ====================
+# Execução principal
+# ====================
+
 if __name__ == "__main__":
-    # Configurações
-    arquivo_entrada = "TMDB_movie_dataset_v11.csv"  # Dataset original completo
-    arquivo_saida = "movies_limpo.csv"  # Arquivo final limpo
+    entrada = "TMDB_movie_dataset_v11.csv"
+    saida = "movies_limpo.csv"
 
     try:
-        # Análise inicial (opcional)
-        print("=== ANÁLISE INICIAL ===")
-        analise_rapida(arquivo_entrada)
+        print("\n🚀 ANÁLISE INICIAL")
+        analise_rapida(entrada)
 
-        print("\n" + "=" * 50)
-        print("INICIANDO LIMPEZA DOS DADOS")
-        print("=" * 50)
+        print("\n" + "=" * 60)
+        print("🧹 INICIANDO LIMPEZA DOS DADOS")
+        print("=" * 60)
 
-        # Executar limpeza
-        df_limpo = limpar_base_tmdb(arquivo_entrada, arquivo_saida)
+        limpar_base_tmdb(entrada, saida)
 
-        print("\n" + "=" * 50)
-        print("LIMPEZA CONCLUÍDA COM SUCESSO!")
-        print("=" * 50)
+        print("\n" + "=" * 60)
+        print("🏁 LIMPEZA CONCLUÍDA COM SUCESSO!")
+        print("=" * 60)
 
     except FileNotFoundError:
-        print(f"Erro: Arquivo '{arquivo_entrada}' não encontrado!")
-        print("Certifique-se de que o arquivo está no mesmo diretório do script.")
+        print(f"❌ Erro: Arquivo '{entrada}' não encontrado!")
     except Exception as e:
-        print(f"Erro durante a execução: {str(e)}")
+        print(f"❌ Erro durante a execução: {type(e).__name__}: {e}")

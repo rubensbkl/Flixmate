@@ -136,20 +136,14 @@ async def health_check():
     """🏥 Verifica status completo do sistema, modelo e cache"""
     try:
         from recommender import recommender, debug_ratings_data
+        
         cache_stats = get_cache_stats()
 
         # 🔧 Informações gerais
         system_info = {
             "version": "2.1.1",
             "status": "operational",
-            "features": [
-                "🧠 Sistema híbrido (colaborativo + conteúdo)",
-                "💾 Cache Redis inteligente",
-                "🔄 Invalidação automática no treino",
-                "📊 Estatísticas detalhadas",
-                "🛡️ Robustez contra falhas"
-            ],
-            "timestamp": datetime.now()
+            "timestamp": datetime.now().isoformat()
         }
 
         # 🧠 Status do modelo
@@ -199,20 +193,19 @@ async def health_check():
             "degraded" if model_info["loaded"] else "error"
         )
 
-        # 🔍 Dados adicionais opcionais
-        ratings_analysis = {}
-        if recommender and recommender.ratings_df is not None and len(recommender.ratings_df) > 0:
-            try:
-                ratings_analysis = debug_ratings_data(recommender)
-            except Exception as e:
-                ratings_analysis = {"error": str(e)}
-
         return {
             "status": status,
             "system": system_info,
             "model": model_info,
             "cache": cache_info,
-            "ratings_analysis": ratings_analysis,
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Health check failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
         }
 
     except Exception as e:
