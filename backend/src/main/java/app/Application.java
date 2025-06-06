@@ -9,22 +9,23 @@ import static spark.Spark.port;
 import static spark.Spark.post;
 import static spark.Spark.staticFiles;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.Collections;
-import java.security.SecureRandom;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import dao.FavoriteDAO;
 import dao.FeedbackDAO;
 import dao.GenreDAO;
 import dao.MovieDAO;
@@ -33,12 +34,12 @@ import dao.RecommendationDAO;
 import dao.UserDAO;
 import dao.UserGenreDAO;
 import dao.WatchLaterDAO;
-import dao.FavoriteDAO;
 import model.Feedback;
 import model.Genre;
 import model.Movie;
 import model.Recommendation;
 import model.User;
+import service.FavoriteService;
 import service.FeedbackService;
 import service.GenreService;
 import service.MovieGenreService;
@@ -48,8 +49,6 @@ import service.TMDBService;
 import service.UserGenreService;
 import service.UserService;
 import service.WatchLaterService;
-import service.FavoriteService;
-
 import util.FlixAi;
 import util.JWTUtil;
 
@@ -909,7 +908,7 @@ get("/api/profile/:userId/favorites", (req, res) -> {
 
                 final int NUM_CANDIDATOS = 500;
 
-                Collections.shuffle(candidatos, );
+                Collections.shuffle(candidatos, new Random());
                 candidatos = candidatos.subList(0, Math.min(NUM_CANDIDATOS, candidatos.size()));
 
                 // 🔥 Chamar IA para gerar o feed
