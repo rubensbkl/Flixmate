@@ -7,6 +7,7 @@ from typing import List, Optional
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from fastapi import Query
 
 # Import do sistema de recomendação COM REDIS
 from recommender import (auto_retrain_if_needed, debug_ratings_data, get_cache_stats, load_model, recommend, train)
@@ -22,15 +23,18 @@ class Rating(BaseModel):
     movie: int
     rating: bool
 
+class FeedRequest(BaseModel):
+    user: int
+    top_n: Optional[int] = 20
+    candidate_ids: Optional[List[int]] = None
+
 class TrainRequest(BaseModel):
     ratings: List[Rating]
-
 
 class RecommendRequest(BaseModel):
     user: int
     candidate_ids: List[int]
     top_n: Optional[int] = Field(1, ge=1, le=10)
-
 
 class TrainResponse(BaseModel):
     message: str
@@ -47,7 +51,6 @@ class RecommendResponse(BaseModel):
     error: Optional[str] = None
     debug_info: Optional[dict] = None
     timestamp: datetime = Field(default_factory=datetime.now)
-
 
 class HealthResponse(BaseModel):
     status: str
@@ -98,6 +101,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Middleware para logging de requests com info de cache
+@app.middleware("http")
+async def log_requests(request, call_next):
+    start_time = datetime.now()
+
+    response = await call_next(request)
+
+    process_time = (datetime.now() - start_time).total_seconds()
+
+    # Emoji baseado na performance (indica se foi cache hit)
+    if process_time < 0.01:
+        emoji = "⚡"  # Muito rápido = provavelmente cache hit
+    elif process_time < 0.05:
+        emoji = "🚀"  # Rápido
+    elif process_time < 0.1:
+        emoji = "✅"  # Normal
+    else:
+        emoji = "⏳"  # Lento = cache miss ou cálculo pesado
+
+    logger.info(
+        f"{emoji} {request.method} {request.url.path} - {response.status_code} - {process_time:.3f}s"
+    )
+
+    return response
 
 @app.get("/", response_model=dict)
 async def root():
@@ -130,92 +157,53 @@ async def root():
             "docs": "/docs - Documentação da API"
         }
     }
+    
 
-@app.get("/health", response_model=dict)
-async def health_check():
-    """🏥 Verifica status completo do sistema, modelo e cache"""
+@app.post("/feed", response_model=RecommendResponse)
+async def feed_endpoint(request: FeedRequest):
+    """
+    📰 Gera feed de filmes recomendados para o usuário
+
+    - Se candidate_ids for fornecido, filtra os candidatos.
+    - Se não for, considera todo o catálogo de filmes.
+    """
     try:
-        from recommender import recommender, debug_ratings_data
-        
-        cache_stats = get_cache_stats()
+        from recommender import recommender
 
-        # 🔧 Informações gerais
-        system_info = {
-            "version": "2.1.1",
-            "status": "operational",
-            "timestamp": datetime.now().isoformat()
-        }
+        if recommender is None or recommender.movies_df is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Modelo não está disponível ou não há filmes carregados. Execute /train primeiro."
+            )
 
-        # 🧠 Status do modelo
-        model_info = {
-            "loaded": recommender is not None,
-            "last_update": getattr(recommender, "last_update", None),
-            "movies_count": len(recommender.movies_df) if recommender and recommender.movies_df is not None else 0,
-            "ratings_count": len(recommender.ratings_df) if recommender and recommender.ratings_df is not None else 0,
-            "user_profiles_count": len(getattr(recommender, "user_profiles", {})),
-            "collaborative_model": {
-                "ready": recommender.collaborative_model is not None if recommender else False,
-                "user_ids": len(getattr(recommender, "user_ids", [])),
-                "movie_ids": len(getattr(recommender, "movie_ids", []))
-            },
-            "content_model": {
-                "ready": recommender.content_matrix is not None if recommender else False,
-                "vectorizer": recommender.genre_vectorizer is not None if recommender else False,
-                "matrix_shape": recommender.content_matrix.shape if getattr(recommender, "content_matrix", None) is not None else None
-            }
-        }
-
-        # 🗄️ Status do Cache Redis
-        if cache_stats.get("available"):
-            total_ops = cache_stats.get("hits", 0) + cache_stats.get("misses", 0)
-            hit_rate = (cache_stats.get("hits", 0) / total_ops) * 100 if total_ops > 0 else 0
-
-            cache_info = {
-                "status": "connected",
-                "total_keys": cache_stats.get("total_keys", 0),
-                "memory_usage": cache_stats.get("memory_usage", "N/A"),
-                "hit_rate_percent": round(hit_rate, 2),
-                "cache_hits": cache_stats.get("hits", 0),
-                "cache_misses": cache_stats.get("misses", 0),
-                "model_version": cache_stats.get("model_version", 1),
-                "last_update": cache_stats.get("model_info", {}).get("last_update"),
-            }
+        # 🔍 Definir os candidatos
+        if request.candidate_ids and len(request.candidate_ids) > 0:
+            candidate_ids = request.candidate_ids
         else:
-            cache_info = {
-                "status": "unavailable",
-                "error": cache_stats.get("error", "Não conectado"),
-                "impact": "Performance reduzida, sem cache",
-            }
+            candidate_ids = recommender.movies_df["id"].tolist()
 
-        # 🏥 Health summary
-        healthy = model_info["loaded"] and cache_info["status"] == "connected"
-        status = "healthy" if healthy else (
-            "degraded" if model_info["loaded"] else "error"
+        # 🔥 Gerar recomendações
+        result = recommend(request.user, candidate_ids, request.top_n)
+
+        if "error" in result:
+            return RecommendResponse(
+                error=result["error"],
+                debug_info=result.get("debug_info")
+            )
+
+        return RecommendResponse(
+            all_recommendations=result.get("all_recommendations", []),
+            cache_used=result.get("cache_used", False)
         )
 
-        return {
-            "status": status,
-            "system": system_info,
-            "model": model_info,
-            "cache": cache_info,
-        }
-
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"❌ Health check failed: {e}")
-        return {
-            "status": "error",
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
+        logger.error(f"❌ Erro no feed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Erro interno no feed: {str(e)}"
+        )
 
-    except Exception as e:
-        logger.error(f"❌ Health check failed: {e}")
-        return {
-            "status": "error",
-            "error": str(e),
-            "timestamp": datetime.now()
-        }
-    
 
 @app.post("/train", response_model=TrainResponse)
 async def train_endpoint(request: TrainRequest, background_tasks: BackgroundTasks):
@@ -281,6 +269,21 @@ async def train_endpoint(request: TrainRequest, background_tasks: BackgroundTask
         raise HTTPException(
             status_code=500, detail=f"Erro interno no treinamento: {str(e)}"
         )
+    
+# Função helper para treinar em background
+async def train_model_background(ratings_data):
+    """Executa treinamento em background com tratamento de erro"""
+    try:
+        logger.info("🔄 Iniciando treinamento em background...")
+        result = train(ratings_data)
+        
+        if "error" in result:
+            logger.error(f"❌ Erro no treinamento: {result['error']}")
+        else:
+            logger.info(f"✅ Treinamento concluído: {result}")
+            
+    except Exception as e:
+        logger.error(f"❌ Erro no treinamento em background: {e}")
 
 
 @app.post("/recommend", response_model=RecommendResponse)
@@ -374,48 +377,90 @@ async def recommend_endpoint(request: RecommendRequest):
         )
 
 
-# Função helper para treinar em background
-async def train_model_background(ratings_data):
-    """Executa treinamento em background com tratamento de erro"""
+@app.get("/health", response_model=dict)
+async def health_check():
+    """🏥 Verifica status completo do sistema, modelo e cache"""
     try:
-        logger.info("🔄 Iniciando treinamento em background...")
-        result = train(ratings_data)
+        from recommender import recommender, debug_ratings_data
         
-        if "error" in result:
-            logger.error(f"❌ Erro no treinamento: {result['error']}")
+        cache_stats = get_cache_stats()
+
+        # 🔧 Informações gerais
+        system_info = {
+            "version": "2.1.1",
+            "status": "operational",
+            "timestamp": datetime.now().isoformat()
+        }
+
+        # 🧠 Status do modelo
+        model_info = {
+            "loaded": recommender is not None,
+            "last_update": getattr(recommender, "last_update", None),
+            "movies_count": len(recommender.movies_df) if recommender and recommender.movies_df is not None else 0,
+            "ratings_count": len(recommender.ratings_df) if recommender and recommender.ratings_df is not None else 0,
+            "user_profiles_count": len(getattr(recommender, "user_profiles", {})),
+            "collaborative_model": {
+                "ready": recommender.collaborative_model is not None if recommender else False,
+                "user_ids": len(getattr(recommender, "user_ids", [])),
+                "movie_ids": len(getattr(recommender, "movie_ids", []))
+            },
+            "content_model": {
+                "ready": recommender.content_matrix is not None if recommender else False,
+                "vectorizer": recommender.genre_vectorizer is not None if recommender else False,
+                "matrix_shape": recommender.content_matrix.shape if getattr(recommender, "content_matrix", None) is not None else None
+            }
+        }
+
+        # 🗄️ Status do Cache Redis
+        if cache_stats.get("available"):
+            total_ops = cache_stats.get("hits", 0) + cache_stats.get("misses", 0)
+            hit_rate = (cache_stats.get("hits", 0) / total_ops) * 100 if total_ops > 0 else 0
+
+            cache_info = {
+                "status": "connected",
+                "total_keys": cache_stats.get("total_keys", 0),
+                "memory_usage": cache_stats.get("memory_usage", "N/A"),
+                "hit_rate_percent": round(hit_rate, 2),
+                "cache_hits": cache_stats.get("hits", 0),
+                "cache_misses": cache_stats.get("misses", 0),
+                "model_version": cache_stats.get("model_version", 1),
+                "last_update": cache_stats.get("model_info", {}).get("last_update"),
+            }
         else:
-            logger.info(f"✅ Treinamento concluído: {result}")
-            
+            cache_info = {
+                "status": "unavailable",
+                "error": cache_stats.get("error", "Não conectado"),
+                "impact": "Performance reduzida, sem cache",
+            }
+
+        # 🏥 Health summary
+        healthy = model_info["loaded"] and cache_info["status"] == "connected"
+        status = "healthy" if healthy else (
+            "degraded" if model_info["loaded"] else "error"
+        )
+
+        return {
+            "status": status,
+            "system": system_info,
+            "model": model_info,
+            "cache": cache_info,
+        }
+
     except Exception as e:
-        logger.error(f"❌ Erro no treinamento em background: {e}")
+        logger.error(f"❌ Health check failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
 
-
-# Middleware para logging de requests com info de cache
-@app.middleware("http")
-async def log_requests(request, call_next):
-    start_time = datetime.now()
-
-    response = await call_next(request)
-
-    process_time = (datetime.now() - start_time).total_seconds()
-
-    # Emoji baseado na performance (indica se foi cache hit)
-    if process_time < 0.01:
-        emoji = "⚡"  # Muito rápido = provavelmente cache hit
-    elif process_time < 0.05:
-        emoji = "🚀"  # Rápido
-    elif process_time < 0.1:
-        emoji = "✅"  # Normal
-    else:
-        emoji = "⏳"  # Lento = cache miss ou cálculo pesado
-
-    logger.info(
-        f"{emoji} {request.method} {request.url.path} - {response.status_code} - {process_time:.3f}s"
-    )
-
-    return response
-
-
+    except Exception as e:
+        logger.error(f"❌ Health check failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now()
+        }
 
 # Endpoint para forçar recarregamento do modelo
 @app.post("/pqp/reload_model")

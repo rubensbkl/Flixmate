@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.Collections;
+import java.security.SecureRandom;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -892,81 +893,77 @@ get("/api/profile/:userId/favorites", (req, res) -> {
         // =====================================//
 
         // Pega lista de filmes para o usuario avaliar
-        post("/api/movies", (req, res) -> {
-
-            // Extrair ID do usuário do token
+        post("/api/feed", (req, res) -> {
             int userId = req.attribute("userId");
-
             JsonObject requestBody = gson.fromJson(req.body(), JsonObject.class);
             int page = requestBody.has("page") ? requestBody.get("page").getAsInt() : 1;
+
             try {
-                // DAO de preferências
-                List<Genre> preferredGenresList = userGenreDAO.getPreferredGenres(userId);
-                List<Integer> preferredGenres = preferredGenresList.stream()
-                        .map(Genre::getId)
-                        .toList();
+                // 🔍 Gerar lista de candidatos
+                List<Integer> candidatos = movieService.getAllMoviesIds();
 
-                // Pega filmes de várias listas
-                JsonArray trendingMovies = tmdb.getTrendingMovies(page);
-                JsonArray popularMovies = tmdb.getPopularMovies(page);
-                JsonArray topRatedMovies = tmdb.getTopRatedMovies(page);
-                JsonArray upcomingMovies = tmdb.getUpcomingMovies(page);
+                if (candidatos.isEmpty()) {
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "Não há filmes disponíveis para gerar o feed."));
+                }
 
-                // Usamos um Set para evitar duplicatas por ID
-                Map<Integer, JsonObject> uniqueMoviesMap = new HashMap<>();
+                final int NUM_CANDIDATOS = 500;
 
-                // Função para processar cada array e adicionar ao mapa de filmes únicos
-                Consumer<JsonArray> processMovies = (moviesArray) -> {
-                    if (moviesArray != null) {
-                        moviesArray.forEach(element -> {
-                            if (element.isJsonObject()) {
-                                JsonObject movie = element.getAsJsonObject();
-                                if (movie.has("id")) {
-                                    int movieId = movie.get("id").getAsInt();
+                Collections.shuffle(candidatos, );
+                candidatos = candidatos.subList(0, Math.min(NUM_CANDIDATOS, candidatos.size()));
 
-                                    // Só adiciona se ainda não existe no mapa
-                                    if (!uniqueMoviesMap.containsKey(movieId)) {
-                                        uniqueMoviesMap.put(movieId, movie);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                };
+                // 🔥 Chamar IA para gerar o feed
+                JsonObject aiResponse = flixAi.getFeed(userId, 50, candidatos);
+                JsonArray aiMoviesArray = aiResponse.getAsJsonArray("all_recommendations");
 
-                // Processa todas as listas
-                processMovies.accept(trendingMovies);
-                processMovies.accept(popularMovies);
-                processMovies.accept(topRatedMovies);
-                processMovies.accept(upcomingMovies);
+                if (aiMoviesArray == null) {
+                    throw new RuntimeException("❌ Feed da IA retornou vazio ou inválido.");
+                }
 
-                // Converte o mapa para uma lista
-                List<JsonObject> allMovies = new ArrayList<>(uniqueMoviesMap.values());
-
-                // Ordena pela compatibilidade com os gêneros preferidos
-                allMovies.sort((m1, m2) -> {
-                    int score1 = userGenreService.calculateGenreScore(m1, preferredGenres);
-                    int score2 = userGenreService.calculateGenreScore(m2, preferredGenres);
-                    return Integer.compare(score2, score1); // Ordem decrescente
+                List<Integer> aiMovieIds = new ArrayList<>();
+                aiMoviesArray.forEach(item -> {
+                    JsonArray pair = item.getAsJsonArray();
+                    int movieId = pair.get(0).getAsInt();
+                    aiMovieIds.add(movieId);
                 });
 
-                int totalMovies = allMovies.size();
-                int moviesToReturn = (totalMovies / 10) * 10; // maior múltiplo de 10 menor ou igual
-                if (moviesToReturn == 0 && totalMovies > 0) {
-                    moviesToReturn = Math.min(10, totalMovies);
-                }
-                List<JsonObject> topMovies = allMovies.stream().limit(moviesToReturn).toList();
+                // 🔥 Buscar detalhes dos filmes da IA na TMDB
+                List<JsonObject> aiMoviesDetails = tmdb.getMoviesDetails(aiMovieIds);
 
-                // Log para debug
-                System.out.println("[🎞️:🟣] MOVIES GET SUCCESS: [total: " + totalMovies + ", retornado: " + moviesToReturn +"]");
+                System.out.println("[🎥] AI movies fetched: total = " + aiMoviesDetails.size());
 
-                return gson.toJson(Map.of("status", "ok", "movies", topMovies));
+                // 🔍 Buscar mais filmes do discover
+                JsonArray discoverMovies = tmdb.getDiscoverMovies(page);
+
+                System.out.println("[🎥] Discover movies fetched: total = " + discoverMovies.size());
+
+                // 🔗 Combinar IA + discover
+                Map<Integer, JsonObject> uniqueMoviesMap = new HashMap<>();
+
+                aiMoviesDetails.forEach(movie -> {
+                    int id = movie.get("id").getAsInt();
+                    uniqueMoviesMap.put(id, movie);
+                });
+
+                discoverMovies.forEach(item -> {
+                    JsonObject movie = item.getAsJsonObject();
+                    int id = movie.get("id").getAsInt();
+                    uniqueMoviesMap.putIfAbsent(id, movie);
+                });
+
+                List<JsonObject> finalMovies = new ArrayList<>(uniqueMoviesMap.values());
+
+                System.out.println("[🎥] Movies fetched: total = " + finalMovies.size());
+
+                return gson.toJson(Map.of("status", "ok", "movies", finalMovies));
+
             } catch (Exception e) {
                 e.printStackTrace();
                 res.status(500);
-                return gson.toJson(Map.of("error", "Erro ao buscar recomendações de filmes: " + e.getMessage()));
+                return gson.toJson(Map.of("error", "Erro ao buscar filmes: " + e.getMessage()));
             }
         });
+
 
         // Endpoint watchlist toggle
         post("/api/recommendation/watched", (req, res) -> {
@@ -1127,9 +1124,9 @@ get("/api/profile/:userId/favorites", (req, res) -> {
                         currentRating = ratingValue;
                         flixAi.train(userId, movieId, ratingValue);
                     }
-                    case 3 -> { // REMOVE
-                        operation = "REMOVE";
-                        message = "Rating removido";
+                    case 3 -> { // IGNORE
+                        operation = "IGNORED";
+                        message = "Rating ignorado";
                     }
                     case 0 -> {
                         res.status(500);
@@ -1185,7 +1182,7 @@ get("/api/profile/:userId/favorites", (req, res) -> {
                 return "{\"erro\": \"Não há filmes não avaliados para recomendar.\"}";
             }
 
-            Collections.shuffle(candidatos);
+            Collections.shuffle(candidatos, new SecureRandom());
 
             candidatos = candidatos.subList(0, Math.min(NUM_CANDIDATOS, candidatos.size()));
     

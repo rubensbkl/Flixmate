@@ -139,6 +139,55 @@ public class TMDBService {
         }
     }
 
+    public JsonArray getDiscoverMovies(int page) throws Exception {
+        String url = "https://api.themoviedb.org/3/discover/movie?page=" + page + "&language=pt-BR&api_key=" + API_KEY;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .GET()
+                .build();
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Erro ao buscar filmes do Discover: " + response.body());
+        }
+
+        JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
+        return json.getAsJsonArray("results");
+    }
+
+    public List<JsonObject> getMoviesDetails(List<Integer> movieIds) {
+        List<JsonObject> movies = new ArrayList<>();
+
+        for (Integer id : movieIds) {
+            try {
+                String url = "https://api.themoviedb.org/3/movie/" + id + "?language=pt-BR&api_key=" + API_KEY;
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .GET()
+                        .build();
+
+                HttpClient client = HttpClient.newHttpClient();
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() == 200) {
+                    JsonObject movie = JsonParser.parseString(response.body()).getAsJsonObject();
+                    movies.add(movie);
+                } else {
+                    System.err.println("Erro ao buscar detalhes do filme ID " + id);
+                }
+
+            } catch (Exception e) {
+                System.err.println("Erro ao buscar detalhes do filme ID " + id + ": " + e.getMessage());
+            }
+        }
+
+        return movies;
+    }
+
     private String getJsonStringOrDefault(JsonObject json, String key, String defaultValue) {
         return json.has(key) && !json.get(key).isJsonNull() ? json.get(key).getAsString() : defaultValue;
     }

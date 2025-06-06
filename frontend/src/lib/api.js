@@ -38,7 +38,7 @@ export const fetchMoviesToRate = async (page = 1) => {
 
     console.log("📡 Buscando filmes da API - página", page);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feed`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({ page }),
@@ -57,6 +57,9 @@ export const fetchMoviesToRate = async (page = 1) => {
         popularity: movie.popularity,
         original_language: movie.original_language,
     }));
+
+    console.log(`🔍 ${processed.length} filmes encontrados na página ${page}`);
+    console.log(processed)
 
     if (page === 1) movieCache.store(token, processed);
 
