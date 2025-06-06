@@ -4,7 +4,7 @@ import ErrorModal from "@/components/ErrorModal";
 import ImprovedMovieCard from "@/components/ImprovedMovieCard";
 import Navbar from "@/components/Navbar";
 import {
-    ArrowPathIcon,
+    ArrowRightIcon,
     HeartIcon,
     SparklesIcon,
     XMarkIcon,
@@ -196,23 +196,28 @@ export default function Home() {
     const outOfFrame = (idx) =>
         console.log(`${movies[idx]?.title} saiu da tela.`);
 
-    const resetMatches = async () => {
-        if (feedbackCount < 1) {
-            console.log("Tentativa de resetar com menos de 1 feedbacks.");
-            setErrorMessage(
-                "Você precisa avaliar pelo menos 1 filmes para poder reiniciar."
-            );
-            setShowErrorModal(true);
-            return; // Impede a execução do resto da função
-        }
-
-        // Proceed with reset if feedbackCount > 1
-        console.log("Iniciando reset de matches...");
-        // clearSession(); // Clear session immediately
-
-        setFeedbackCount(0); // Reset local count
-        currentPage.current = 1;
-
+    const skipMovie = () => {
+        if (!canSwipe || currentIndex < 0) return;
+        
+        console.log(`Pulou: ${movies[currentIndex].title}`);
+        
+        setIsAnimating(true);
+        setSwipeDirection('up'); // Direção diferente para indicar skip
+        
+        // Não conta como feedback, apenas pula para o próximo filme
+        setTimeout(() => {
+            setCurrentIndex((prev) => prev - 1);
+            setIsAnimating(false);
+            setSwipeDirection(null);
+        }, 300);
+        
+        // Atualiza a sessão sem incrementar feedbackCount
+        saveSession({
+            movies,
+            currentIndex: currentIndex - 1,
+            feedbackCount,
+            currentPage: currentPage.current,
+        });
     };
 
     const surprise = async () => {
@@ -364,12 +369,12 @@ export default function Home() {
                     {/* Botões de interação - Posicionados no fundo da tela com padding para evitar sobreposição da navbar mobile */}
                     <div className="flex space-x-4 py-4 md:py-2 justify-center mb-20 md:mb-4">
                         <button
-                            onClick={resetMatches}
-                            disabled={loading}
+                            onClick={skipMovie}
+                            disabled={!canSwipe}
                             className="w-14 h-14 flex items-center justify-center bg-foreground rounded-full shadow-lg hover:scale-105 transition disabled:opacity-50"
-                            title="Reiniciar"
+                            title="Pular filme"
                         >
-                            <ArrowPathIcon className="w-6 h-6 text-accent" />
+                            <ArrowRightIcon className="w-6 h-6 text-accent" />
                         </button>
                         <button
                             onClick={() => swipe("left")}

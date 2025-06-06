@@ -93,4 +93,35 @@ public class FlixAi {
 
         return result;
     }
+
+    public JsonObject getFeed(int userId, int topN, List<Integer> candidateIds) throws Exception {
+        JsonObject payload = new JsonObject();
+        payload.addProperty("user", String.valueOf(userId));
+        payload.addProperty("top_n", topN);
+
+        if (candidateIds != null && !candidateIds.isEmpty()) {
+            JsonArray candidatesArray = new JsonArray();
+            candidateIds.forEach(candidatesArray::add);
+            payload.add("candidate_ids", candidatesArray);
+        }
+
+        HttpClient client = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(AI_URL + "/feed"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            System.err.println("Erro na resposta IA feed: " + response.body());
+            throw new RuntimeException("Erro no feed: " + response.body());
+        }
+
+        return JsonParser.parseString(response.body()).getAsJsonObject();
+    }
 }
