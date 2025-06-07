@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.List;
 
 import model.Movie;
 
@@ -39,10 +38,10 @@ public class MovieDAO extends DAO {
             st.setDouble(7, movie.getPopularity());
             st.setString(8, movie.getPosterPath());
             st.setString(9, movie.getPosterPath());
-            
+
             int rowsAffected = st.executeUpdate();
             status = rowsAffected > 0;
-            
+
             st.close();
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao inserir filme: " + e.getMessage(), e);
@@ -117,10 +116,10 @@ public class MovieDAO extends DAO {
             st.setString(3, movie.getOriginalLanguage());
             st.setDouble(4, movie.getPopularity());
             st.setInt(5, movie.getId());
-            
+
             int rowsAffected = st.executeUpdate();
             status = rowsAffected > 0;
-            
+
             st.close();
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao atualizar filme: " + e.getMessage(), e);
@@ -149,9 +148,9 @@ public class MovieDAO extends DAO {
         ArrayList<Movie> movies = new ArrayList<>();
 
         String sql = "SELECT id, title, poster_path, release_date, popularity FROM movies " +
-                    "WHERE LOWER(title) LIKE ? " +
-                    "ORDER BY popularity DESC " +
-                    "LIMIT ? OFFSET ?";
+                "WHERE LOWER(title) LIKE ? " +
+                "ORDER BY popularity DESC " +
+                "LIMIT ? OFFSET ?";
 
         try {
             PreparedStatement st = conexao.prepareStatement(sql);
@@ -165,7 +164,7 @@ public class MovieDAO extends DAO {
                 movie.setId(rs.getInt("id"));
                 movie.setTitle(rs.getString("title"));
                 movie.setReleaseDate(rs.getString("release_date"));
-                movie.setPopularity(rs.getDouble("popularity")); 
+                movie.setPopularity(rs.getDouble("popularity"));
                 movie.setPosterPath(rs.getString("poster_path"));
                 movies.add(movie);
             }
@@ -187,7 +186,7 @@ public class MovieDAO extends DAO {
         int total = 0;
 
         String sql = "SELECT COUNT(*) AS total FROM movies " +
-                    "WHERE LOWER(title) LIKE ?";
+                "WHERE LOWER(title) LIKE ?";
 
         try {
             PreparedStatement st = conexao.prepareStatement(sql);
@@ -212,29 +211,30 @@ public class MovieDAO extends DAO {
 
     /**
      * Busca os filmes mais populares ordenados por popularidade
-     * @param page Página atual (começa em 1)
+     * 
+     * @param page  Página atual (começa em 1)
      * @param limit Número de filmes por página
      * @return Lista de filmes mais populares
      */
     public ArrayList<Movie> getMostPopularMovies(int page, int limit) {
         ArrayList<Movie> movies = new ArrayList<>();
-        
+
         String sql = "SELECT id, title, poster_path, release_date, popularity FROM movies " +
-                    "ORDER BY popularity DESC " +
-                    "LIMIT ? OFFSET ?";
-        
+                "ORDER BY popularity DESC " +
+                "LIMIT ? OFFSET ?";
+
         try {
             PreparedStatement st = conexao.prepareStatement(sql);
             st.setInt(1, limit);
             st.setInt(2, (page - 1) * limit);
-            
+
             ResultSet rs = st.executeQuery();
             while (rs.next()) {
                 Movie movie = new Movie();
                 movie.setId(rs.getInt("id"));
                 movie.setTitle(rs.getString("title"));
                 movie.setReleaseDate(rs.getString("release_date"));
-                movie.setPopularity(rs.getDouble("popularity")); 
+                movie.setPopularity(rs.getDouble("popularity"));
                 movie.setPosterPath(rs.getString("poster_path"));
                 movies.add(movie);
             }
@@ -243,33 +243,229 @@ public class MovieDAO extends DAO {
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar filmes populares: " + e.getMessage(), e);
         }
-        
+
         return movies;
     }
 
     /**
      * Conta o total de filmes no banco de dados
+     * 
      * @return Número total de filmes
      */
     public int getTotalMoviesCount() {
         int total = 0;
-        
+
         String sql = "SELECT COUNT(*) AS total FROM movies";
-        
+
         try {
             PreparedStatement st = conexao.prepareStatement(sql);
             ResultSet rs = st.executeQuery();
-            
+
             if (rs.next()) {
                 total = rs.getInt("total");
             }
-            
+
             rs.close();
             st.close();
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao contar filmes: " + e.getMessage(), e);
         }
 
+        return total;
+    }
+
+    // Adicione estes métodos ao MovieDAO
+
+    /**
+     * Busca filmes com filtros avançados
+     */
+    public ArrayList<Movie> searchWithFilters(String query, int page, int limit, String sortBy, String genresParam,
+            String yearFrom, String yearTo) {
+        ArrayList<Movie> movies = new ArrayList<>();
+
+        StringBuilder sql = new StringBuilder();
+        sql.append(
+                "SELECT DISTINCT m.id, m.title, m.poster_path, m.release_date, m.popularity, m.rating FROM movies m ");
+
+        // Join com genres se necessário
+        if (genresParam != null && !genresParam.trim().isEmpty()) {
+            sql.append("INNER JOIN movie_genres mg ON m.id = mg.movie_id ");
+        }
+
+        sql.append("WHERE 1=1 ");
+
+        ArrayList<Object> params = new ArrayList<>();
+        int paramIndex = 1;
+
+        // Filtro por query (título)
+        if (query != null && !query.trim().isEmpty()) {
+            sql.append("AND LOWER(m.title) LIKE ? ");
+            params.add("%" + query.toLowerCase() + "%");
+        }
+
+        // Filtro por gêneros
+        if (genresParam != null && !genresParam.trim().isEmpty()) {
+            String[] genreIds = genresParam.split(",");
+            sql.append("AND mg.genre_id IN (");
+            for (int i = 0; i < genreIds.length; i++) {
+                sql.append("?");
+                if (i < genreIds.length - 1)
+                    sql.append(",");
+                params.add(Integer.parseInt(genreIds[i].trim()));
+            }
+            sql.append(") ");
+        }
+
+        // Filtro por ano - desde
+        if (yearFrom != null && !yearFrom.trim().isEmpty()) {
+            sql.append("AND EXTRACT(YEAR FROM m.release_date::date) >= ? ");
+            params.add(Integer.parseInt(yearFrom));
+        }
+
+        // Filtro por ano - até
+        if (yearTo != null && !yearTo.trim().isEmpty()) {
+            sql.append("AND EXTRACT(YEAR FROM m.release_date::date) <= ? ");
+            params.add(Integer.parseInt(yearTo));
+        }
+
+        // Ordenação
+        sql.append("ORDER BY ");
+        switch (sortBy) {
+            case "rating":
+                sql.append("m.rating DESC ");
+                break;
+            case "release_date_desc":
+                sql.append("m.release_date DESC ");
+                break;
+            case "release_date_asc":
+                sql.append("m.release_date ASC ");
+                break;
+            case "title":
+                sql.append("m.title ASC ");
+                break;
+            case "popularity":
+            default:
+                sql.append("m.popularity DESC ");
+                break;
+        }
+
+        // Paginação
+        sql.append("LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add((page - 1) * limit);
+
+        try {
+            PreparedStatement st = conexao.prepareStatement(sql.toString());
+
+            // Definir parâmetros
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                if (param instanceof String) {
+                    st.setString(i + 1, (String) param);
+                } else if (param instanceof Integer) {
+                    st.setInt(i + 1, (Integer) param);
+                }
+            }
+
+            ResultSet rs = st.executeQuery();
+            while (rs.next()) {
+                Movie movie = new Movie();
+                movie.setId(rs.getInt("id"));
+                movie.setTitle(rs.getString("title"));
+                movie.setReleaseDate(rs.getString("release_date"));
+                movie.setPopularity(rs.getDouble("popularity"));
+                movie.setPosterPath(rs.getString("poster_path"));
+                // Adicionar rating se estiver ordenando por ele
+                if (sortBy.equals("rating")) {
+                    movie.setRating(rs.getDouble("rating"));
+                }
+                movies.add(movie);
+            }
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar filmes com filtros: " + e.getMessage(), e);
+        }
+
+        System.out.println("Filmes encontrados com filtros: " + movies.size());
+        return movies;
+    }
+
+    /**
+     * Conta resultados de busca com filtros avançados
+     */
+    public int countSearchResultsWithFilters(String query, String sortBy, String genresParam, String yearFrom,
+            String yearTo) {
+        int total = 0;
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT COUNT(DISTINCT m.id) AS total FROM movies m ");
+
+        // Join com genres se necessário
+        if (genresParam != null && !genresParam.trim().isEmpty()) {
+            sql.append("INNER JOIN movie_genres mg ON m.id = mg.movie_id ");
+        }
+
+        sql.append("WHERE 1=1 ");
+
+        ArrayList<Object> params = new ArrayList<>();
+
+        // Filtro por query (título)
+        if (query != null && !query.trim().isEmpty()) {
+            sql.append("AND LOWER(m.title) LIKE ? ");
+            params.add("%" + query.toLowerCase() + "%");
+        }
+
+        // Filtro por gêneros
+        if (genresParam != null && !genresParam.trim().isEmpty()) {
+            String[] genreIds = genresParam.split(",");
+            sql.append("AND mg.genre_id IN (");
+            for (int i = 0; i < genreIds.length; i++) {
+                sql.append("?");
+                if (i < genreIds.length - 1)
+                    sql.append(",");
+                params.add(Integer.parseInt(genreIds[i].trim()));
+            }
+            sql.append(") ");
+        }
+
+        // Filtro por ano - desde
+        if (yearFrom != null && !yearFrom.trim().isEmpty()) {
+            sql.append("AND EXTRACT(YEAR FROM m.release_date::date) >= ? ");
+            params.add(Integer.parseInt(yearFrom));
+        }
+
+        // Filtro por ano - até
+        if (yearTo != null && !yearTo.trim().isEmpty()) {
+            sql.append("AND EXTRACT(YEAR FROM m.release_date::date) <= ? ");
+            params.add(Integer.parseInt(yearTo));
+        }
+
+        try {
+            PreparedStatement st = conexao.prepareStatement(sql.toString());
+
+            // Definir parâmetros
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                if (param instanceof String) {
+                    st.setString(i + 1, (String) param);
+                } else if (param instanceof Integer) {
+                    st.setInt(i + 1, (Integer) param);
+                }
+            }
+
+            ResultSet rs = st.executeQuery();
+            if (rs.next()) {
+                total = rs.getInt("total");
+            }
+
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao contar filmes com filtros: " + e.getMessage(), e);
+        }
+
+        System.out.println("Total de filmes encontrados com filtros: " + total);
         return total;
     }
 
