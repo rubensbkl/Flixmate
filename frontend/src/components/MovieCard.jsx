@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import React from "react";
 
 import Image from "next/image";
 import { useState } from 'react';
@@ -28,6 +27,7 @@ export default function MovieCard({ movie, isMobile }) {
                         fill
                         className={`object-cover rounded-md transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
                         onLoadingComplete={() => setIsLoading(false)}
+                        loading="lazy"
                     />
                 </div>
 
@@ -51,8 +51,8 @@ export default function MovieCard({ movie, isMobile }) {
                                 ? movie.genres.map((g) => g.name).join(", ")
                                 : movie.genres.join(", ")
                             : movie.genre_ids?.length > 0
-                            ? "Carregando gêneros..."
-                            : "Sem gêneros"}
+                                ? "Carregando gêneros..."
+                                : "Sem gêneros"}
                     </p>
                 </div>
             </Link>

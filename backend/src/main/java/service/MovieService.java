@@ -12,14 +12,14 @@ public class MovieService {
     private MovieDAO movieDAO;
     private MovieGenreService movieGenreService;
     private TMDBService tmdbService;
-    
+
     // Construtor com dependências
     public MovieService(MovieDAO movieDAO, MovieGenreService movieGenreService, TMDBService tmdbService) {
         this.movieDAO = movieDAO;
         this.movieGenreService = movieGenreService;
         this.tmdbService = tmdbService;
     }
-    
+
     /**
      * Busca um filme do TMDB e o salva no banco de dados junto com seus gêneros
      * 
@@ -33,7 +33,9 @@ public class MovieService {
             String overview = movieObj.has("overview") ? movieObj.get("overview").getAsString() : null;
             double rating = movieObj.has("vote_average") ? movieObj.get("vote_average").getAsDouble() : 0.0;
             String releaseDate = movieObj.has("release_date") ? movieObj.get("release_date").getAsString() : null;
-            String originalLanguage = movieObj.has("original_language") ? movieObj.get("original_language").getAsString() : null;
+            String originalLanguage = movieObj.has("original_language")
+                    ? movieObj.get("original_language").getAsString()
+                    : null;
             double popularity = movieObj.has("popularity") ? movieObj.get("popularity").getAsDouble() : 0.0;
             String posterPath = movieObj.has("poster_path") ? movieObj.get("poster_path").getAsString() : null;
             String backdropPath = movieObj.has("backdrop_path") ? movieObj.get("backdrop_path").getAsString() : null;
@@ -43,20 +45,37 @@ public class MovieService {
                 return true;
             }
 
-            Movie movie = new Movie(movieId, title, overview, rating, releaseDate, originalLanguage, popularity, posterPath, backdropPath);
+            Movie movie = new Movie(movieId, title, overview, rating, releaseDate, originalLanguage, popularity,
+                    posterPath, backdropPath);
             if (!movieDAO.insert(movie)) {
                 System.err.println("Falha ao inserir filme no banco: " + movieId + " - " + title);
                 return false;
             }
-            
+
             System.out.println("[🎬:🟢] MOVIE CREATE SUCCESS: [movieId: " + movieId + ", title: " + title + "]");
             return true;
-        
+
         } catch (Exception e) {
             System.err.println("Erro ao processar filme: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
+    }
+
+    /**
+     * Busca filmes com filtros avançados
+     */
+    public ArrayList<Movie> searchWithFilters(String query, int page, int limit, String sortBy, String genresParam,
+            String yearFrom, String yearTo) throws Exception {
+        return movieDAO.searchWithFilters(query, page, limit, sortBy, genresParam, yearFrom, yearTo);
+    }
+
+    /**
+     * Conta resultados com filtros avançados
+     */
+    public int countSearchResultsWithFilters(String query, String sortBy, String genresParam, String yearFrom,
+            String yearTo) {
+        return movieDAO.countSearchResultsWithFilters(query, sortBy, genresParam, yearFrom, yearTo);
     }
 
     /**
@@ -95,7 +114,6 @@ public class MovieService {
     public int countSearchResults(String query) {
         return movieDAO.countSearchResults(query);
     }
-    
 
     /**
      * Busca os filmes mais populares do banco local

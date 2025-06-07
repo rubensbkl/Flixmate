@@ -1,8 +1,8 @@
 'use client';
 import "@/styles/tinder-card.css";
-import { useEffect, useState, memo } from 'react';
+import Image from 'next/image';
+import { memo, useEffect, useState } from 'react';
 
-// Usando memo para evitar re-renderizações desnecessárias
 const ImprovedMovieCard = memo(({ 
   movie, 
   isActive = true, 
@@ -10,18 +10,18 @@ const ImprovedMovieCard = memo(({
   swipeDirection = null,
   className = ""
 }) => {
-  // Estado para controlar se mostra a descrição completa
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
-  // Efeito para resetar descrição quando card muda
   useEffect(() => {
     setShowFullDescription(false);
+    setImageLoaded(false);
+    setImageError(false);
   }, [movie?.id]);
 
-  // Garantir tratamento de erro para poster path
   const posterPath = movie?.image || 'https://via.placeholder.com/500x750?text=No+Image';
 
-  // Prevenir eventos padrão que podem atrapalhar a interação do swipe
   const preventDefaultHandler = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -40,25 +40,41 @@ const ImprovedMovieCard = memo(({
         userSelect: 'none', 
         transform: isActive ? 'scale(1)' : 'scale(0.95)',
         transition: 'all 0.3s ease',
-        minHeight: '400px', // Garante altura mínima
-        width: '100%',      // Garante largura completa
-        display: 'block',   // Garante que o elemento seja exibido como bloco
-        backgroundColor: '#f0f0f0', // Cor de fundo como fallback
+        minHeight: '400px',
+        width: '100%',
+        display: 'block',
+        backgroundColor: '#f0f0f0',
       }}
       onDragStart={preventDefaultHandler}
       onContextMenu={preventDefaultHandler}
     >
-      {/* Usado div com background-image ao invés de img para melhor controle */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: `url(${posterPath})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
+      {/* Loading skeleton */}
+      {!imageLoaded && !imageError && (
+        <div className="absolute inset-0 bg-foreground animate-pulse" />
+      )}
+      
+      {/* Image com lazy loading usando Next.js Image */}
+      <Image
+        src={posterPath}
+        alt={movie.title}
+        fill
+        className={`object-cover transition-opacity duration-500 ${
+          imageLoaded ? 'opacity-100' : 'opacity-0'
+        }`}
+        onLoad={() => setImageLoaded(true)}
+        onError={() => setImageError(true)}
+        priority={isActive} // Priorizar imagem ativa
+        loading={isActive ? "eager" : "lazy"} // Lazy loading para cards não ativos
         draggable="false"
       />
       
+      {/* Fallback para erro de imagem */}
+      {imageError && (
+        <div className="absolute inset-0 bg-gray-300 flex items-center justify-center">
+          <span className="text-gray-600">Sem imagem</span>
+        </div>
+      )}
+
       {/* Indicadores de swipe */}
       {swipeDirection === 'left' && (
         <div className="absolute top-8 left-8 bg-red-500 text-white py-1 px-4 rounded-full transform -rotate-12 font-bold z-10">
@@ -97,7 +113,7 @@ const ImprovedMovieCard = memo(({
             <button
               className="text-xs text-blue-300 mt-1 font-medium"
               onClick={(e) => {
-                e.stopPropagation(); // Evita que o clique afete o TinderCard
+                e.stopPropagation();
                 setShowFullDescription(!showFullDescription);
               }}
             >
@@ -110,7 +126,6 @@ const ImprovedMovieCard = memo(({
   );
 });
 
-// Definindo displayName para o componente memo
 ImprovedMovieCard.displayName = 'ImprovedMovieCard';
 
 export default ImprovedMovieCard;

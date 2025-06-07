@@ -14,11 +14,11 @@ import { useSwipeable } from "react-swipeable";
 import TinderCard from "react-tinder-card";
 
 import MovieMatchModal from "@/components/MovieMatchModal";
-import { useAuth,useUserId } from "@/contexts/AuthContext";
+import { useAuth, useUserId } from "@/contexts/AuthContext";
 import {
     fetchMoviesToRate,
-    setMovieRate,
     getRecommendation,
+    setMovieRate,
 } from "@/lib/api";
 import { movieCache } from "@/lib/cache";
 import { clearSession, loadSession, saveSession } from "@/lib/session";
@@ -40,6 +40,7 @@ export default function Home() {
     const [recommendedMovie, setRecommendedMovie] = useState(null);
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const hasLoadedMovies = useRef(false); // FLAG PARA CONTROLAR CARREGAMENTO
 
     const { user, isInitialized } = useAuth();
     const userId = useUserId(); // Hook que sempre retorna o userId
@@ -75,7 +76,9 @@ export default function Home() {
     };
 
     const loadMovies = useCallback(async () => {
-        if (!isInitialized) return; // Aguardar inicialização
+        if (!isInitialized || !userId || hasLoadedMovies.current) return;
+        
+        hasLoadedMovies.current = true; // MARCAR COMO CARREGADO
 
         const session = loadSession();
         if (session) {
@@ -105,17 +108,57 @@ export default function Home() {
             });
         } catch (err) {
             console.error("Erro ao carregar filmes:", err);
+            hasLoadedMovies.current = false; // RESETAR EM CASO DE ERRO
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [isInitialized, userId]);
+
+
+    // Função para carregar mais filmes automaticamente
+    const loadMoreMovies = useCallback(async () => {
+        if (loading) return;
+
+        setLoading(true);
+        try {
+            currentPage.current += 1;
+            const fetchedMovies = await fetchMoviesToRate(currentPage.current);
+            const reversed = [...fetchedMovies].reverse();
+            const startIdx = reversed.length - 1;
+
+            setMovies(reversed);
+            setCurrentIndex(startIdx);
+
+            // Limpar cache antigo e salvar nova sessão
+            clearSession();
+            movieCache.clear(localStorage.getItem("token"));
+
+            saveSession({
+                movies: reversed,
+                currentIndex: startIdx,
+                feedbackCount,
+                currentPage: currentPage.current,
+            });
+        } catch (err) {
+            console.error("Erro ao carregar mais filmes:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, [loading, feedbackCount]);
 
     useEffect(() => {
-        if (isInitialized && userId) {
+        if (isInitialized && userId && !hasLoadedMovies.current) {
             loadMovies();
         }
-        if (user) loadMovies();
-    }, [loadMovies,isInitialized, user]);
+    }, [isInitialized, userId, loadMovies]);
+
+
+    useEffect(() => {
+        if (currentIndex < 0 && movies.length > 0 && !loading) {
+            console.log("🔄 Filmes acabaram, carregando mais automaticamente...");
+            loadMoreMovies();
+        }
+    }, [currentIndex, movies.length, loading, loadMoreMovies]);
 
     const swiped = async (direction, index) => {
         if (!canSwipe) return;
@@ -198,19 +241,19 @@ export default function Home() {
 
     const skipMovie = () => {
         if (!canSwipe || currentIndex < 0) return;
-        
+
         console.log(`Pulou: ${movies[currentIndex].title}`);
-        
+
         setIsAnimating(true);
         setSwipeDirection('up'); // Direção diferente para indicar skip
-        
+
         // Não conta como feedback, apenas pula para o próximo filme
         setTimeout(() => {
             setCurrentIndex((prev) => prev - 1);
             setIsAnimating(false);
             setSwipeDirection(null);
         }, 300);
-        
+
         // Atualiza a sessão sem incrementar feedbackCount
         saveSession({
             movies,
@@ -316,8 +359,8 @@ export default function Home() {
                                         >
                                             <div
                                                 className={`w-[90vw] max-w-md ${isNext
-                                                        ? "scale-90 translate-y-4 transition-all duration-300"
-                                                        : ""
+                                                    ? "scale-90 translate-y-4 transition-all duration-300"
+                                                    : ""
                                                     }`}
                                             >
                                                 <ImprovedMovieCard
@@ -337,29 +380,31 @@ export default function Home() {
                                         </TinderCard>
                                     );
                                 })
-                            ) : (
-                                <div className="text-center p-8 bg-white rounded-lg shadow">
-                                    <h2 className="text-2xl font-bold mb-4">
-                                        Sem mais filmes!
+                            ) : loading ? (
+                                // Loading quando não há filmes e está carregando
+                                <div className="text-center p-8">
+                                    <div className="w-16 h-16 border-t-4 border-accent border-solid rounded-full animate-spin mx-auto mb-4"></div>
+                                    <h2 className="text-xl font-semibold text-primary mb-2">
+                                        Carregando mais filmes...
                                     </h2>
-                                    <p className="text-gray-600 mb-4">
-                                        Você viu todos os filmes
-                                        disponíveis.
+                                    <p className="text-secondary">
+                                        Encontrando filmes perfeitos para você
+                                    </p>
+                                </div>
+                            ) : (
+                                // Fallback caso algo dê errado
+                                <div className="text-center p-8 bg-foreground rounded-lg shadow">
+                                    <h2 className="text-2xl font-bold mb-4 text-primary">
+                                        Oops! Algo deu errado
+                                    </h2>
+                                    <p className="text-secondary mb-4">
+                                        Não conseguimos carregar mais filmes.
                                     </p>
                                     <button
-                                        onClick={() => {
-                                            currentPage.current += 1;
-                                            clearSession();
-                                            movieCache.clear(
-                                                localStorage.getItem(
-                                                    "token"
-                                                )
-                                            );
-                                            loadMovies();
-                                        }}
-                                        className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900"
+                                        onClick={loadMoreMovies}
+                                        className="px-6 py-3 bg-accent text-background rounded-lg hover:bg-accent/90 font-medium transition-colors"
                                     >
-                                        Buscar Mais Filmes
+                                        Tentar Novamente
                                     </button>
                                 </div>
                             )}
@@ -406,8 +451,8 @@ export default function Home() {
                 {/* Overlay de carregamento */}
                 <div
                     className={`fixed inset-0 flex flex-col bg-background items-center justify-center transition-opacity duration-500 ${isLoadingRecommendation
-                            ? "opacity-100 z-50"
-                            : "opacity-0 pointer-events-none"
+                        ? "opacity-100 z-50"
+                        : "opacity-0 pointer-events-none"
                         }`}
                 >
                     <div className="text-xl font-semibold text-primary">
