@@ -10,21 +10,20 @@ RUN apt-get update && apt-get install -y \
 # Definir diretório de trabalho
 WORKDIR /app
 
-# Criar diretório para dados do modelo
-RUN mkdir -p /app/model_data
-
 # Copiar requirements primeiro para cache de layers
 COPY requirements.txt .
 
 # Instalar dependências Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar código da aplicação
-COPY . .
+# Copiar apenas arquivos necessários
+COPY ./model_data ./model_data
+COPY ./inference.py ./
+COPY ./recommender.py ./
+COPY ./3pretrain.py ./
 
 # Criar usuário não-root para segurança
 RUN groupadd -r appuser && useradd -r -g appuser appuser
-RUN chown -R appuser:appuser /app
 USER appuser
 
 # Expor porta

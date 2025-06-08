@@ -1,2 +1,24 @@
 .env*
 *.log
+# Exclude node_modules and other unnecessary directories
+node_modules
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+.idea
+.vscode
+output/
+logs/
+*.csv
+*.pkl
+
+# Exclude build artifacts
+target/
+*.class
+
+# Exclude temporary files
+*.tmp
+*.swp
+*.bak
