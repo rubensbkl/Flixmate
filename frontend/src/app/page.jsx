@@ -47,6 +47,11 @@ export default function Home() {
     const currentPage = useRef(1);
     const currentMovieRef = useRef(null);
 
+    const [pendingTrainingRequests, setPendingTrainingRequests] = useState(0);
+    const [completedTrainingRequests, setCompletedTrainingRequests] = useState(0);
+    const trainingQueue = useRef([]);
+    const isProcessingQueue = useRef(false);
+
     const canSwipe =
         currentIndex >= 0 &&
         !isAnimating &&
@@ -160,6 +165,54 @@ export default function Home() {
         }
     }, [currentIndex, movies.length, loading, loadMoreMovies]);
 
+    // Função para processar fila de treinamento assincronamente
+    const processTrainingQueue = useCallback(async () => {
+        if (isProcessingQueue.current || trainingQueue.current.length === 0) {
+            return;
+        }
+
+        isProcessingQueue.current = true;
+
+        while (trainingQueue.current.length > 0) {
+            const trainingData = trainingQueue.current.shift();
+            
+            try {
+                await setMovieRate(trainingData.movieId, trainingData.liked);
+                setCompletedTrainingRequests(prev => prev + 1);
+                console.log(`✅ Treinamento enviado: ${trainingData.movieTitle} - ${trainingData.liked ? 'Curtiu' : 'Descartou'}`);
+            } catch (error) {
+                console.error(`❌ Erro no treinamento: ${trainingData.movieTitle}`, error);
+                // Re-adicionar à fila em caso de erro (máximo 3 tentativas)
+                if (!trainingData.retryCount) trainingData.retryCount = 0;
+                if (trainingData.retryCount < 3) {
+                    trainingData.retryCount++;
+                    trainingQueue.current.push(trainingData);
+                    console.log(`🔄 Tentativa ${trainingData.retryCount}/3 para ${trainingData.movieTitle}`);
+                }
+            }
+
+            // Pequeno delay para não sobrecarregar o servidor
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        isProcessingQueue.current = false;
+    }, []);
+
+    // Função para adicionar treinamento à fila
+    const queueTraining = useCallback((movieId, movieTitle, liked) => {
+        trainingQueue.current.push({
+            movieId,
+            movieTitle,
+            liked,
+            timestamp: Date.now()
+        });
+
+        setPendingTrainingRequests(prev => prev + 1);
+        
+        // Processar fila automaticamente
+        processTrainingQueue();
+    }, [processTrainingQueue]);
+
     const swiped = async (direction, index) => {
         if (!canSwipe) return;
 
@@ -170,7 +223,8 @@ export default function Home() {
         setIsAnimating(true);
         setSwipeDirection(direction);
 
-        await setMovieRate(movie.id, liked);
+        // Adicionar à fila de treinamento assíncrono
+        queueTraining(movie.id, movie.title, liked);
 
         const newCount = feedbackCount + 1;
         setFeedbackCount(newCount);
@@ -184,12 +238,35 @@ export default function Home() {
         if (newCount >= 10) {
             try {
                 setIsLoadingRecommendation(true);
+                
+                // Aguardar que pelo menos 8 das 10 requisições de treinamento sejam completadas
+                // antes de gerar recomendação (permite margem para requests em andamento)
+                const waitForTraining = async () => {
+                    const maxWaitTime = 10000; // 10 segundos máximo
+                    const startTime = Date.now();
+                    
+                    while (completedTrainingRequests < Math.max(8, newCount - 2)) {
+                        if (Date.now() - startTime > maxWaitTime) {
+                            console.warn("⚠️ Timeout aguardando treinamentos. Gerando recomendação mesmo assim.");
+                            break;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
+                };
+
+                await waitForTraining();
+                
+                console.log(`🎯 Gerando recomendação após ${completedTrainingRequests} treinamentos completados`);
+                
                 // Get recommendation and show match modal
                 const recommendationData = await getRecommendation();
                 setRecommendedMovie(recommendationData);
 
-                // Reset feedback count
+                // Reset feedback count and training counters
                 setFeedbackCount(0);
+                setCompletedTrainingRequests(0);
+                setPendingTrainingRequests(0);
+                
                 saveSession({
                     movies,
                     currentIndex: index - 1,
@@ -205,6 +282,8 @@ export default function Home() {
             } catch (err) {
                 console.error("Erro ao gerar recomendação:", err);
                 setIsLoadingRecommendation(false);
+                setErrorMessage("Erro ao gerar recomendação. Tente novamente.");
+                setShowErrorModal(true);
             }
 
             // Release animation and reset direction
@@ -315,7 +394,7 @@ export default function Home() {
             {/* Conteúdo principal */}
             <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] md:h-screen overflow-hidden ">
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    {/* Barra de progresso */}
+                    {/* Barra de progresso com indicador de treinamento */}
                     <div className="relative h-1 w-full bg-foreground">
                         <div
                             className="absolute h-1 bg-accent transition-all duration-300 ease-in-out"
@@ -323,6 +402,13 @@ export default function Home() {
                                 width: `${(feedbackCount / 10) * 100}%`,
                             }}
                         ></div>
+                        {/* Indicador de treinamentos pendentes */}
+                        {pendingTrainingRequests > completedTrainingRequests && (
+                            <div className="absolute -top-6 right-2 text-xs text-secondary flex items-center gap-1">
+                                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                                <span>Treinando IA ({completedTrainingRequests}/{pendingTrainingRequests})</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Área de cards de filmes */}
@@ -448,15 +534,18 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Overlay de carregamento */}
+                {/* Overlay de carregamento com informações do treinamento */}
                 <div
                     className={`fixed inset-0 flex flex-col bg-background items-center justify-center transition-opacity duration-500 ${isLoadingRecommendation
                         ? "opacity-100 z-50"
                         : "opacity-0 pointer-events-none"
                         }`}
                 >
-                    <div className="text-xl font-semibold text-primary">
+                    <div className="text-xl font-semibold text-primary mb-2">
                         Gerando recomendação...
+                    </div>
+                    <div className="text-sm text-secondary mb-4">
+                        IA treinada com {completedTrainingRequests} avaliações
                     </div>
                     <div className="mt-4 w-16 h-16 border-t-4 border-yellow-500 border-solid rounded-full animate-spin"></div>
                 </div>
