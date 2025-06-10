@@ -1,4 +1,4 @@
-package service;
+package util;
 
 import java.io.IOException;
 import java.net.URI;
@@ -12,17 +12,17 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class TMDBService {
+public class TMDBUtil {
     private String API_KEY;
     private final HttpClient client = HttpClient.newHttpClient();
     private static final String BASE_URL = "https://api.themoviedb.org/3/movie/";
 
     /**
-     * Construtor da classe TMDBService
+     * Construtor da classe TMDBUtil
      * 
      * @param apiKey Chave de API do The Movie Database (TMDB)
      */
-    public TMDBService(String apiKey) {
+    public TMDBUtil(String apiKey) {
         this.API_KEY = apiKey;
     }
 

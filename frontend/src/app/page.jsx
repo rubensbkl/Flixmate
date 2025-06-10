@@ -22,7 +22,6 @@ import {
 } from "@/lib/api";
 import { movieCache } from "@/lib/cache";
 import { clearSession, loadSession, saveSession } from "@/lib/session";
-import "@/styles/home.css";
 import { useRouter } from "next/navigation";
 
 export default function Home() {

@@ -1,23 +1,23 @@
 package service;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import com.google.gson.JsonObject;
 
 import dao.MovieDAO;
 import model.Movie;
+import util.TMDBUtil;
 
 public class MovieService {
     private MovieDAO movieDAO;
     private MovieGenreService movieGenreService;
-    private TMDBService tmdbService;
+    private TMDBUtil tmdbUtil;
 
     // Construtor com dependências
-    public MovieService(MovieDAO movieDAO, MovieGenreService movieGenreService, TMDBService tmdbService) {
+    public MovieService(MovieDAO movieDAO, MovieGenreService movieGenreService, TMDBUtil tmdbUtil) {
         this.movieDAO = movieDAO;
         this.movieGenreService = movieGenreService;
-        this.tmdbService = tmdbService;
+        this.tmdbUtil = tmdbUtil;
     }
 
     /**
@@ -90,7 +90,7 @@ public class MovieService {
 
     // getMovieDetails
     public JsonObject getMovieDetails(int movieId) {
-        return tmdbService.getMovieDetails(movieId);
+        return tmdbUtil.getMovieDetails(movieId);
     }
 
     public ArrayList<Integer> getAllMoviesIds() {
