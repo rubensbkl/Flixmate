@@ -4,14 +4,15 @@ import java.util.ArrayList;
 
 import dao.RecommendationDAO;
 import model.Recommendation;
+import util.TMDBUtil;
 
 public class RecommendationService {
     private RecommendationDAO recommendationDAO;
-    private TMDBService tmdbService;
+    private TMDBUtil tmdbUtil;
 
-    public RecommendationService(RecommendationDAO recommendationDAO, TMDBService tmdbService) {
+    public RecommendationService(RecommendationDAO recommendationDAO, TMDBUtil tmdbUtil) {
         this.recommendationDAO = recommendationDAO;
-        this.tmdbService = tmdbService;
+        this.tmdbUtil = tmdbUtil;
     }
 
 

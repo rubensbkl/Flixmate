@@ -4,7 +4,6 @@ import Header from '@/components/Header';
 import Navbar from '@/components/Navbar';
 import Searchbar from '@/components/Searchbar';
 import UserCard from '@/components/UserCard';
-import { fetchUsers } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -152,7 +151,7 @@ export default function ProfileSearch() {
                             {/* Título da seção */}
                             <div className="mb-4">
                                 <h2 className="text-xl font-semibold text-primary">
-                                    {query.trim() ? `Resultados para "${query}"` : 'Filmes Populares'}
+                                    {query.trim() ? `Resultados para "${query}"` : 'Perfis'}
                                 </h2>
                                 {totalResults > 0 && (
                                     <p className="text-secondary text-sm">

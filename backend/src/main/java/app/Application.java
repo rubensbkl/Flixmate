@@ -45,12 +45,12 @@ import service.GenreService;
 import service.MovieGenreService;
 import service.MovieService;
 import service.RecommendationService;
-import service.TMDBService;
 import service.UserGenreService;
 import service.UserService;
 import service.WatchLaterService;
 import util.FlixAi;
 import util.JWTUtil;
+import util.TMDBUtil;
 
 public class Application {
 
@@ -65,9 +65,6 @@ public class Application {
                 "PORT",
                 "JWT_SECRET",
                 "TMDB_API_KEY",
-                "AZURE_OPENAI_ENDPOINT",
-                "AZURE_OPENAI_API_KEY",
-                "AZURE_OPENAI_DEPLOYMENT_NAME",
                 "DB_HOST",
                 "DB_PORT",
                 "DB_NAME",
@@ -103,10 +100,6 @@ public class Application {
         // Envs de autenticação
         String jwtSecret = System.getenv("JWT_SECRET");
         String tmdbApiKey = System.getenv("TMDB_API_KEY");
-        // Envs de IA
-        String azureOpenAIEndpoint = System.getenv("AZURE_OPENAI_ENDPOINT");
-        String azureOpenAIKey = System.getenv("AZURE_OPENAI_API_KEY");
-        String azureOpenAIDeploymentName = System.getenv("AZURE_OPENAI_DEPLOYMENT_NAME");
         // Envs de Banco
         String dbHost = System.getenv("DB_HOST");
         String dbName = System.getenv("DB_NAME");
@@ -128,8 +121,12 @@ public class Application {
         WatchLaterDAO watchLaterDAO = new WatchLaterDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
         FavoriteDAO favoriteDAO = new FavoriteDAO(dbHost, dbName, dbPort, dbUser, dbPassword);
 
+        TMDBUtil tmdb = new TMDBUtil(tmdbApiKey);
+        JWTUtil jwt = new JWTUtil(jwtSecret);
+        FlixAi flixAi = new FlixAi();
+
+
         // Services
-        TMDBService tmdb = new TMDBService(tmdbApiKey);
         MovieGenreService movieGenreService = new MovieGenreService(movieGenreDAO);
         RecommendationService recommendationService = new RecommendationService(recommendationDAO, tmdb);
         MovieService movieService = new MovieService(movieDAO, movieGenreService, tmdb);
@@ -140,9 +137,6 @@ public class Application {
         WatchLaterService watchLaterService = new WatchLaterService(watchLaterDAO);
         FavoriteService favoriteService = new FavoriteService(favoriteDAO);
 
-        // JWT Util
-        JWTUtil jwt = new JWTUtil(jwtSecret);
-        FlixAi flixAi = new FlixAi();
 
         // Configurar a porta do servidor
         port(porta);
@@ -429,7 +423,6 @@ public class Application {
                         return gson.toJson(Map.of("error", "Filme não encontrado para ID: " + movieId));
                     }
 
-                    // TODO: Jogar essa funcao de movie generes para o service
                     List<Integer> movieGenresIds = movieGenreService.getGenreIdsForMovie(movieId);
                     System.out.println("Gêneros do filme: " + movieGenresIds);
                     ArrayList<Genre> movieGenres = new ArrayList<>();

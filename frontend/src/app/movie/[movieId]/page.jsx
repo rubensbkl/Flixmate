@@ -2,28 +2,28 @@
 
 import Navbar from "@/components/Navbar";
 import {
+    checkMovieFavorite,
+    checkMovieRecommended,
+    checkMovieWatchlist,
+    deleteMovieRecommendation,
     fetchMovieById,
     getMovieRating,
     setMovieRate,
-    checkMovieRecommended,
     updateWatchlistMovie,
-    updatefavoriteMovie,
-    checkMovieWatchlist,
-    checkMovieFavorite,
-    deleteMovieRecommendation
+    updatefavoriteMovie
 } from "@/lib/api";
 import {
+    ClockIcon,
     HandThumbDownIcon,
     HandThumbUpIcon,
-    ClockIcon,
     StarIcon,
     TrashIcon
 } from "@heroicons/react/24/outline";
 
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 
 export default function MovieProfilePage() {
@@ -286,9 +286,9 @@ export default function MovieProfilePage() {
 
     return (
         <>
-            <div className={`flex flex-col md:flex-row min-h-screen overflow-y-auto bg-background ${isMobile ? 'pb-20' : ''}`}>
+            <div className={`flex md:flex-row h-screen bg-background`}>
 
-                <div className="md:w-64">
+                <div className="md:w-64 h-full">
                     <Navbar />
                 </div>
 
