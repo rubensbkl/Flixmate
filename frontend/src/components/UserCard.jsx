@@ -1,10 +1,7 @@
-// components/UserCard.jsx
-
 "use client";
 
 import { UserIcon } from "@heroicons/react/24/solid";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 export default function UserCard({ user }) {
     const router = useRouter();

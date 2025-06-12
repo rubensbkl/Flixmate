@@ -16,8 +16,6 @@ public class MovieGenreService {
         this.movieGenreDAO = movieGenreDAO;
     }
 
-
-
     /**
      * Registra múltiplos gêneros para um filme
      * 
@@ -28,7 +26,6 @@ public class MovieGenreService {
     public boolean storeMovieGenres(JsonObject movieObj) {
         int movieId = movieObj.get("id").getAsInt();
 
-        // Verifica se o filme já tem os gêneros associados
         if (movieGenreDAO.checkIfMovieHasGenres(movieId)) {
             System.out.println("Filme já tem gêneros associados: " + movieId);
             return true;
@@ -91,13 +88,13 @@ public class MovieGenreService {
     /**
      * Insere múltiplas associações de gêneros para um filme
      * 
-     * @param movieId O ID do filme
+     * @param movieId  O ID do filme
      * @param genreIds Lista de IDs de gêneros
      * @return true se todas as inserções foram bem-sucedidas, false caso contrário
      */
     public boolean insertMovieGenres(int movieId, List<Integer> genreIds) {
         boolean allSuccessful = true;
-        
+
         for (Integer genreId : genreIds) {
             MovieGenre movieGenre = new MovieGenre(movieId, genreId);
             boolean status = movieGenreDAO.insert(movieGenre);
@@ -105,7 +102,7 @@ public class MovieGenreService {
                 allSuccessful = false;
             }
         }
-        
+
         return allSuccessful;
     }
 

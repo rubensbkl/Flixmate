@@ -34,11 +34,13 @@ import dao.RecommendationDAO;
 import dao.UserDAO;
 import dao.UserGenreDAO;
 import dao.WatchLaterDAO;
+import model.Favorite;
 import model.Feedback;
 import model.Genre;
 import model.Movie;
 import model.Recommendation;
 import model.User;
+import model.WatchLater;
 import service.FavoriteService;
 import service.FeedbackService;
 import service.GenreService;
@@ -55,11 +57,12 @@ import util.TMDBUtil;
 public class Application {
 
     /**
-     * Validates the required environment variables for the application.
-     * Throws an exception if any required variable is missing or empty.
+     * Método para validar as variáveis de ambiente necessárias.
+     * 
+     * @throws IllegalStateException se alguma variável de ambiente obrigatória não
+     *                               estiver definida
      */
     public static void validateRequiredEnvs() {
-        // List of required environment variables
         String[] requiredEnvs = {
                 "ENV",
                 "PORT",
@@ -72,7 +75,6 @@ public class Application {
                 "DB_PASSWORD"
         };
 
-        // Check each required environment variable
         for (String env : requiredEnvs) {
             String value = System.getenv(env);
             if (value == null || value.isEmpty()) {
@@ -84,11 +86,15 @@ public class Application {
     }
 
     /**
-     * Main method to start the application.
+     * Método principal que inicia o servidor e configura os endpoints.
      * 
-     * @param args Command line arguments
+     * @param args argumentos da linha de comando (não utilizados)
      */
     public static void main(String[] args) {
+
+        // ===========================
+        // ======= INICIALIZAÇÃO ======
+        // ===========================
 
         // Valida as variáveis de ambiente necessárias
         validateRequiredEnvs();
@@ -125,7 +131,6 @@ public class Application {
         JWTUtil jwt = new JWTUtil(jwtSecret);
         FlixAi flixAi = new FlixAi();
 
-
         // Services
         MovieGenreService movieGenreService = new MovieGenreService(movieGenreDAO);
         RecommendationService recommendationService = new RecommendationService(recommendationDAO, tmdb);
@@ -137,13 +142,16 @@ public class Application {
         WatchLaterService watchLaterService = new WatchLaterService(watchLaterDAO);
         FavoriteService favoriteService = new FavoriteService(favoriteDAO);
 
-
         // Configurar a porta do servidor
         port(porta);
 
         // Static files e webjars
         staticFiles.location("/public");
         staticFiles.externalLocation("webjars");
+
+        // ==========================
+        // ======= CORS =============
+        // ==========================
 
         // CORS - Cross-Origin Resource Sharing
         Set<String> allowedOrigins = new HashSet<>(List.of(
@@ -193,7 +201,46 @@ public class Application {
             res.type("application/json");
         });
 
-        // Endpoints
+        // Middleware de autenticação para rotas protegidas
+        before("/api/*", (req, res) -> {
+            // Ignorar verificação para requisições OPTIONS
+            if (req.requestMethod().equals("OPTIONS")) {
+                return;
+            }
+
+            // Excluir rotas públicas
+            String path = req.pathInfo();
+            if (path.equals("/api/login") || path.equals("/api/register") || path.equals("/api/verify")
+                    || path.equals("/api/ping")) {
+                return; // Ignorar verificação para rotas públicas
+            }
+
+            String authHeader = req.headers("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                halt(401, gson.toJson(Map.of("error", "Token não fornecido")));
+            }
+
+            try {
+                String token = authHeader.substring(7);
+                var decoded = jwt.verifyToken(token);
+
+                if (decoded == null) {
+                    halt(401, gson.toJson(Map.of("error", "Token inválido")));
+                }
+
+                // Adicionar atributos úteis à requisição
+                req.attribute("userEmail", decoded.getSubject());
+                req.attribute("userId", decoded.getClaim("userId").asInt());
+            } catch (Exception e) {
+                e.printStackTrace();
+                halt(403, gson.toJson(Map.of("error", "Token inválido")));
+            }
+        });
+
+        // ==========================
+        // ======= LOGIN ============
+        // ==========================
+
         post("/api/login", (req, res) -> {
             User user = gson.fromJson(req.body(), User.class);
             if (userService.authenticateUser(user.getEmail(), user.getPassword())) {
@@ -332,44 +379,11 @@ public class Application {
             }
         });
 
-        // Middleware de autenticação para rotas protegidas
-        before("/api/*", (req, res) -> {
-            // Ignorar verificação para requisições OPTIONS
-            if (req.requestMethod().equals("OPTIONS")) {
-                return;
-            }
-
-            // Excluir rotas públicas
-            String path = req.pathInfo();
-            if (path.equals("/api/login") || path.equals("/api/register") || path.equals("/api/verify")
-                    || path.equals("/api/ping")) {
-                return; // Ignorar verificação para rotas públicas
-            }
-
-            String authHeader = req.headers("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                halt(401, gson.toJson(Map.of("error", "Token não fornecido")));
-            }
-
-            try {
-                String token = authHeader.substring(7);
-                var decoded = jwt.verifyToken(token);
-
-                // Verificar se o token é válido
-                if (decoded == null) {
-                    halt(401, gson.toJson(Map.of("error", "Token inválido")));
-                }
-
-                // Adicionar atributos úteis à requisição
-                req.attribute("userEmail", decoded.getSubject());
-                req.attribute("userId", decoded.getClaim("userId").asInt());
-            } catch (Exception e) {
-                e.printStackTrace();
-                halt(403, gson.toJson(Map.of("error", "Token inválido")));
-            }
-        });
-
         get("/api/ping", (req, res) -> gson.toJson(Map.of("status", "ok", "message", "pong")));
+
+        // ==========================
+        // ======= RECOMENDAÇÕES ====
+        // ==========================
 
         // Endpoint para deleter filmes recomendados
         post("/api/recommendation/delete", (req, res) -> {
@@ -396,7 +410,6 @@ public class Application {
         });
 
         // Endpoint para listar filmes recomendados
-
         get("/api/recommendations/:userId", (req, res) -> {
             try {
                 // Pegar userId dos parâmetros da URL
@@ -531,11 +544,200 @@ public class Application {
             }
         });
 
+        // Pega lista de filmes para o usuario avaliar
+        post("/api/feed", (req, res) -> {
+            int userId = req.attribute("userId");
+            JsonObject requestBody = gson.fromJson(req.body(), JsonObject.class);
+            int page = requestBody.has("page") ? requestBody.get("page").getAsInt() : 1;
+
+            try {
+                // 🔍 Gerar lista de candidatos
+                List<Integer> candidatos = movieService.getAllMoviesIds();
+
+                if (candidatos.isEmpty()) {
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "Não há filmes disponíveis para gerar o feed."));
+                }
+
+                final int NUM_CANDIDATOS = 500;
+
+                Collections.shuffle(candidatos, new Random());
+                candidatos = candidatos.subList(0, Math.min(NUM_CANDIDATOS, candidatos.size()));
+
+                // 🔥 Chamar IA para gerar o feed
+                JsonObject aiResponse = flixAi.getFeed(userId, 50, candidatos);
+                JsonArray aiMoviesArray = aiResponse.getAsJsonArray("all_recommendations");
+
+                if (aiMoviesArray == null) {
+                    throw new RuntimeException("❌ Feed da IA retornou vazio ou inválido.");
+                }
+
+                List<Integer> aiMovieIds = new ArrayList<>();
+                aiMoviesArray.forEach(item -> {
+                    JsonArray pair = item.getAsJsonArray();
+                    int movieId = pair.get(0).getAsInt();
+                    aiMovieIds.add(movieId);
+                });
+
+                // 🔥 Buscar detalhes dos filmes da IA na TMDB
+                List<JsonObject> aiMoviesDetails = tmdb.getMoviesDetails(aiMovieIds);
+
+                System.out.println("[🎥] AI movies fetched: total = " + aiMoviesDetails.size());
+
+                // 🔍 Buscar mais filmes do discover
+                JsonArray discoverMovies = tmdb.getTopRatedMovies(page);
+
+                System.out.println("[🎥] Discover movies fetched: total = " + discoverMovies.size());
+
+                // 🔗 Combinar IA + discover
+                Map<Integer, JsonObject> uniqueMoviesMap = new HashMap<>();
+
+                aiMoviesDetails.forEach(movie -> {
+                    int id = movie.get("id").getAsInt();
+                    uniqueMoviesMap.put(id, movie);
+                });
+
+                discoverMovies.forEach(item -> {
+                    JsonObject movie = item.getAsJsonObject();
+                    int id = movie.get("id").getAsInt();
+                    uniqueMoviesMap.putIfAbsent(id, movie);
+                });
+
+                List<JsonObject> finalMovies = new ArrayList<>(uniqueMoviesMap.values());
+
+                System.out.println("[🎥] Movies fetched: total = " + finalMovies.size());
+
+                return gson.toJson(Map.of("status", "ok", "movies", finalMovies));
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao buscar filmes: " + e.getMessage()));
+            }
+        });
+
+        // Endpoint watchlist toggle
+        post("/api/recommendation/watched", (req, res) -> {
+            try {
+                int userId = req.attribute("userId");
+                JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
+                int movieId = bodyObj.get("movieId").getAsInt();
+
+                boolean watched = bodyObj.get("watched").getAsBoolean();
+                WatchLater watchLater = new WatchLater(userId, movieId);
+
+                boolean success = watchLaterService.toggleWatchLater(watchLater, watched);
+
+                if (success) {
+                    boolean currentStatus = watchLaterService.isInWatchLater(watchLater);
+                    return gson.toJson(Map.of(
+                            "status", "ok",
+                            "message", watched ? "Filme adicionado à watchlist" : "Filme removido da watchlist",
+                            "currentStatus", currentStatus));
+                } else {
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "Erro ao atualizar watchlist"));
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao processar watchlist: " + e.getMessage()));
+            }
+        });
+
+        // Endpoint favorite toggle
+        post("/api/recommendation/favorite", (req, res) -> {
+            try {
+                int userId = req.attribute("userId");
+
+                JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
+                int movieId = bodyObj.get("movieId").getAsInt();
+
+                boolean status = bodyObj.get("favorite").getAsBoolean();
+                Favorite favoriteObj = new Favorite(userId, movieId);
+
+                boolean success = favoriteService.toggleFavorite(favoriteObj, status);
+
+                if (success) {
+                    boolean currentStatus = favoriteService.isInFavorites(favoriteObj);
+                    flixAi.train(userId, movieId, currentStatus);
+                    return gson.toJson(Map.of(
+                            "status", "ok",
+                            "message", status ? "Filme adicionado aos favoritos" : "Filme removido dos favoritos",
+                            "currentStatus", currentStatus));
+                } else {
+                    res.status(400);
+                    return gson.toJson(Map.of("error", "Erro ao atualizar favoritos"));
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao processar favoritos: " + e.getMessage()));
+            }
+        });
+
+        // Endpoint para verificar status de watchlist
+        get("/api/movie/:movieId/watchlist", (req, res) -> {
+            try {
+                int userId = req.attribute("userId");
+                int movieId = Integer.parseInt(req.params("movieId"));
+
+                WatchLater watchLater = new WatchLater(userId, movieId);
+
+                boolean isInWatchlist = watchLaterService.isInWatchLater(watchLater);
+
+                return gson.toJson(Map.of(
+                        "status", "ok",
+                        "movieId", movieId,
+                        "isInWatchlist", isInWatchlist));
+
+            } catch (NumberFormatException e) {
+                res.status(400);
+                return gson.toJson(Map.of("error", "ID de filme inválido"));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao verificar watchlist: " + e.getMessage()));
+            }
+        });
+
+        // Endpoint para verificar status de favorito
+        get("/api/movie/:movieId/favorite", (req, res) -> {
+            try {
+                int userId = req.attribute("userId");
+                int movieId = Integer.parseInt(req.params("movieId"));
+
+                Favorite favoriteObj = new Favorite(userId, movieId);
+
+                boolean isFavorite = favoriteService.isInFavorites(favoriteObj);
+
+                return gson.toJson(Map.of(
+                        "status", "ok",
+                        "movieId", movieId,
+                        "isFavorite", isFavorite));
+
+            } catch (NumberFormatException e) {
+                res.status(400);
+                return gson.toJson(Map.of("error", "ID de filme inválido"));
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return gson.toJson(Map.of("error", "Erro ao verificar favorito: " + e.getMessage()));
+            }
+        });
+
+        // ==========================
+        // ======= USER =============
+        // ==========================
+
+        // Endpoint para buscar informações do usuário
         get("/api/users", (req, res) -> {
             try {
                 int currentUserId = req.attribute("userId");
 
-                // Prevent SQL injection
+                // Prevenir SQL injection
                 if (currentUserId <= 0) {
                     res.status(400);
                     return gson.toJson(Map.of("error", "ID de usuário inválido"));
@@ -564,6 +766,7 @@ public class Application {
             }
         });
 
+        // Endpoint para buscar informações privadas do usuário
         get("/api/private", (req, res) -> {
             try {
                 int targetUserId = req.attribute("userId");
@@ -609,6 +812,7 @@ public class Application {
             }
         });
 
+        // Endpoint para buscar informações do perfil de um usuário específico
         get("/api/profile/:userId", (req, res) -> {
             try {
                 int targetUserId = Integer.parseInt(req.params("userId"));
@@ -640,6 +844,7 @@ public class Application {
             }
         });
 
+        // Endpoint para buscar filmes recomendados para um usuário específico
         get("/api/profile/:userId/recommended", (req, res) -> {
             try {
                 int targetUserId = Integer.parseInt(req.params("userId"));
@@ -676,7 +881,7 @@ public class Application {
             }
         });
 
-        // Endpoint para update do usuário
+        // Endpoint para atualizar informações do perfil do usuário
         post("/api/profile/update", (req, res) -> {
             try {
                 int userId = req.attribute("userId");
@@ -828,6 +1033,10 @@ public class Application {
             }
         });
 
+        // =====================================//
+        // Endpoints de Avaliação de Filmes //
+        // =====================================//
+
         get("/api/rate/:movieId", (req, res) -> {
             try {
                 int userId = req.attribute("userId");
@@ -856,13 +1065,14 @@ public class Application {
             try {
                 int userId = req.attribute("userId");
                 int movieId = Integer.parseInt(req.params("movieId"));
-
                 boolean removed = feedbackService.removeRating(userId, movieId);
 
                 if (removed) {
+                    System.out.println("[🏅:🗑️] RATING DELETE SUCCESS: [userId: " + userId + ", movieId: " + movieId + "]");
                     res.status(200);
                     return gson.toJson(Map.of("status", "Avaliação removida com sucesso"));
                 } else {
+                    System.out.println("[🏅:🔴] RATING DELETE ERROR: [userId: " + userId + ", movieId: " + movieId + "]");
                     res.status(404);
                     return gson.toJson(Map.of("error", "Avaliação não encontrada"));
                 }
@@ -873,190 +1083,11 @@ public class Application {
             }
         });
 
-        // =====================================//
-        // Endpoints de Recomendação de Filmes //
-        // =====================================//
-
-        // Pega lista de filmes para o usuario avaliar
-        post("/api/feed", (req, res) -> {
-            int userId = req.attribute("userId");
-            JsonObject requestBody = gson.fromJson(req.body(), JsonObject.class);
-            int page = requestBody.has("page") ? requestBody.get("page").getAsInt() : 1;
-
-            try {
-                // 🔍 Gerar lista de candidatos
-                List<Integer> candidatos = movieService.getAllMoviesIds();
-
-                if (candidatos.isEmpty()) {
-                    res.status(400);
-                    return gson.toJson(Map.of("error", "Não há filmes disponíveis para gerar o feed."));
-                }
-
-                final int NUM_CANDIDATOS = 500;
-
-                Collections.shuffle(candidatos, new Random());
-                candidatos = candidatos.subList(0, Math.min(NUM_CANDIDATOS, candidatos.size()));
-
-                // 🔥 Chamar IA para gerar o feed
-                JsonObject aiResponse = flixAi.getFeed(userId, 50, candidatos);
-                JsonArray aiMoviesArray = aiResponse.getAsJsonArray("all_recommendations");
-
-                if (aiMoviesArray == null) {
-                    throw new RuntimeException("❌ Feed da IA retornou vazio ou inválido.");
-                }
-
-                List<Integer> aiMovieIds = new ArrayList<>();
-                aiMoviesArray.forEach(item -> {
-                    JsonArray pair = item.getAsJsonArray();
-                    int movieId = pair.get(0).getAsInt();
-                    aiMovieIds.add(movieId);
-                });
-
-                // 🔥 Buscar detalhes dos filmes da IA na TMDB
-                List<JsonObject> aiMoviesDetails = tmdb.getMoviesDetails(aiMovieIds);
-
-                System.out.println("[🎥] AI movies fetched: total = " + aiMoviesDetails.size());
-
-                // 🔍 Buscar mais filmes do discover
-                JsonArray discoverMovies = tmdb.getTopRatedMovies(page);
-
-                System.out.println("[🎥] Discover movies fetched: total = " + discoverMovies.size());
-
-                // 🔗 Combinar IA + discover
-                Map<Integer, JsonObject> uniqueMoviesMap = new HashMap<>();
-
-                aiMoviesDetails.forEach(movie -> {
-                    int id = movie.get("id").getAsInt();
-                    uniqueMoviesMap.put(id, movie);
-                });
-
-                discoverMovies.forEach(item -> {
-                    JsonObject movie = item.getAsJsonObject();
-                    int id = movie.get("id").getAsInt();
-                    uniqueMoviesMap.putIfAbsent(id, movie);
-                });
-
-                List<JsonObject> finalMovies = new ArrayList<>(uniqueMoviesMap.values());
-
-                System.out.println("[🎥] Movies fetched: total = " + finalMovies.size());
-
-                return gson.toJson(Map.of("status", "ok", "movies", finalMovies));
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.status(500);
-                return gson.toJson(Map.of("error", "Erro ao buscar filmes: " + e.getMessage()));
-            }
-        });
-
-        // Endpoint watchlist toggle
-        post("/api/recommendation/watched", (req, res) -> {
-            try {
-                int userId = req.attribute("userId");
-                JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
-                int movieId = bodyObj.get("movieId").getAsInt();
-                boolean watched = bodyObj.get("watched").getAsBoolean();
-
-                boolean success = watchLaterService.toggleWatchLater(userId, movieId, watched);
-
-                if (success) {
-                    boolean currentStatus = watchLaterService.isInWatchLater(userId, movieId);
-                    return gson.toJson(Map.of(
-                            "status", "ok",
-                            "message", watched ? "Filme adicionado à watchlist" : "Filme removido da watchlist",
-                            "currentStatus", currentStatus));
-                } else {
-                    res.status(400);
-                    return gson.toJson(Map.of("error", "Erro ao atualizar watchlist"));
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.status(500);
-                return gson.toJson(Map.of("error", "Erro ao processar watchlist: " + e.getMessage()));
-            }
-        });
-
-        // Endpoint favorite toggle
-        post("/api/recommendation/favorite", (req, res) -> {
-            try {
-                int userId = req.attribute("userId");
-                JsonObject bodyObj = JsonParser.parseString(req.body()).getAsJsonObject();
-                int movieId = bodyObj.get("movieId").getAsInt();
-                boolean favorite = bodyObj.get("favorite").getAsBoolean();
-
-                boolean success = favoriteService.toggleFavorite(userId, movieId, favorite);
-
-                if (success) {
-                    boolean currentStatus = favoriteService.isInFavorites(userId, movieId);
-                    flixAi.train(userId, movieId, currentStatus);
-                    return gson.toJson(Map.of(
-                            "status", "ok",
-                            "message", favorite ? "Filme adicionado aos favoritos" : "Filme removido dos favoritos",
-                            "currentStatus", currentStatus));
-                } else {
-                    res.status(400);
-                    return gson.toJson(Map.of("error", "Erro ao atualizar favoritos"));
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.status(500);
-                return gson.toJson(Map.of("error", "Erro ao processar favoritos: " + e.getMessage()));
-            }
-        });
-
-        // Endpoint para verificar status de watchlist
-        get("/api/movie/:movieId/watchlist", (req, res) -> {
-            try {
-                int userId = req.attribute("userId");
-                int movieId = Integer.parseInt(req.params("movieId"));
-
-                boolean isInWatchlist = watchLaterService.isInWatchLater(userId, movieId);
-
-                return gson.toJson(Map.of(
-                        "status", "ok",
-                        "movieId", movieId,
-                        "isInWatchlist", isInWatchlist));
-
-            } catch (NumberFormatException e) {
-                res.status(400);
-                return gson.toJson(Map.of("error", "ID de filme inválido"));
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.status(500);
-                return gson.toJson(Map.of("error", "Erro ao verificar watchlist: " + e.getMessage()));
-            }
-        });
-
-        // Endpoint para verificar status de favorito
-        get("/api/movie/:movieId/favorite", (req, res) -> {
-            try {
-                int userId = req.attribute("userId");
-                int movieId = Integer.parseInt(req.params("movieId"));
-
-                boolean isFavorite = favoriteService.isInFavorites(userId, movieId);
-
-                return gson.toJson(Map.of(
-                        "status", "ok",
-                        "movieId", movieId,
-                        "isFavorite", isFavorite));
-
-            } catch (NumberFormatException e) {
-                res.status(400);
-                return gson.toJson(Map.of("error", "ID de filme inválido"));
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.status(500);
-                return gson.toJson(Map.of("error", "Erro ao verificar favorito: " + e.getMessage()));
-            }
-        });
-
         // ========================================//
         // AI - Artificial Intelligence Endpoints //
         // ========================================//
 
-        // Endpoint 1
+        // Endpoint para enviar feedback de rating
         post("/api/rate", (req, res) -> {
             try {
                 int userId = req.attribute("userId");
@@ -1095,13 +1126,11 @@ public class Application {
                         operation = "CREATE";
                         message = "Rating criado";
                         currentRating = ratingValue;
-                        flixAi.train(userId, movieId, ratingValue);
                     }
                     case 2 -> { // UPDATE
                         operation = "UPDATE";
                         message = "Rating atualizado";
                         currentRating = ratingValue;
-                        flixAi.train(userId, movieId, ratingValue);
                     }
                     case 3 -> { // IGNORE
                         operation = "IGNORED";
@@ -1134,7 +1163,7 @@ public class Application {
             }
         });
 
-        // Endpoint 2
+        // Endpoint para receber recomendações de filmes
         get("/api/recommendation", (req, res) -> {
             int userId = req.attribute("userId");
 
@@ -1208,8 +1237,7 @@ public class Application {
         // Endpoints de Filmes //
         // =====================//
 
-        // Endpoint seila
-        // Endpoint atualizado com filtros avançados
+        // Endpoint de busca de filmes com filtros avançados
         get("/api/movies/search", (req, res) -> {
             try {
                 int userId = req.attribute("userId");
@@ -1393,6 +1421,7 @@ public class Application {
             }
         });
 
+        // Endpoint para verificar se um filme está nos favoritos do usuário
         get("/api/movie/:movieId/recommended", (req, res) -> {
             try {
                 int userId = req.attribute("userId"); // Usuário logado
@@ -1416,6 +1445,7 @@ public class Application {
             }
         });
 
+        // Endpoint para buscar detalhes de um filme
         get("/api/movie/:movieId/details", (req, res) -> {
             try {
                 int userId = req.attribute("userId");

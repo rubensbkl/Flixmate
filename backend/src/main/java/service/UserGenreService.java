@@ -1,7 +1,7 @@
 package service;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 import com.google.gson.JsonObject;
 
@@ -17,6 +17,13 @@ public class UserGenreService {
         this.userGenreDAO = userGenreDAO;
     }
 
+    /**
+     * Calcula a pontuação de um filme com base nos gêneros preferidos do usuário.
+     * 
+     * @param movie            O objeto JsonObject representando o filme
+     * @param preferredGenres  Lista de IDs dos gêneros preferidos do usuário
+     * @return A pontuação do filme com base nos gêneros preferidos
+     */
     public int calculateGenreScore(JsonObject movie, List<Integer> preferredGenres) {
         if (!movie.has("genre_ids")) {
             return 0;
@@ -34,40 +41,51 @@ public class UserGenreService {
         return score;
     }
 
-    // Create a method to get the preferred genres of a user
+    /**
+     * Obtém os gêneros preferidos de um usuário.
+     * 
+     * @param userId O ID do usuário
+     * @return Lista de gêneros preferidos do usuário
+     */
     public ArrayList<Genre> getPreferredGenres(int userId) {
         return userGenreDAO.getPreferredGenres(userId);
     }
 
-    // Validate if genreId is valid
+    /**
+     * Verifica se um gênero é válido com base no ID.
+     * 
+     * @param genreId O ID do gênero
+     * @return true se o gênero existir, false caso contrário
+     */
     public boolean isValidGenreId(int genreId) {
         return userGenreDAO.genreExists(genreId);
     }
 
-    // Create a method to add a preferred genre for a user
+    /**
+     * Adiciona um gênero preferido para um usuário.
+     * 
+     * @param userId   O ID do usuário
+     * @param genreId  O ID do gênero a ser adicionado
+     * @return true se o gênero foi adicionado com sucesso, false caso contrário
+     */
     public boolean addPreferredGenre(int userId, int genreId) {
-        // Check if the genreId is valid
         if (!isValidGenreId(genreId)) {
             System.err.println("Invalid genre ID: " + genreId);
             return false;
         }
-        // Check if the userId is valid
         if (userId <= 0) {
             System.err.println("Invalid user ID: " + userId);
             return false;
         }
-        // Check if the genre already exists for the user
         if (userGenreDAO.getPreferredGenres(userId).stream().anyMatch(g -> g.getId() == genreId)) {
             System.err.println("Genre already exists for user " + userId);
             return false;
         }
-        // Get the genre object from the genreId
         Genre genre = userGenreDAO.getGenreById(genreId);
         if (genre == null) {
             System.err.println("Genre not found for ID: " + genreId);
             return false;
         }
-        // Insert the new user genre
         UserGenre userGenre = new UserGenre(userId, genreId);
         boolean result = userGenreDAO.insert(userGenre);
         if (result) {
@@ -78,12 +96,13 @@ public class UserGenreService {
         return result;
 
     }
-
+    
     /**
-     * Removes all preferred genres for a user.
+     * Remove um gênero preferido de um usuário.
      * 
-     * @param userId The ID of the user
-     * @return true if the operation was successful, false otherwise
+     * @param userId   O ID do usuário
+     * @param genreId  O ID do gênero a ser removido
+     * @return true se o gênero foi removido com sucesso, false caso contrário
      */
     public boolean removeAllPreferredGenres(int userId) {
         return userGenreDAO.removeAllByUserId(userId);

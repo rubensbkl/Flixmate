@@ -1,5 +1,5 @@
+import { getCurrentUser, getToken } from "./auth";
 import { movieCache } from "./cache";
-import { getToken, getCurrentUser } from "./auth";
 
 // Função auxiliar para obter o token
 const getAuthToken = () => {
@@ -7,7 +7,7 @@ const getAuthToken = () => {
 };
 
 // Função auxiliar para obter userId
-const getUserId = () => {
+export const getUserId = () => {
     const user = getCurrentUser();
     return user?.userId || null;
 };
@@ -597,5 +597,26 @@ export const checkMovieRecommended = async (movieId) => {
     } catch (error) {
         console.error("❌ Erro ao verificar recomendação:", error);
         return false;
+    }
+};
+
+export const verifyUser = async () => {
+    console.log("🔍 Verificando usuário autenticado");
+
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/verify`, {
+            method: "GET",
+            headers: getAuthHeaders(),
+        });
+
+        if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
+
+        const data = await res.json();
+        console.log("✅ Usuário verificado:", data);
+
+        return data;
+    } catch (error) {
+        console.error("❌ Erro ao verificar usuário:", error);
+        throw error;
     }
 };

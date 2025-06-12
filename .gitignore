@@ -30,6 +30,9 @@ backend/.mvn/
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+
+*.sh
+
 # React Stuff and Compiled Files
 cinematch/target/
 cinematch/.idea/*

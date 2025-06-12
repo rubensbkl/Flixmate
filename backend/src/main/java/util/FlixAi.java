@@ -4,19 +4,23 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import model.Feedback;
-
 public class FlixAi {
 
-    private static final String AI_URL = "http://ai:5005"; // ou o endereço do container
+    private static final String AI_URL = "http://ai:5005";
 
+    /**
+     * Treina a IA com o feedback do usuário sobre um filme.
+     *
+     * @param userId   ID do usuário
+     * @param movieId  ID do filme
+     * @param rating   true se o usuário gostou do filme, false caso contrário
+     */
     public void train(int userId, int movieId, boolean rating) {
         JsonObject ratingObj = new JsonObject();
         ratingObj.addProperty("user", String.valueOf(userId));
@@ -48,6 +52,14 @@ public class FlixAi {
         }
     }
 
+    /**
+     * Recomenda filmes para um usuário com base em uma lista de IDs de candidatos.
+     *
+     * @param userId        ID do usuário
+     * @param candidateIds  Lista de IDs de filmes candidatos
+     * @return JsonObject contendo as recomendações
+     * @throws Exception se ocorrer um erro ao enviar a solicitação
+     */
     public JsonObject recommend(int userId, List<Integer> candidateIds) throws Exception {
         JsonObject payload = new JsonObject();
         payload.addProperty("user", String.valueOf(userId));
@@ -94,6 +106,15 @@ public class FlixAi {
         return result;
     }
 
+    /**
+     * Obtém o feed de recomendações para um usuário.
+     *
+     * @param userId       ID do usuário
+     * @param topN         Número máximo de recomendações a serem retornadas
+     * @param candidateIds Lista de IDs de filmes candidatos (opcional)
+     * @return JsonObject contendo o feed de recomendações
+     * @throws Exception se ocorrer um erro ao enviar a solicitação
+     */
     public JsonObject getFeed(int userId, int topN, List<Integer> candidateIds) throws Exception {
         JsonObject payload = new JsonObject();
         payload.addProperty("user", String.valueOf(userId));
@@ -124,4 +145,5 @@ public class FlixAi {
 
         return JsonParser.parseString(response.body()).getAsJsonObject();
     }
+
 }

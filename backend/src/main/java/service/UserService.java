@@ -1,52 +1,43 @@
 package service;
 
 import java.util.ArrayList;
+
 import dao.UserDAO;
 import model.User;
 
-/**
- * Service class responsible for user-related business logic.
- * This class acts as an intermediary between the controllers and the data
- * access objects.
- */
 public class UserService {
     private UserDAO userDAO;
 
-    /**
-     * Constructs a new UserService with the required dependencies.
-     *
-     * @param userDAO The data access object for user operations
-     */
     public UserService(UserDAO userDAO) {
         this.userDAO = userDAO;
     }
 
     /**
-     * Authenticates a user with the provided email and password.
+     * Autentica um usuário com base no email e senha fornecidos.
      *
-     * @param email    The email of the user to authenticate
-     * @param password The password to verify
-     * @return true if authentication is successful, false otherwise
+     * @param email    O email do usuário
+     * @param password A senha do usuário
+     * @return true se a autenticação for bem-sucedida, false caso contrário
      */
     public boolean authenticateUser(String email, String password) {
         return userDAO.auth(email, password);
     }
 
     /**
-     * Retrieves a user by their email address.
+     * Retorna um usuário com base no email fornecido.
      *
-     * @param email The email of the user to retrieve
-     * @return The User object if found, null otherwise
+     * @param email O email do usuário
+     * @return O objeto User correspondente ao email, ou null se não encontrado
      */
     public User getUserByEmail(String email) {
         return userDAO.getByEmail(email);
     }
 
     /**
-     * Inserts a new user into the database.
+     * Insere um novo usuário no banco de dados.
      *
-     * @param user The User object to insert
-     * @return true if the insertion was successful, false otherwise
+     * @param user O objeto User a ser inserido
+     * @return true se a inserção foi bem-sucedida, false caso contrário
      */
     public boolean insertUser(User user) {
         if (userDAO.insert(user)) {
@@ -56,50 +47,63 @@ public class UserService {
     }
 
     /**
-     * Checks if an email address already exists in the database.
+     * Verifica se um endereço de email já existe no banco de dados.
      *
-     * @param email The email to check
-     * @return true if the email exists, false otherwise
+     * @param email O email a ser verificado
+     * @return true se o email existir, false caso contrário
      */
     public boolean emailExists(String email) {
         return userDAO.emailExists(email);
     }
 
     /**
-     * Retrieves a user by their ID.
+     * Obtém um usuário com base no ID fornecido.
      *
-     * @param id The ID of the user to retrieve
-     * @return The User object if found, null otherwise
+     * @param id O ID do usuário
+     * @return O objeto User correspondente ao ID, ou null se não encontrado
      */
     public User getUserById(int id) {
         return userDAO.getById(id);
     }
 
+    /**
+     * Atualiza as informações de um usuário no banco de dados.
+     *
+     * @param user O objeto User contendo os dados atualizados
+     * @return true se a atualização foi bem-sucedida, false caso contrário
+     */
     public ArrayList<User> search(String query, int page, int limit) throws Exception {
         return userDAO.search(query, page, limit);
     }
 
+    /**
+     * Conta o número de resultados de pesquisa com base em uma consulta.
+     *
+     * @param query A consulta de pesquisa
+     * @return O número de resultados correspondentes à consulta
+     */
     public int countSearchResults(String query) {
         return userDAO.countSearchResults(query);
     }
 
     /**
-     * Busca os filmes mais populares do banco local
-     * Ordena por popularidade (campo popularity) em ordem decrescente
+     * Obtém todos os usuários do banco de dados com paginação.
+     *
+     * @param page  O número da página para paginação
+     * @param limit O número máximo de resultados por página
+     * @return Uma lista de usuários correspondentes à paginação
      */
     public ArrayList<User> getAllUsers(int page, int limit) {
         return userDAO.getAllUsers(page, limit);
     }
 
     /**
-     * Conta o total de usuarios no banco
+     * Conta o número total de usuários no banco de dados.
+     *
+     * @return O número total de usuários
      */
     public int getTotalUsersCount() {
         return userDAO.getTotalUsersCount();
     }
-
-    
-
-
 
 }

@@ -22,10 +22,8 @@ const nextConfig = {
     poweredByHeader: false,
     serverExternalPackages: [],
     
-    // ✅ Apenas configurações experimentais válidas
     experimental: {
         optimizePackageImports: ['@heroicons/react', 'lucide-react'],
-        // ✅ Configuração Turbopack movida para experimental
         turbo: {
             memoryLimit: 512,
             rules: {

@@ -153,10 +153,10 @@ public class UserGenreDAO extends DAO {
     }
 
     /**
-     * Removes all preferred genres for a specific user.
+     * Remove todos os gêneros preferidos de um usuário
      * 
-     * @param userId The ID of the user
-     * @return true if the operation was successful, false otherwise
+     * @param userId ID do usuário
+     * @return true se a remoção foi bem-sucedida, false caso contrário
      */
     public boolean removeAllByUserId(int userId) {
         boolean status = false;

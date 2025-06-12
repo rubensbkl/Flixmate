@@ -1,35 +1,50 @@
 package service;
 
-import dao.FavoriteDAO;
-import dao.WatchLaterDAO;   
 import java.util.ArrayList;
 
-/**
- * Service class for managing the "Watch Later" functionality.
- * This class interacts with the WatchLaterDAO to retrieve movie IDs
- * that a user has marked to watch later.
- */
+import dao.WatchLaterDAO;
+import model.WatchLater;
+
 public class WatchLaterService {
     private WatchLaterDAO watchLaterDAO;
-    
+
     public WatchLaterService(WatchLaterDAO watchLaterDAO) {
         this.watchLaterDAO = watchLaterDAO;
     }
-    
+
+    /**
+     * Retorna uma lista de IDs de filmes que o usuário deseja assistir mais tarde.
+     *
+     * @param userId o ID do usuário
+     * @return uma lista de IDs de filmes
+     */
     public ArrayList<Integer> getWatchLaterMovies(int userId) {
         return watchLaterDAO.getWatchLaterMovieIds(userId);
     }
 
-    public boolean toggleWatchLater(int userId, int movieId, boolean watched) {
-    if (watched) {
-        return watchLaterDAO.addToWatchLater(userId, movieId);
-    } else {
-        return watchLaterDAO.removeFromWatchLater(userId, movieId);
+    /**
+     * Adiciona ou remove um filme da lista de "assistir mais tarde" do usuário.
+     *
+     * @param watchLater o objeto WatchLater contendo o ID do usuário e do filme
+     * @param watched    true para adicionar o filme à lista, false para removê-lo
+     * @return true se a operação foi bem-sucedida, false caso contrário
+     */
+    public boolean toggleWatchLater(WatchLater watchLater, boolean watched) {
+        if (watched) {
+            return watchLaterDAO.addToWatchLater(watchLater);
+        } else {
+            return watchLaterDAO.removeFromWatchLater(watchLater);
+        }
     }
-}
 
-public boolean isInWatchLater(int userId, int movieId) {
-    return watchLaterDAO.isInWatchLater(userId, movieId);
-}
+    /**
+     * Verifica se um filme está na lista de "assistir mais tarde" do usuário.
+     *
+     * @param watchLater o objeto WatchLater contendo o ID do usuário e do filme
+     * @return true se o filme estiver na lista, false caso contrário
+     */
+    public boolean isInWatchLater(WatchLater watchLater) {
+        return watchLaterDAO.isInWatchLater(watchLater);
+    }
 
 }
