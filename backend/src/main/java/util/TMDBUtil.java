@@ -89,17 +89,15 @@ public class TMDBUtil {
         return movies;
     }
 
+
     /**
-     * Busca um filme aleatório com alta popularidade
+     * Busca filmes populares
      * 
-     * @param page                Página de resultados a ser buscada
-     * @param popularityThreshold Limiar de popularidade para considerar um filme
-     *                            "popular"
-     * @return JsonObject do filme selecionado ou null se nenhum filme for
-     *         encontrado
+     * @param page Página de resultados a ser buscada
+     * @return JsonArray com os filmes populares ou null em caso de erro
      */
-    public JsonArray getTopRatedMovies(int page) throws IOException, InterruptedException {
-        String url = String.format("https://api.themoviedb.org/3/movie/top_rated?api_key=%s&page=%d", API_KEY, page);
+    public JsonArray getPopularMovies(int page) throws IOException, InterruptedException {
+        String url = String.format("https://api.themoviedb.org/3/movie/popular?api_key=%s&page=%d", API_KEY, page);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .GET()
@@ -107,7 +105,7 @@ public class TMDBUtil {
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() != 200) {
-            throw new RuntimeException("Erro ao buscar filmes mais bem avaliados: " + response.body());
+            throw new RuntimeException("Erro ao buscar filmes populares: " + response.body());
         }
 
         JsonObject jsonResponse = JsonParser.parseString(response.body()).getAsJsonObject();
