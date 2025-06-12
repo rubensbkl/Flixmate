@@ -390,7 +390,7 @@ export default function Home() {
             </div>
 
             {/* Conteúdo principal */}
-            <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] md:h-screen overflow-hidden pb-12 md:pb-0">
+            <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] md:h-screen overflow-hidden">
                 <div className="flex-1 flex flex-col overflow-hidden">
                     {/* Barra de progresso com indicador de treinamento */}
                     <div className="relative h-1 w-full bg-foreground">
@@ -496,7 +496,7 @@ export default function Home() {
                     </div>
 
                     {/* Botões de interação - Posicionados no fundo da tela com padding para evitar sobreposição da navbar mobile */}
-                    <div className="flex space-x-4 py-4 md:py-2 justify-center mb-20 md:mb-4">
+                    <div className="flex space-x-4 py-4 md:py-2 justify-center pb-24 md:pb-4">
                         <button
                             onClick={skipMovie}
                             disabled={!canSwipe}
