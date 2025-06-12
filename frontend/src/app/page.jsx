@@ -178,7 +178,6 @@ export default function Home() {
             try {
                 await setMovieRate(trainingData.movieId, trainingData.liked);
                 setCompletedTrainingRequests(prev => prev + 1);
-                console.log(`✅ Treinamento enviado: ${trainingData.movieTitle} - ${trainingData.liked ? 'Curtiu' : 'Descartou'}`);
             } catch (error) {
                 console.error(`❌ Erro no treinamento: ${trainingData.movieTitle}`, error);
                 // Re-adicionar à fila em caso de erro (máximo 3 tentativas)
@@ -391,7 +390,7 @@ export default function Home() {
             </div>
 
             {/* Conteúdo principal */}
-            <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] md:h-screen overflow-hidden ">
+            <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] md:h-screen overflow-hidden pb-24 md:pb-0">
                 <div className="flex-1 flex flex-col overflow-hidden">
                     {/* Barra de progresso com indicador de treinamento */}
                     <div className="relative h-1 w-full bg-foreground">
