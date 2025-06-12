@@ -383,14 +383,14 @@ export default function Home() {
         <div className="flex flex-col md:flex-row h-screen overflow-hidden">
             {/* Navbar - Fixed height for mobile, fixed width for desktop */}
             <div
-                className={`${isMobile ? "h-16" : "md:w-64 md:min-h-screen"
+                className={`${isMobile ? "" : "md:w-64 md:min-h-screen"
                     }`}
             >
                 <Navbar />
             </div>
 
             {/* Conteúdo principal */}
-            <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] md:h-screen overflow-hidden pb-24 md:pb-0">
+            <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] md:h-screen overflow-hidden pb-6 md:pb-0">
                 <div className="flex-1 flex flex-col overflow-hidden">
                     {/* Barra de progresso com indicador de treinamento */}
                     <div className="relative h-1 w-full bg-foreground">
