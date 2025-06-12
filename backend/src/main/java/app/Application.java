@@ -551,7 +551,6 @@ public class Application {
             int page = requestBody.has("page") ? requestBody.get("page").getAsInt() : 1;
 
             try {
-                // 🔍 Gerar lista de candidatos
                 List<Integer> candidatos = movieService.getAllMoviesIds();
 
                 if (candidatos.isEmpty()) {
@@ -564,8 +563,7 @@ public class Application {
                 Collections.shuffle(candidatos, new Random());
                 candidatos = candidatos.subList(0, Math.min(NUM_CANDIDATOS, candidatos.size()));
 
-                // 🔥 Chamar IA para gerar o feed
-                JsonObject aiResponse = flixAi.getFeed(userId, 50, candidatos);
+                JsonObject aiResponse = flixAi.getFeed(userId, 20, candidatos);
                 JsonArray aiMoviesArray = aiResponse.getAsJsonArray("all_recommendations");
 
                 if (aiMoviesArray == null) {
@@ -579,17 +577,14 @@ public class Application {
                     aiMovieIds.add(movieId);
                 });
 
-                // 🔥 Buscar detalhes dos filmes da IA na TMDB
                 List<JsonObject> aiMoviesDetails = tmdb.getMoviesDetails(aiMovieIds);
 
                 System.out.println("[🎥] AI movies fetched: total = " + aiMoviesDetails.size());
 
-                // 🔍 Buscar mais filmes do discover
-                JsonArray discoverMovies = tmdb.getTopRatedMovies(page);
+                JsonArray discoverMovies = tmdb.getPopularMovies(page);
 
                 System.out.println("[🎥] Discover movies fetched: total = " + discoverMovies.size());
 
-                // 🔗 Combinar IA + discover
                 Map<Integer, JsonObject> uniqueMoviesMap = new HashMap<>();
 
                 aiMoviesDetails.forEach(movie -> {
@@ -604,6 +599,8 @@ public class Application {
                 });
 
                 List<JsonObject> finalMovies = new ArrayList<>(uniqueMoviesMap.values());
+
+                Collections.shuffle(finalMovies, new SecureRandom());
 
                 System.out.println("[🎥] Movies fetched: total = " + finalMovies.size());
 
