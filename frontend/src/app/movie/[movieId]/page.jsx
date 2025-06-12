@@ -8,6 +8,7 @@ import {
     deleteMovieRecommendation,
     fetchMovieById,
     getMovieRating,
+    removeMovieRating,
     setMovieRate,
     updateWatchlistMovie,
     updatefavoriteMovie
@@ -101,15 +102,22 @@ export default function MovieProfilePage() {
 
         try {
             setRatingLoading(true);
-            const response = await setMovieRate(movieId, true);
-            if (response && 'currentRating' in response) {
-                setRating(response.currentRating);
+
+            if (rating === true) {
+                // Se já está curtido, remover
+                await removeMovieRating(movieId);
+                setRating(null);
+                showToast("Curtir removido com sucesso!", "success");
+            } else {
+                const response = await setMovieRate(movieId, true);
+                if (response && 'currentRating' in response) {
+                    setRating(response.currentRating);
+                    showToast("Filme curtido!", "success");
+                }
             }
-        } catch {
-            try {
-                const currentRating = await getMovieRating(movieId);
-                setRating(currentRating);
-            } catch { }
+        } catch (error) {
+            console.error("Erro ao curtir/remover curtir:", error);
+            showToast("Erro ao processar curtida", "error");
         } finally {
             setRatingLoading(false);
         }
@@ -120,15 +128,22 @@ export default function MovieProfilePage() {
 
         try {
             setRatingLoading(true);
-            const response = await setMovieRate(movieId, false);
-            if (response && 'currentRating' in response) {
-                setRating(response.currentRating);
+
+            if (rating === false) {
+                // Se já está descurtido, remover
+                await removeMovieRating(movieId);
+                setRating(null);
+                showToast("Descurtir removido com sucesso!", "success");
+            } else {
+                const response = await setMovieRate(movieId, false);
+                if (response && 'currentRating' in response) {
+                    setRating(response.currentRating);
+                    showToast("Filme descurtido!", "success");
+                }
             }
-        } catch {
-            try {
-                const currentRating = await getMovieRating(movieId);
-                setRating(currentRating);
-            } catch { }
+        } catch (error) {
+            console.error("Erro ao descurtir/remover descurtir:", error);
+            showToast("Erro ao processar descurtida", "error");
         } finally {
             setRatingLoading(false);
         }

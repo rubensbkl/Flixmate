@@ -1,22 +1,23 @@
 "use client";
 
-import Navbar from "@/components/Navbar";
 import MovieGrid from "@/components/MovieGrid";
+import Navbar from "@/components/Navbar";
 import {
+    fetchRecommendations,
     fetchUserFavorites,
     fetchUserProfile,
     fetchUserWatchList,
-    fetchRecommendations,
+    verifyUser,
 } from "@/lib/api";
 import {
-    UserIcon,
-    FilmIcon,
     BookmarkIcon,
-    StarIcon
+    FilmIcon,
+    StarIcon,
+    UserIcon
 } from "@heroicons/react/24/outline";
 import {
-    FilmIcon as FilmIconSolid,
     BookmarkIcon as BookmarkIconSolid,
+    FilmIcon as FilmIconSolid,
     StarIcon as StarIconSolid
 } from "@heroicons/react/24/solid";
 import { useParams } from "next/navigation";
@@ -40,6 +41,7 @@ export default function UserProfilePage() {
     const [activeTab, setActiveTab] = useState('recommended');
     const [error, setError] = useState(null);
     const [isMobile, setIsMobile] = useState(false);
+    const [isCurrentUser, setIsCurrentUser] = useState(false); // State to track if the profile belongs to the logged-in user
 
     useEffect(() => {
         const checkMobile = () => {
@@ -95,6 +97,22 @@ export default function UserProfilePage() {
         if (userId) {
             loadUserInfoAndCounts();
         }
+    }, [userId]);
+
+    // Verificar se o perfil pertence ao usuário logado
+    useEffect(() => {
+        const checkCurrentUser = async () => {
+            try {
+                const verifiedUser = await verifyUser();
+                if (verifiedUser.valid && verifiedUser.user.id === parseInt(userId)) {
+                    setIsCurrentUser(true);
+                }
+            } catch (err) {
+                console.error("Erro ao verificar usuário:", err);
+            }
+        };
+
+        checkCurrentUser();
     }, [userId]);
 
     // Agora não precisamos mais carregar dados quando a aba muda, apenas mostrar loading do conteúdo
@@ -198,138 +216,148 @@ export default function UserProfilePage() {
     const activeMovies = getActiveTabData();
 
     return (
-            <div className={`flex md:flex-row min-h-screen bg-background ${isMobile ? 'pb-20' : ''}`}>
-                <div className="md:w-64 md:min-h-screen">
-                    <Navbar />
-                </div>
+        <div className={`flex md:flex-row min-h-screen bg-background ${isMobile ? 'pb-20' : ''}`}>
+            <div className="md:w-64 md:min-h-screen">
+                <Navbar />
+            </div>
 
-                <main className="flex-1 overflow-y-auto overflow-x-hidden">
-                    <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
-
-                        {/* Header do Perfil - Estilo Instagram */}
-                        <div className="md:flex mb-4 justify-around items-center">
-                            <div className="flex items-center">
-                                {/* Foto de Perfil */}
-                                <div className="h-20 w-20 ml-3 md:h-24 md:w-24 rounded-full bg-foreground flex items-center justify-center border-2 border-accent/20 overflow-hidden">
-                                    <UserIcon className="h-8 w-8 md:h-12 md:w-12 text-secondary" />
-                                </div>
-
-                                {/* Informações do Usuário */}
-                                <div className="ml-6">
-                                    <h1 className="text-xl font-semibold text-primary mb-1">
-                                        {userInfo.firstName} {userInfo.lastName}
-                                    </h1>
-                                    <p className="text-secondary text-sm">{userInfo.email}</p>
-                                </div>
+            <main className="flex-1 overflow-y-auto overflow-x-hidden">
+                <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
+                    {/* Header do Perfil - Estilo Instagram */}
+                    <div className="md:flex mb-4 justify-around items-center">
+                        <div className="flex items-center">
+                            {/* Foto de Perfil */}
+                            <div className="h-20 w-20 ml-3 md:h-24 md:w-24 rounded-full bg-foreground flex items-center justify-center border-2 border-accent/20 overflow-hidden">
+                                <UserIcon className="h-8 w-8 md:h-12 md:w-12 text-secondary" />
                             </div>
 
-                            {/* Estatísticas */}
-                            <div className="flex gap-8 justify-around mt-6 md:mt-0">
-                                <div className="text-center">
-                                    <span className="block text-xl font-semibold text-primary">
-                                        {loadingCounts ? (
-                                            <div className="w-6 h-6 bg-foreground animate-pulse rounded mx-auto"></div>
-                                        ) : (
-                                            stats.recommended
-                                        )}
-                                    </span>
-                                    <span className="text-sm text-secondary">recomendados</span>
-                                </div>
-                                <div className="text-center">
-                                    <span className="block text-xl font-semibold text-primary">
-                                        {loadingCounts ? (
-                                            <div className="w-6 h-6 bg-foreground animate-pulse rounded mx-auto"></div>
-                                        ) : (
-                                            stats.favorites
-                                        )}
-                                    </span>
-                                    <span className="text-sm text-secondary">favoritos</span>
-                                </div>
-                                <div className="text-center">
-                                    <span className="block text-xl font-semibold text-primary">
-                                        {loadingCounts ? (
-                                            <div className="w-6 h-6 bg-foreground animate-pulse rounded mx-auto"></div>
-                                        ) : (
-                                            stats.watchlater
-                                        )}
-                                    </span>
-                                    <span className="text-sm text-secondary">assistir depois</span>
-                                </div>
+                            {/* Informações do Usuário */}
+                            <div className="ml-6">
+                                <h1 className="text-xl font-semibold text-primary mb-1">
+                                    {userInfo.firstName} {userInfo.lastName}
+                                </h1>
+                                <p className="text-secondary text-sm">{userInfo.email}</p>
                             </div>
                         </div>
 
-                        {/* Separador */}
-                        <div className="border-t border-foreground"></div>
-
-                        {/* Abas de Navegação - Estilo Instagram */}
-                        <div className="flex justify-center border-b border-foreground mb-6 justify-around">
-                            {/* Aba Recomendados */}
-                            <button
-                                onClick={() => handleTabChange('recommended')}
-                                className={`flex items-center md:gap-2 py-3 transition-colors ${activeTab === 'recommended'
-                                        ? 'text-accent border-b-2 border-accent'
-                                        : 'text-secondary hover:text-primary'
-                                    }`}
-                            >
-                                {activeTab === 'recommended' ? (
-                                    <FilmIconSolid className="h-6 w-6" />
-                                ) : (
-                                    <FilmIcon className="h-6 w-6" />
-                                )}
-                                <span className="font-medium text-sm uppercase tracking-wide hidden md:block">
-                                    Recomendados
+                        {/* Estatísticas */}
+                        <div className="flex gap-8 justify-around mt-6 md:mt-0">
+                            <div className="text-center">
+                                <span className="block text-xl font-semibold text-primary">
+                                    {loadingCounts ? (
+                                        <div className="w-6 h-6 bg-foreground animate-pulse rounded mx-auto"></div>
+                                    ) : (
+                                        stats.recommended
+                                    )}
                                 </span>
-                            </button>
-
-                            {/* Aba Assistir Depois */}
-                            <button
-                                onClick={() => handleTabChange('watchlater')}
-                                className={`flex items-center md:gap-2 py-3 transition-colors ${activeTab === 'watchlater'
-                                        ? 'text-accent border-b-2 border-accent'
-                                        : 'text-secondary hover:text-primary'
-                                    }`}
-                            >
-                                {activeTab === 'watchlater' ? (
-                                    <BookmarkIconSolid className="h-6 w-6" />
-                                ) : (
-                                    <BookmarkIcon className="h-6 w-6" />
-                                )}
-                                <span className="font-medium text-sm uppercase tracking-wide hidden md:block">
-                                    Assistir Depois
+                                <span className="text-sm text-secondary">recomendados</span>
+                            </div>
+                            <div className="text-center">
+                                <span className="block text-xl font-semibold text-primary">
+                                    {loadingCounts ? (
+                                        <div className="w-6 h-6 bg-foreground animate-pulse rounded mx-auto"></div>
+                                    ) : (
+                                        stats.favorites
+                                    )}
                                 </span>
-                            </button>
-
-                            {/* Aba Favoritos */}
-                            <button
-                                onClick={() => handleTabChange('favorites')}
-                                className={`flex items-center md:gap-2 py-3 transition-colors ${activeTab === 'favorites'
-                                        ? 'text-accent border-b-2 border-accent'
-                                        : 'text-secondary hover:text-primary'
-                                    }`}
-                            >
-                                {activeTab === 'favorites' ? (
-                                    <StarIconSolid className="h-6 w-6" />
-                                ) : (
-                                    <StarIcon className="h-6 w-6" />
-                                )}
-                                <span className="font-medium text-sm uppercase tracking-wide hidden md:block">
-                                    Favoritos
+                                <span className="text-sm text-secondary">favoritos</span>
+                            </div>
+                            <div className="text-center">
+                                <span className="block text-xl font-semibold text-primary">
+                                    {loadingCounts ? (
+                                        <div className="w-6 h-6 bg-foreground animate-pulse rounded mx-auto"></div>
+                                    ) : (
+                                        stats.watchlater
+                                    )}
                                 </span>
-                            </button>
-                        </div>
-
-                        {/* Conteúdo da Aba Ativa */}
-                        <div className="min-h-[400px]">
-                            <MovieGrid
-                                movies={activeMovies}
-                                loading={loadingContent || loadingCounts}
-                                emptyMessage={getEmptyMessage()}
-                                emptyIcon={getEmptyIcon()}
-                            />
+                                <span className="text-sm text-secondary">assistir depois</span>
+                            </div>
                         </div>
                     </div>
-                </main>
-            </div>
-        
+
+                    {/* Botão de Editar Perfil */}
+                    {isCurrentUser && (
+                        <div className="text-center mb-6">
+                            <button
+                                onClick={() => window.location.href = "/profile/edit"}
+                                className="px-4 py-2 md:px-6 md:py-3 bg-accent text-background text-sm md:text-base font-semibold rounded-lg md:rounded-full hover:bg-accent-dark transition-shadow shadow-sm md:shadow-md hover:shadow-lg"
+                            >
+                                Editar Perfil
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Separador */}
+                    <div className="border-t border-foreground"></div>
+
+                    {/* Abas de Navegação - Estilo Instagram */}
+                    <div className="flex justify-center border-b border-foreground mb-6 justify-around">
+                        {/* Aba Recomendados */}
+                        <button
+                            onClick={() => handleTabChange('recommended')}
+                            className={`flex items-center md:gap-2 py-3 transition-colors ${activeTab === 'recommended'
+                                    ? 'text-accent border-b-2 border-accent'
+                                    : 'text-secondary hover:text-primary'
+                                }`}
+                        >
+                            {activeTab === 'recommended' ? (
+                                <FilmIconSolid className="h-6 w-6" />
+                            ) : (
+                                <FilmIcon className="h-6 w-6" />
+                            )}
+                            <span className="font-medium text-sm uppercase tracking-wide hidden md:block">
+                                Recomendados
+                            </span>
+                        </button>
+
+                        {/* Aba Assistir Depois */}
+                        <button
+                            onClick={() => handleTabChange('watchlater')}
+                            className={`flex items-center md:gap-2 py-3 transition-colors ${activeTab === 'watchlater'
+                                    ? 'text-accent border-b-2 border-accent'
+                                    : 'text-secondary hover:text-primary'
+                                }`}
+                        >
+                            {activeTab === 'watchlater' ? (
+                                <BookmarkIconSolid className="h-6 w-6" />
+                            ) : (
+                                <BookmarkIcon className="h-6 w-6" />
+                            )}
+                            <span className="font-medium text-sm uppercase tracking-wide hidden md:block">
+                                Assistir Depois
+                            </span>
+                        </button>
+
+                        {/* Aba Favoritos */}
+                        <button
+                            onClick={() => handleTabChange('favorites')}
+                            className={`flex items-center md:gap-2 py-3 transition-colors ${activeTab === 'favorites'
+                                    ? 'text-accent border-b-2 border-accent'
+                                    : 'text-secondary hover:text-primary'
+                                }`}
+                        >
+                            {activeTab === 'favorites' ? (
+                                <StarIconSolid className="h-6 w-6" />
+                            ) : (
+                                <StarIcon className="h-6 w-6" />
+                            )}
+                            <span className="font-medium text-sm uppercase tracking-wide hidden md:block">
+                                Favoritos
+                            </span>
+                        </button>
+                    </div>
+
+                    {/* Conteúdo da Aba Ativa */}
+                    <div className="min-h-[400px]">
+                        <MovieGrid
+                            movies={activeMovies}
+                            loading={loadingContent || loadingCounts}
+                            emptyMessage={getEmptyMessage()}
+                            emptyIcon={getEmptyIcon()}
+                        />
+                    </div>
+                </div>
+            </main>
+        </div>
     );
 }

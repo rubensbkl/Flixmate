@@ -1,4 +1,3 @@
-// components/MovieMatchModal.jsx
 "use client";
 
 import { HeartIcon, XMarkIcon } from "@heroicons/react/24/solid";

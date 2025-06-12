@@ -107,10 +107,25 @@ public class MovieService {
         return movieDAO.exists(movieId);
     }
 
+    /**
+     * Busca filmes com base em uma consulta de pesquisa
+     * 
+     * @param query A consulta de pesquisa
+     * @param page  O número da página para paginação
+     * @param limit O número máximo de resultados por página
+     * @return Uma lista de filmes correspondentes à consulta
+     * @throws Exception Se ocorrer um erro durante a busca
+     */
     public ArrayList<Movie> search(String query, int page, int limit) throws Exception {
         return movieDAO.search(query, page, limit);
     }
 
+    /**
+     * Conta o número de resultados de pesquisa com base em uma consulta
+     * 
+     * @param query A consulta de pesquisa
+     * @return O número de resultados correspondentes à consulta
+     */
     public int countSearchResults(String query) {
         return movieDAO.countSearchResults(query);
     }

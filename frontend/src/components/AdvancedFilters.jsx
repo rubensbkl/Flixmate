@@ -1,10 +1,12 @@
+"use client";
+
 import {
-    Bars3BottomLeftIcon,
-    CalendarDaysIcon,
-    ChevronDownIcon,
-    FunnelIcon,
-    TagIcon,
-    XMarkIcon
+  Bars3BottomLeftIcon,
+  CalendarDaysIcon,
+  ChevronDownIcon,
+  FunnelIcon,
+  TagIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useEffect, useState } from 'react';
 

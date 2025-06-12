@@ -1,9 +1,11 @@
 "use client";
+import CustomDatePicker from "@/components/CustomDatePicker";
 import { useAuth } from "@/contexts/AuthContext";
+import "@/styles/react-datepicker.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { DateInputWithPlaceholder } from "@/components/DateInputWithPlaceholder";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function SignUpPage() {
     const { login } = useAuth();
@@ -285,16 +287,13 @@ export default function SignUpPage() {
                             autoComplete="new-password"
                         />
 
-                        <DateInputWithPlaceholder
-                            placeholder="Data de Nascimento"
+                        <CustomDatePicker
                             value={formData.birthdate}
-                            onChange={handleChange}
+                            onChange={(date) => handleChange({ target: { name: "birthdate", value: date } })}
+                            className="w-full p-3 text-primary bg-foreground border border-foreground rounded-lg placeholder-secondary focus:border-accent focus:outline-none transition-colors"
                             name="birthdate"
                             required
-                            min="1900-01-01"
-                            max={new Date().toISOString().split("T")[0]}
                         />
-
 
 
                         <select

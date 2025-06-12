@@ -124,6 +124,12 @@ public class RecommendationDAO extends DAO {
         return exists;
     }
 
+    /**
+     * Obtém todas as recomendações favoritas de um usuário específico
+     * 
+     * @param userId O ID do usuário
+     * @return Lista de recomendações favoritas do usuário
+     */
     public ArrayList<Recommendation> getFavoritesByUserId(int userId) {
         ArrayList<Recommendation> recommendations = new ArrayList<>();
         try {
@@ -148,6 +154,12 @@ public class RecommendationDAO extends DAO {
         return recommendations;
     }
 
+    /**
+     * Obtém todas as recomendações assistidas de um usuário específico
+     * 
+     * @param userId O ID do usuário
+     * @return Lista de recomendações assistidas do usuário
+     */
     public ArrayList<Recommendation> getWatchedByUserId(int userId) {
         ArrayList<Recommendation> recommendations = new ArrayList<>();
         try {
@@ -172,7 +184,13 @@ public class RecommendationDAO extends DAO {
         return recommendations;
     }
 
-    // getRecommendationByUserIdAndMovieId
+    /**
+     * Obtém uma recomendação específica por ID de usuário e ID de filme
+     * 
+     * @param userId  O ID do usuário
+     * @param movieId O ID do filme
+     * @return A recomendação encontrada ou null se não existir
+     */
     public Recommendation getRecommendationByUserIdAndMovieId(int userId, int movieId) {
         Recommendation recommendation = null;
         try {

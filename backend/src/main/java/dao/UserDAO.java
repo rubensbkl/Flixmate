@@ -23,11 +23,17 @@ public class UserDAO extends DAO {
         close();
     }
 
+    /**
+     * Insere um novo usuário no banco de dados
+     * 
+     * @param user O usuário a ser inserido
+     * @return true se a inserção foi bem-sucedida, false caso contrário
+     */
     public boolean insert(User user) {
         boolean status = false;
         String sql = "INSERT INTO users " +
-                     "(first_name, last_name, email, password, gender) " +
-                     "VALUES (?, ?, ?, ?, ?) RETURNING id;";
+                "(first_name, last_name, email, password, gender) " +
+                "VALUES (?, ?, ?, ?, ?) RETURNING id;";
         try (PreparedStatement st = conexao.prepareStatement(sql)) {
             st.setString(1, user.getFirstName());
             st.setString(2, user.getLastName());
@@ -47,6 +53,12 @@ public class UserDAO extends DAO {
         return status;
     }
 
+    /**
+     * Busca um usuário pelo ID
+     * 
+     * @param id O ID do usuário a ser buscado
+     * @return O usuário encontrado ou null se não encontrado
+     */
     public User getById(int id) {
         User user = null;
         String sql = "SELECT first_name, last_name, email, password, gender FROM users WHERE id = ?";
@@ -55,13 +67,12 @@ public class UserDAO extends DAO {
             try (ResultSet rs = st.executeQuery()) {
                 if (rs.next()) {
                     user = new User(
-                        id,
-                        rs.getString("first_name"),
-                        rs.getString("last_name"),
-                        rs.getString("email"),
-                        rs.getString("password"),
-                        rs.getString("gender").charAt(0)
-                    );
+                            id,
+                            rs.getString("first_name"),
+                            rs.getString("last_name"),
+                            rs.getString("email"),
+                            rs.getString("password"),
+                            rs.getString("gender").charAt(0));
                 }
             }
         } catch (SQLException e) {
@@ -70,21 +81,25 @@ public class UserDAO extends DAO {
         return user;
     }
 
+    /**
+     * Busca todos os usuários no banco de dados
+     * 
+     * @return Lista de usuários
+     */
     public List<User> getAll() {
         List<User> users = new ArrayList<>();
         String sql = "SELECT id, first_name, last_name, email, password, gender FROM users";
         try (Statement st = conexao.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
+                ResultSet rs = st.executeQuery(sql)) {
 
             while (rs.next()) {
                 users.add(new User(
-                    rs.getInt("id"),
-                    rs.getString("first_name"),
-                    rs.getString("last_name"),
-                    rs.getString("email"),
-                    rs.getString("password"),
-                    rs.getString("gender").charAt(0)
-                ));
+                        rs.getInt("id"),
+                        rs.getString("first_name"),
+                        rs.getString("last_name"),
+                        rs.getString("email"),
+                        rs.getString("password"),
+                        rs.getString("gender").charAt(0)));
             }
         } catch (SQLException e) {
             System.err.println("Erro ao buscar todos os usuários: " + e.getMessage());
@@ -92,16 +107,22 @@ public class UserDAO extends DAO {
         return users;
     }
 
+    /**
+     * Atualiza os dados de um usuário existente
+     * 
+     * @param user O usuário com os dados atualizados
+     * @return true se a atualização foi bem-sucedida, false caso contrário
+     */
     public boolean update(User user) {
         boolean status = false;
         // Primeiro, mantém ou re-hash da senha
         User current = getById(user.getId());
         String senhaParaSalvar = user.getPassword().equals(current.getPassword())
-            ? user.getPassword()
-            : PasswordUtil.hashPassword(user.getPassword());
+                ? user.getPassword()
+                : PasswordUtil.hashPassword(user.getPassword());
         String sql = "UPDATE users SET " +
-                     "first_name = ?, last_name = ?, email = ?, password = ?, gender = ?" +
-                     "WHERE id = ?";
+                "first_name = ?, last_name = ?, email = ?, password = ?, gender = ? " +
+                "WHERE id = ?";
         try (PreparedStatement st = conexao.prepareStatement(sql)) {
             st.setString(1, user.getFirstName());
             st.setString(2, user.getLastName());
@@ -117,7 +138,12 @@ public class UserDAO extends DAO {
         return status;
     }
 
-    // Remove um usuário
+    /**
+     * Exclui um usuário pelo ID
+     * 
+     * @param id O ID do usuário a ser excluído
+     * @return true se a exclusão foi bem-sucedida, false caso contrário
+     */
     public boolean delete(int id) {
         boolean status = false;
         String sql = "DELETE FROM users WHERE id = ?";
@@ -130,7 +156,13 @@ public class UserDAO extends DAO {
         return status;
     }
 
-    // Autentica pelo email/senha
+    /**
+     * Autentica um usuário com base no email e senha
+     * 
+     * @param email    O email do usuário
+     * @param password A senha do usuário
+     * @return true se a autenticação for bem-sucedida, false caso contrário
+     */
     public boolean auth(String email, String password) {
         boolean ok = false;
         String sql = "SELECT password FROM users WHERE email = ?";
@@ -147,7 +179,12 @@ public class UserDAO extends DAO {
         return ok;
     }
 
-    // Verifica existência de email
+    /**
+     * Verifica se um email já existe no banco de dados
+     * 
+     * @param email O email a ser verificado
+     * @return true se o email já existir, false caso contrário
+     */
     public boolean emailExists(String email) {
         boolean exists = false;
         String sql = "SELECT 1 FROM users WHERE email = ?";
@@ -162,7 +199,12 @@ public class UserDAO extends DAO {
         return exists;
     }
 
-    // Busca por email
+    /**
+     * Busca um usuário pelo email
+     * 
+     * @param email O email do usuário a ser buscado
+     * @return O usuário encontrado ou null se não encontrado
+     */
     public User getByEmail(String email) {
         User user = null;
         String sql = "SELECT id, first_name, last_name, password, gender FROM users WHERE email = ?";
@@ -171,13 +213,12 @@ public class UserDAO extends DAO {
             try (ResultSet rs = st.executeQuery()) {
                 if (rs.next()) {
                     user = new User(
-                        rs.getInt("id"),
-                        rs.getString("first_name"),
-                        rs.getString("last_name"),
-                        email,
-                        rs.getString("password"),
-                        rs.getString("gender").charAt(0)
-                    );
+                            rs.getInt("id"),
+                            rs.getString("first_name"),
+                            rs.getString("last_name"),
+                            email,
+                            rs.getString("password"),
+                            rs.getString("gender").charAt(0));
                 }
             }
         } catch (SQLException e) {
@@ -186,13 +227,21 @@ public class UserDAO extends DAO {
         return user;
     }
 
+    /**
+     * Busca usuários com base em uma consulta de pesquisa
+     * 
+     * @param query A consulta de pesquisa (pode ser parte do nome ou email)
+     * @param page  Número da página para paginação
+     * @param limit Número máximo de resultados por página
+     * @return Lista de usuários que correspondem à consulta
+     */
     public ArrayList<User> search(String query, int page, int limit) {
         ArrayList<User> users = new ArrayList<>();
 
         String sql = "SELECT id, first_name, last_name, email FROM users " +
-                    "WHERE LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(email) LIKE ? " +
-                    "ORDER BY first_name ASC " +
-                    "LIMIT ? OFFSET ?";
+                "WHERE LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(email) LIKE ? " +
+                "ORDER BY first_name ASC " +
+                "LIMIT ? OFFSET ?";
 
         try {
             PreparedStatement st = conexao.prepareStatement(sql);
@@ -221,12 +270,17 @@ public class UserDAO extends DAO {
         return users;
     }
 
-
+    /**
+     * Conta o número total de usuários que correspondem a uma consulta de pesquisa
+     * 
+     * @param query A consulta de pesquisa (pode ser parte do nome ou email)
+     * @return Número total de usuários que correspondem à consulta
+     */
     public int countSearchResults(String query) {
         int total = 0;
 
         String sql = "SELECT COUNT(*) AS total FROM users " +
-                    "WHERE LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(email) LIKE ?";
+                "WHERE LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(email) LIKE ?";
 
         try {
             PreparedStatement st = conexao.prepareStatement(sql);
@@ -249,12 +303,19 @@ public class UserDAO extends DAO {
         return total;
     }
 
+    /**
+     * Busca todos os usuários com paginação
+     * 
+     * @param page  Número da página para paginação
+     * @param limit Número máximo de resultados por página
+     * @return Lista de usuários na página especificada
+     */
     public ArrayList<User> getAllUsers(int page, int limit) {
         ArrayList<User> users = new ArrayList<>();
 
         String sql = "SELECT id, first_name, last_name, email FROM users " +
-                    "ORDER BY first_name ASC " +
-                    "LIMIT ? OFFSET ?";
+                "ORDER BY first_name ASC " +
+                "LIMIT ? OFFSET ?";
 
         try {
             PreparedStatement st = conexao.prepareStatement(sql);
@@ -280,10 +341,9 @@ public class UserDAO extends DAO {
         return users;
     }
 
-
-
     /**
      * Conta o total de usuarios no banco de dados
+     * 
      * @return Número total de usuarios
      */
     public int getTotalUsersCount() {
@@ -307,6 +367,5 @@ public class UserDAO extends DAO {
 
         return total;
     }
-
 
 }

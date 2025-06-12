@@ -12,6 +12,8 @@ public class JWTUtil {
     private static Algorithm algorithm;
     private static final long EXPIRATION = 1000 * 60 * 60 * 24; // 24 horas
 
+    // JavaDoc
+    
     public JWTUtil(String secret) {
         if (secret == null || secret.isEmpty()) {
             throw new IllegalArgumentException("Secret cannot be null or empty");

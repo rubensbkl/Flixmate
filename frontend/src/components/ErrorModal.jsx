@@ -1,4 +1,4 @@
-// filepath: /Users/berd/git/CineMatch/CineMatch/frontend/src/components/ErrorModal.jsx
+"use client";
 import { ExclamationTriangleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 export default function ErrorModal({ isOpen, onClose, message }) {

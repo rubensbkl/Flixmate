@@ -17,7 +17,6 @@ public class Feedback {
         this.feedback = feedback;
     }
 
-    // Getters e Setters
     public int getUserId() {
         return userId;
     }
@@ -50,5 +49,5 @@ public class Feedback {
                 ", feedback=" + feedback +
                 '}';
     }
-    
+
 }

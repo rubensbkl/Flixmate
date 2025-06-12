@@ -2,9 +2,6 @@ package util;
 
 import org.mindrot.jbcrypt.BCrypt;
 
-/**
- * Utilitário para lidar com criptografia de senhas usando BCrypt
- */
 public class PasswordUtil {
     
     private static final int ROUNDS = 12;

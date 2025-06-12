@@ -37,7 +37,7 @@ public class MovieDAO extends DAO {
             st.setString(6, movie.getOriginalLanguage());
             st.setDouble(7, movie.getPopularity());
             st.setString(8, movie.getPosterPath());
-            st.setString(9, movie.getPosterPath());
+            st.setString(9, movie.getBackdropPath());
 
             int rowsAffected = st.executeUpdate();
             status = rowsAffected > 0;
@@ -127,6 +127,12 @@ public class MovieDAO extends DAO {
         return status;
     }
 
+    /**
+     * Remove um filme do banco de dados
+     * 
+     * @param movieId O ID do filme a ser removido
+     * @return true se a remoção foi bem-sucedida, false caso contrário
+     */
     public ArrayList<Integer> getAllMoviesIds() {
         ArrayList<Integer> ids = new ArrayList<>();
         try {
@@ -144,6 +150,14 @@ public class MovieDAO extends DAO {
         return ids;
     }
 
+    /**
+     * Busca filmes com base em uma consulta de pesquisa.
+     * 
+     * @param query A consulta de pesquisa
+     * @param page  A página atual (começa em 1)
+     * @param limit O número de filmes por página
+     * @return Uma lista de filmes que correspondem à consulta
+     */
     public ArrayList<Movie> search(String query, int page, int limit) {
         ArrayList<Movie> movies = new ArrayList<>();
 
@@ -182,6 +196,12 @@ public class MovieDAO extends DAO {
         return movies;
     }
 
+    /**
+     * Conta o número total de resultados de busca para uma consulta específica
+     * 
+     * @param query A consulta de pesquisa
+     * @return O número total de filmes que correspondem à consulta
+     */
     public int countSearchResults(String query) {
         int total = 0;
 
@@ -206,8 +226,6 @@ public class MovieDAO extends DAO {
         System.out.println("Total de filmes encontrados: " + total);
         return total;
     }
-
-    // Adicione estes métodos ao final da sua classe MovieDAO existente:
 
     /**
      * Busca os filmes mais populares ordenados por popularidade
@@ -274,10 +292,17 @@ public class MovieDAO extends DAO {
         return total;
     }
 
-    // Adicione estes métodos ao MovieDAO
-
     /**
-     * Busca filmes com filtros avançados
+     * Busca filmes com filtros avançados, incluindo gêneros, ano e ordenação.
+     * 
+     * @param query       A consulta de pesquisa
+     * @param page        A página atual (começa em 1)
+     * @param limit       O número de filmes por página
+     * @param sortBy      O critério de ordenação (rating, release_date_desc, etc.)
+     * @param genresParam Os IDs dos gêneros filtrados, separados por vírgula
+     * @param yearFrom    O ano inicial do filtro
+     * @param yearTo      O ano final do filtro
+     * @return Uma lista de filmes que correspondem aos filtros
      */
     public ArrayList<Movie> searchWithFilters(String query, int page, int limit, String sortBy, String genresParam,
             String yearFrom, String yearTo) {
@@ -287,7 +312,6 @@ public class MovieDAO extends DAO {
         sql.append(
                 "SELECT DISTINCT m.id, m.title, m.poster_path, m.release_date, m.popularity, m.rating FROM movies m ");
 
-        // Join com genres se necessário
         if (genresParam != null && !genresParam.trim().isEmpty()) {
             sql.append("INNER JOIN movie_genres mg ON m.id = mg.movie_id ");
         }
@@ -297,13 +321,11 @@ public class MovieDAO extends DAO {
         ArrayList<Object> params = new ArrayList<>();
         int paramIndex = 1;
 
-        // Filtro por query (título)
         if (query != null && !query.trim().isEmpty()) {
             sql.append("AND LOWER(m.title) LIKE ? ");
             params.add("%" + query.toLowerCase() + "%");
         }
 
-        // Filtro por gêneros
         if (genresParam != null && !genresParam.trim().isEmpty()) {
             String[] genreIds = genresParam.split(",");
             sql.append("AND mg.genre_id IN (");
@@ -316,19 +338,16 @@ public class MovieDAO extends DAO {
             sql.append(") ");
         }
 
-        // Filtro por ano - desde
         if (yearFrom != null && !yearFrom.trim().isEmpty()) {
             sql.append("AND EXTRACT(YEAR FROM m.release_date::date) >= ? ");
             params.add(Integer.parseInt(yearFrom));
         }
 
-        // Filtro por ano - até
         if (yearTo != null && !yearTo.trim().isEmpty()) {
             sql.append("AND EXTRACT(YEAR FROM m.release_date::date) <= ? ");
             params.add(Integer.parseInt(yearTo));
         }
 
-        // Ordenação
         sql.append("ORDER BY ");
         switch (sortBy) {
             case "rating":
@@ -349,7 +368,6 @@ public class MovieDAO extends DAO {
                 break;
         }
 
-        // Paginação
         sql.append("LIMIT ? OFFSET ?");
         params.add(limit);
         params.add((page - 1) * limit);
@@ -357,7 +375,6 @@ public class MovieDAO extends DAO {
         try {
             PreparedStatement st = conexao.prepareStatement(sql.toString());
 
-            // Definir parâmetros
             for (int i = 0; i < params.size(); i++) {
                 Object param = params.get(i);
                 if (param instanceof String) {
@@ -375,7 +392,6 @@ public class MovieDAO extends DAO {
                 movie.setReleaseDate(rs.getString("release_date"));
                 movie.setPopularity(rs.getDouble("popularity"));
                 movie.setPosterPath(rs.getString("poster_path"));
-                // Adicionar rating se estiver ordenando por ele
                 if (sortBy.equals("rating")) {
                     movie.setRating(rs.getDouble("rating"));
                 }
@@ -392,7 +408,14 @@ public class MovieDAO extends DAO {
     }
 
     /**
-     * Conta resultados de busca com filtros avançados
+     * Conta o número total de resultados de busca com filtros avançados.
+     * 
+     * @param query       A consulta de pesquisa
+     * @param sortBy      O critério de ordenação
+     * @param genresParam Os IDs dos gêneros filtrados, separados por vírgula
+     * @param yearFrom    O ano inicial do filtro
+     * @param yearTo      O ano final do filtro
+     * @return O número total de filmes que correspondem aos filtros
      */
     public int countSearchResultsWithFilters(String query, String sortBy, String genresParam, String yearFrom,
             String yearTo) {
@@ -401,7 +424,6 @@ public class MovieDAO extends DAO {
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT COUNT(DISTINCT m.id) AS total FROM movies m ");
 
-        // Join com genres se necessário
         if (genresParam != null && !genresParam.trim().isEmpty()) {
             sql.append("INNER JOIN movie_genres mg ON m.id = mg.movie_id ");
         }
@@ -410,13 +432,11 @@ public class MovieDAO extends DAO {
 
         ArrayList<Object> params = new ArrayList<>();
 
-        // Filtro por query (título)
         if (query != null && !query.trim().isEmpty()) {
             sql.append("AND LOWER(m.title) LIKE ? ");
             params.add("%" + query.toLowerCase() + "%");
         }
 
-        // Filtro por gêneros
         if (genresParam != null && !genresParam.trim().isEmpty()) {
             String[] genreIds = genresParam.split(",");
             sql.append("AND mg.genre_id IN (");
@@ -429,13 +449,11 @@ public class MovieDAO extends DAO {
             sql.append(") ");
         }
 
-        // Filtro por ano - desde
         if (yearFrom != null && !yearFrom.trim().isEmpty()) {
             sql.append("AND EXTRACT(YEAR FROM m.release_date::date) >= ? ");
             params.add(Integer.parseInt(yearFrom));
         }
 
-        // Filtro por ano - até
         if (yearTo != null && !yearTo.trim().isEmpty()) {
             sql.append("AND EXTRACT(YEAR FROM m.release_date::date) <= ? ");
             params.add(Integer.parseInt(yearTo));
@@ -444,7 +462,6 @@ public class MovieDAO extends DAO {
         try {
             PreparedStatement st = conexao.prepareStatement(sql.toString());
 
-            // Definir parâmetros
             for (int i = 0; i < params.size(); i++) {
                 Object param = params.get(i);
                 if (param instanceof String) {
