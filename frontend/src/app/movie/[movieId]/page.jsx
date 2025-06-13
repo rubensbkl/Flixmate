@@ -116,7 +116,6 @@ export default function MovieProfilePage() {
                 }
             }
         } catch (error) {
-            console.error("Erro ao curtir/remover curtir:", error);
             showToast("Erro ao processar curtida", "error");
         } finally {
             setRatingLoading(false);
@@ -142,7 +141,6 @@ export default function MovieProfilePage() {
                 }
             }
         } catch (error) {
-            console.error("Erro ao descurtir/remover descurtir:", error);
             showToast("Erro ao processar descurtida", "error");
         } finally {
             setRatingLoading(false);
@@ -162,14 +160,12 @@ export default function MovieProfilePage() {
                 setWatch(newWatchStatus);
                 showToast(`Filme ${newWatchStatus ? 'adicionado' : 'removido'} da watchlist!`, 'success');
             } else {
-                console.error("❌ Falha ao atualizar watchlist");
                 showToast("Falha ao atualizar watchlist", 'error');
                 // Reverter o estado em caso de erro
                 const currentStatus = await checkMovieWatchlist(movieId);
                 setWatch(currentStatus);
             }
         } catch (error) {
-            console.error("❌ Erro ao atualizar watchlist:", error);
             // Reverter o estado em caso de erro
             try {
                 const currentStatus = await checkMovieWatchlist(movieId);
@@ -193,14 +189,12 @@ export default function MovieProfilePage() {
                 setFavorite(newFavoriteStatus);
                 showToast(`Filme ${newFavoriteStatus ? 'adicionado' : 'removido'} dos favoritos!`, 'success');
             } else {
-                console.error("❌ Falha ao atualizar favoritos");
                 showToast("Falha ao atualizar favoritos", 'error');
                 // Reverter o estado em caso de erro
                 const currentStatus = await checkMovieFavorite(movieId);
                 setFavorite(currentStatus);
             }
         } catch (error) {
-            console.error("❌ Erro ao atualizar favoritos:", error);
             // Reverter o estado em caso de erro
             try {
                 const currentStatus = await checkMovieFavorite(movieId);
@@ -222,18 +216,14 @@ export default function MovieProfilePage() {
 
             if (success) {
                 setIsRecommended(false);
-                console.log("✅ Filme removido das recomendações com sucesso!");
                 showToast("Filme removido das recomendações!", "success");
             } else {
-                console.error("❌ Falha ao remover filme das recomendações");
                 showToast("Falha ao remover filme das recomendações", "error");
                 // Reverter o estado em caso de erro
                 const currentStatus = await checkMovieRecommended(movieId);
                 setIsRecommended(currentStatus);
             }
         } catch (error) {
-            console.error("❌ Erro ao remover filme recomendado:", error);
-            // Reverter o estado em caso de erro
             try {
                 const currentStatus = await checkMovieRecommended(movieId);
                 setIsRecommended(currentStatus);
@@ -317,8 +307,9 @@ export default function MovieProfilePage() {
                             src={`https://image.tmdb.org/t/p/original${movieInfo.backdropPath}`}
                             alt={movieInfo.title}
                             fill
+                            priority
                             className={`object-cover transition-opacity duration-500 ${backdropLoading ? 'opacity-0' : 'opacity-100'}`}
-                            onLoadingComplete={() => setBackdropLoading(false)}
+                            onLoad={() => setBackdropLoading(false)}
                         />
                         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-background" />
 
@@ -346,9 +337,10 @@ export default function MovieProfilePage() {
                                         src={`https://image.tmdb.org/t/p/original${movieInfo.posterPath}`}
                                         alt={movieInfo.title}
                                         fill
+                                        sizes="(max-width: 768px) 384px, (max-width: 1200px) 512px, 512px"
                                         priority
                                         className={`object-cover rounded-2xl shadow-xl transition-opacity duration-500 ${posterLoading ? 'opacity-0' : 'opacity-100'}`}
-                                        onLoadingComplete={() => setPosterLoading(false)}
+                                        onLoad={() => setPosterLoading(false)}
                                     />
                                 ) : (
                                     <div className="bg-foreground w-full h-full flex items-center justify-center rounded-2xl">

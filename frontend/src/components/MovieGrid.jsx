@@ -20,10 +20,11 @@ function MovieGridItem({ movie }) {
                     src={movie.poster_path ? `https://image.tmdb.org/t/p/original${movie.poster_path}` : "/placeholder.jpg"}
                     alt={movie.title}
                     fill
+                    sizes="(max-width: 768px) 384px, (max-width: 1200px) 512px, 512px"
                     className={`object-cover transition-all duration-500 ${
                         isLoading ? 'opacity-0' : 'opacity-100'
                     } group-hover:opacity-90`}
-                    onLoadingComplete={() => setIsLoading(false)}
+                    onLoad={() => setIsLoading(false)}
                 />
                 
                 {/* Overlay com informações */}

@@ -45,13 +45,9 @@ export function middleware(request) {
   }
   
   // Verificar token
-  const token = request.cookies.get('token')?.value ||
-                request.headers.get('authorization')?.replace('Bearer ', '');
+  const token = request.cookies.get('token')?.value || request.headers.get('authorization')?.replace('Bearer ', '');
   
   if (!isValidToken(token)) {
-    console.log(`🛡️ Middleware: Bloqueando acesso a ${pathname} - token inválido`);
-    
-    // Redirecionar para login
     const loginUrl = new URL('/login', request.url);
     if (pathname !== '/') {
       loginUrl.searchParams.set('redirect', pathname);
@@ -60,7 +56,6 @@ export function middleware(request) {
     return NextResponse.redirect(loginUrl);
   }
   
-  console.log(`✅ Middleware: Permitindo acesso a ${pathname}`);
   return NextResponse.next();
 }
 

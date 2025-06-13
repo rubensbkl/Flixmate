@@ -26,8 +26,9 @@ export default function MovieCard({ movie, isMobile }) {
                         src={movie.poster_path ? `https://image.tmdb.org/t/p/original${movie.poster_path}` : "/placeholder.jpg"}
                         alt={movie.title}
                         fill
+                        sizes="(max-width: 768px) 384px, (max-width: 1200px) 512px, 512px"
                         className={`object-cover rounded-md transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-                        onLoadingComplete={() => setIsLoading(false)}
+                        onLoad={() => setIsLoading(false)}
                         loading="lazy"
                     />
                 </div>

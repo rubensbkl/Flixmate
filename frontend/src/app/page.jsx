@@ -86,7 +86,6 @@ export default function Home() {
 
         const session = loadSession();
         if (session) {
-            console.log("🔄 Restaurando sessão");
             setMovies(session.movies);
             setCurrentIndex(session.currentIndex);
             setFeedbackCount(session.feedbackCount);
@@ -111,7 +110,6 @@ export default function Home() {
                 currentPage: currentPage.current,
             });
         } catch (err) {
-            console.error("Erro ao carregar filmes:", err);
             hasLoadedMovies.current = false; // RESETAR EM CASO DE ERRO
         } finally {
             setLoading(false);
@@ -144,7 +142,6 @@ export default function Home() {
                 currentPage: currentPage.current,
             });
         } catch (err) {
-            console.error("Erro ao carregar mais filmes:", err);
         } finally {
             setLoading(false);
         }
@@ -159,7 +156,6 @@ export default function Home() {
 
     useEffect(() => {
         if (currentIndex < 0 && movies.length > 0 && !loading) {
-            console.log("🔄 Filmes acabaram, carregando mais automaticamente...");
             loadMoreMovies();
         }
     }, [currentIndex, movies.length, loading, loadMoreMovies]);
@@ -179,13 +175,11 @@ export default function Home() {
                 await setMovieRate(trainingData.movieId, trainingData.liked);
                 setCompletedTrainingRequests(prev => prev + 1);
             } catch (error) {
-                console.error(`❌ Erro no treinamento: ${trainingData.movieTitle}`, error);
                 // Re-adicionar à fila em caso de erro (máximo 3 tentativas)
                 if (!trainingData.retryCount) trainingData.retryCount = 0;
                 if (trainingData.retryCount < 3) {
                     trainingData.retryCount++;
                     trainingQueue.current.push(trainingData);
-                    console.log(`🔄 Tentativa ${trainingData.retryCount}/3 para ${trainingData.movieTitle}`);
                 }
             }
 
@@ -216,7 +210,6 @@ export default function Home() {
 
         const liked = direction === "right";
         const movie = movies[index];
-        console.log(`${liked ? "Curtiu" : "Descartou"}: ${movie.title}`);
 
         setIsAnimating(true);
         setSwipeDirection(direction);
@@ -254,8 +247,6 @@ export default function Home() {
 
                 await waitForTraining();
                 
-                console.log(`🎯 Gerando recomendação após ${completedTrainingRequests} treinamentos completados`);
-                
                 // Get recommendation and show match modal
                 const recommendationData = await getRecommendation();
                 setRecommendedMovie(recommendationData);
@@ -278,7 +269,6 @@ export default function Home() {
                     setShowMatchModal(true);
                 }, 300);
             } catch (err) {
-                console.error("Erro ao gerar recomendação:", err);
                 setIsLoadingRecommendation(false);
                 setErrorMessage("Erro ao gerar recomendação. Tente novamente.");
                 setShowErrorModal(true);
@@ -313,13 +303,8 @@ export default function Home() {
         setShowMatchModal(false);
     };
 
-    const outOfFrame = (idx) =>
-        console.log(`${movies[idx]?.title} saiu da tela.`);
-
     const skipMovie = () => {
         if (!canSwipe || currentIndex < 0) return;
-
-        console.log(`Pulou: ${movies[currentIndex].title}`);
 
         setIsAnimating(true);
         setSwipeDirection('up'); // Direção diferente para indicar skip
@@ -434,9 +419,6 @@ export default function Home() {
                                             key={`${movie.id}-${index}`}
                                             onSwipe={(dir) =>
                                                 swiped(dir, index)
-                                            }
-                                            onCardLeftScreen={() =>
-                                                outOfFrame(index)
                                             }
                                             preventSwipe={["up", "down"]}
                                             className="absolute inset-0 flex items-center justify-center"

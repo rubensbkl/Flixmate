@@ -58,6 +58,7 @@ const ImprovedMovieCard = memo(({
         src={posterPath}
         alt={movie.title}
         fill
+        sizes="(max-width: 768px) 384px, (max-width: 1200px) 512px, 512px"
         className={`object-cover transition-opacity duration-500 ${
           imageLoaded ? 'opacity-100' : 'opacity-0'
         }`}

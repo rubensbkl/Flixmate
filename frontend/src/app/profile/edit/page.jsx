@@ -67,7 +67,6 @@ export default function EditProfilePage() {
                 setError(null);
 
                 const data = await fetchPrivate();
-                console.log("Dados do usuário:", data);
 
                 // Dados básicos
                 setFirstName(data.firstName || "");
@@ -87,7 +86,6 @@ export default function EditProfilePage() {
                     setGenres([28]); // Definir Ação como gênero padrão
                 }
             } catch (err) {
-                console.error("Erro ao carregar dados:", err);
                 setError("Não foi possível carregar suas preferências.");
             } finally {
                 setLoading(false);
@@ -187,21 +185,15 @@ export default function EditProfilePage() {
                 genres,
             };
 
-            console.log("Enviando dados:", userData);
 
             // Enviar dados para a API
             const response = await updateMyProfile(userData);
 
-            // Mostrar mensagem de sucesso
-            if (response && response.message) {
-                console.log("Resposta da API:", response);
-            }
             setSuccessMessage("Perfil atualizado com sucesso!");
 
             // Opcional: redirecionar após alguns segundos
             // setTimeout(() => router.push("/profile"), 1500);
         } catch (err) {
-            console.error("Erro ao salvar perfil:", err);
 
             // Verificar se é um erro com mensagem da API
             if (err.response && err.response.data && err.response.data.error) {
