@@ -46,7 +46,6 @@ export function AuthProvider({ children }) {
       setUser(fullUser);
       setLoading(false);
     } catch (error) {
-      console.error("Erro no login:", error);
       logout();
     }
   };

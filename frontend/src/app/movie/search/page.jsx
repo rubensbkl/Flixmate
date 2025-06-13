@@ -114,7 +114,6 @@ export default function SearchPage() {
             setTotalResults(data.total_results);
         } catch (err) {
             setError(err.message || 'Erro ao carregar filmes');
-            console.error('Erro na busca:', err);
         } finally {
             setLoading(false);
         }

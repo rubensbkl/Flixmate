@@ -28,7 +28,6 @@ function SimpleAuthGuard({ children }) {
             if (authenticated) {
                 setIsAuthorized(true);
             } else {
-                console.log('❌ Não autenticado, redirecionando para login');
                 router.replace('/login');
             }
         };

@@ -26,7 +26,6 @@ export const decodeToken = (token) => {
             iat: decoded.iat
         };
     } catch (error) {
-        console.error('Erro ao decodificar token:', error);
         return null;
     }
 };
