@@ -29,6 +29,15 @@ Busca sobre o catálogo importado, com filtro por gênero, intervalo de anos e o
 
 ![Tela de busca do Flixmate: campo de texto, botão de filtros avançados e a lista de resultados com pôster, ano e gêneros de cada filme](docs/img/busca.jpg)
 
+Busca de perfis, que é o que sustenta o lado social do app. Os e-mails aparecem tarjados
+porque são de pessoas reais:
+
+![Tela de busca de perfis do Flixmate: campo de texto e a lista de usuários encontrados, cada um com avatar, nome e o e-mail tarjado](docs/img/perfis.jpg)
+
+O protótipo inicial, de antes de o projeto virar aplicação web e ainda com o nome CineMatch:
+
+<img src="docs/img/prototipo.jpg" alt="Fluxo de telas do protótipo inicial em papel digital: cadastro e login, o cartão de filme com as ações de curtir e descartar, a tela de detalhes e a tela de match" width="330">
+
 ## Guia de leitura
 
 Se você abriu o repositório para olhar código, estes são os arquivos que valem a visita:
