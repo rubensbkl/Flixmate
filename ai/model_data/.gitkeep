@@ -1,0 +1,2 @@
+# Diretório onde o serviço de IA grava hybrid_model.pkl.
+# O modelo em si não entra no versionamento: veja docs/DATASET.md.

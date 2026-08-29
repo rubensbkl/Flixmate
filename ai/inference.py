@@ -463,7 +463,7 @@ async def health_check():
         }
 
 # Endpoint para forçar recarregamento do modelo
-@app.post("/pqp/reload_model")
+@app.post("/admin/reload_model")
 async def reload_model():
     """🔄 Força recarregamento do modelo (para debug)"""
     try:
