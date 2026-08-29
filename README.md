@@ -17,6 +17,18 @@ em Java, um serviço de recomendação em Python e o PostgreSQL.
 > **Status:** o ambiente de produção em `flixmate.com.br` foi desligado depois da entrega.
 > O projeto continua reproduzível localmente: veja [Rodando local](#rodando-local).
 
+## Telas
+
+Imagens da entrega, em junho de 2025.
+
+Perfil, com as três listas que o usuário acumula enquanto avalia:
+
+![Tela de perfil do Flixmate: cabeçalho com nome, contadores de recomendados, favoritos e assistir depois, e a grade de pôsteres da aba de recomendados](docs/img/perfil.jpg)
+
+Busca sobre o catálogo importado, com filtro por gênero, intervalo de anos e ordenação:
+
+![Tela de busca do Flixmate: campo de texto, botão de filtros avançados e a lista de resultados com pôster, ano e gêneros de cada filme](docs/img/busca.jpg)
+
 ## Guia de leitura
 
 Se você abriu o repositório para olhar código, estes são os arquivos que valem a visita:
