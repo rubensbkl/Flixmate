@@ -17,7 +17,7 @@ FROM eclipse-temurin:17
 WORKDIR /app
 
 # Copia o JAR gerado pelo estágio anterior
-COPY --from=builder /app/target/cinematch-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=builder /app/target/flixmate-0.0.1-SNAPSHOT.jar app.jar
 
 # Copia a pasta public para dentro do container
 #COPY public /app/public

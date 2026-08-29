@@ -2,11 +2,11 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.cinematch</groupId>
-	<artifactId>cinematch</artifactId>
+	<groupId>com.flixmate</groupId>
+	<artifactId>flixmate</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Cinematch</name>
-	<description>Uma aplicação web para recomendação e descoberta de filmes</description>
+	<name>Flixmate</name>
+	<description>API do Flixmate: recomendação e descoberta de filmes</description>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
@@ -34,30 +34,10 @@
 		    <version>2.12.1</version>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>jquery</artifactId>
-			<version>3.7.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.pac4j</groupId>
-			<artifactId>spark-pac4j</artifactId>
-			<version>3.0.0</version>
-		</dependency>
-		<dependency>
   			<groupId>com.auth0</groupId>
   			<artifactId>java-jwt</artifactId>
   			<version>4.4.0</version>
 		</dependency>
-        <dependency>
-            <groupId>com.azure</groupId>
-            <artifactId>azure-ai-openai</artifactId>
-            <version>1.0.0-beta.12</version>
-        </dependency>
-        <dependency>
-            <groupId>com.azure</groupId>
-            <artifactId>azure-identity</artifactId>
-            <version>1.13.3</version>
-        </dependency>
 		<dependency>
 			<groupId>org.mindrot</groupId>
 			<artifactId>jbcrypt</artifactId>
