@@ -4,8 +4,6 @@ backend/target/
 **.dev
 *.log
 .env*
-docker-compose.dev.yml
-docker-compose.yml
 
 # Certbot
 certbot/conf/
@@ -156,3 +154,6 @@ next-env.d.ts
 __pycache__/
 venv/
 database/scripts/*.csv
+
+# Exceção: o modelo de configuração entra no versionamento
+!.env.example
