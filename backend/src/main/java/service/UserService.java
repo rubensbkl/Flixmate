@@ -1,6 +1,7 @@
 package service;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import dao.UserDAO;
 import model.User;
@@ -69,9 +70,21 @@ public class UserService {
     /**
      * Atualiza as informações de um usuário no banco de dados.
      *
-     * @param user O objeto User contendo os dados atualizados
      * @return true se a atualização foi bem-sucedida, false caso contrário
      */
+    public boolean updateUser(User user) {
+        return userDAO.update(user);
+    }
+
+    /**
+     * Exclui um usuário do banco de dados.
+     *
+     * @param id O ID do usuário a ser excluído
+     * @return true se a exclusão foi bem-sucedida, false caso contrário
+     */
+    public boolean deleteUser(int id) {
+        return userDAO.delete(id);
+    }
     public ArrayList<User> search(String query, int page, int limit) throws Exception {
         return userDAO.search(query, page, limit);
     }
@@ -95,6 +108,10 @@ public class UserService {
      */
     public ArrayList<User> getAllUsers(int page, int limit) {
         return userDAO.getAllUsers(page, limit);
+    }
+
+    public List<User> getAll() {
+        return userDAO.getAll();
     }
 
     /**

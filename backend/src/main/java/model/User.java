@@ -7,6 +7,10 @@ public class User {
     private String email;
     private String password;
     private char gender;
+    private boolean isAdmin;
+    private boolean googleConnected;
+    private boolean githubConnected;
+    private boolean hasPassword;
 
     public User() {
         this.id = -1;
@@ -15,6 +19,10 @@ public class User {
         this.email = "";
         this.password = "";
         this.gender = '\0';
+        this.isAdmin = false;
+        this.googleConnected = false;
+        this.githubConnected = false;
+        this.hasPassword = true;
     }
 
     public User(int id, String firstName, String lastName, String email, String password, char gender) {
@@ -24,6 +32,21 @@ public class User {
         this.email = email;
         this.password = password;
         this.gender = gender;
+        this.isAdmin = false;
+        this.googleConnected = false;
+        this.githubConnected = false;
+    }
+
+    public User(int id, String firstName, String lastName, String email, String password, char gender, boolean isAdmin) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.password = password;
+        this.gender = gender;
+        this.isAdmin = isAdmin;
+        this.googleConnected = false;
+        this.githubConnected = false;
     }
 
     public int getId() {
@@ -74,8 +97,41 @@ public class User {
         this.gender = gender;
     }
 
+    public boolean isAdmin() {
+        return isAdmin;
+    }
+
+    public void setAdmin(boolean isAdmin) {
+        this.isAdmin = isAdmin;
+    }
+
+    public boolean isGoogleConnected() {
+        return googleConnected;
+    }
+
+    public void setGoogleConnected(boolean googleConnected) {
+        this.googleConnected = googleConnected;
+    }
+
+    public boolean isGithubConnected() {
+        return githubConnected;
+    }
+
+    public void setGithubConnected(boolean githubConnected) {
+        this.githubConnected = githubConnected;
+    }
+
+
+    public boolean hasPassword() {
+        return hasPassword;
+    }
+
+    public void setHasPassword(boolean hasPassword) {
+        this.hasPassword = hasPassword;
+    }
+
     public String toString() {
         return "User [id=" + id + ", firstName=" + firstName + ", lastName=" + lastName + ", email=" + email
-                + ", gender=" + gender + ", birthdate=" + "]";
+                + ", gender=" + gender + ", isAdmin=" + isAdmin + ", googleConnected=" + googleConnected + ", githubConnected=" + githubConnected + "]";
     }
 }

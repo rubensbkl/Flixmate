@@ -551,17 +551,14 @@ public class Application {
             int page = requestBody.has("page") ? requestBody.get("page").getAsInt() : 1;
 
             try {
-                List<Integer> candidatos = movieService.getAllMoviesIds();
+                final int NUM_CANDIDATOS = 500;
+                int offset = (page - 1) * NUM_CANDIDATOS;
+                List<Integer> candidatos = movieService.getUnratedMovieIds(userId, NUM_CANDIDATOS, offset);
 
                 if (candidatos.isEmpty()) {
                     res.status(400);
                     return gson.toJson(Map.of("error", "Não há filmes disponíveis para gerar o feed."));
                 }
-
-                final int NUM_CANDIDATOS = 500;
-
-                Collections.shuffle(candidatos, new Random());
-                candidatos = candidatos.subList(0, Math.min(NUM_CANDIDATOS, candidatos.size()));
 
                 JsonObject aiResponse = flixAi.getFeed(userId, 20, candidatos);
                 JsonArray aiMoviesArray = aiResponse.getAsJsonArray("all_recommendations");

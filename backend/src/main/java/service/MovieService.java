@@ -97,6 +97,10 @@ public class MovieService {
         return movieDAO.getAllMoviesIds();
     }
 
+    public ArrayList<Integer> getUnratedMovieIds(int userId, int limit, int offset) {
+        return movieDAO.getUnratedMovieIds(userId, limit, offset);
+    }
+
     /**
      * Verifica se um filme existe no banco de dados
      * 

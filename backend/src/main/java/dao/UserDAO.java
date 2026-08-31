@@ -32,14 +32,18 @@ public class UserDAO extends DAO {
     public boolean insert(User user) {
         boolean status = false;
         String sql = "INSERT INTO users " +
-                "(first_name, last_name, email, password, gender) " +
-                "VALUES (?, ?, ?, ?, ?) RETURNING id;";
+                "(first_name, last_name, email, password, gender, is_admin, google_connected, github_connected, has_password) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id;";
         try (PreparedStatement st = conexao.prepareStatement(sql)) {
             st.setString(1, user.getFirstName());
             st.setString(2, user.getLastName());
             st.setString(3, user.getEmail());
             st.setString(4, PasswordUtil.hashPassword(user.getPassword()));
             st.setString(5, String.valueOf(user.getGender()));
+            st.setBoolean(6, user.isAdmin());
+            st.setBoolean(7, user.isGoogleConnected());
+            st.setBoolean(8, user.isGithubConnected());
+            st.setBoolean(9, user.hasPassword());
 
             try (ResultSet rs = st.executeQuery()) {
                 if (rs.next()) {
@@ -61,7 +65,7 @@ public class UserDAO extends DAO {
      */
     public User getById(int id) {
         User user = null;
-        String sql = "SELECT first_name, last_name, email, password, gender FROM users WHERE id = ?";
+        String sql = "SELECT first_name, last_name, email, password, gender, is_admin, google_connected, github_connected, has_password FROM users WHERE id = ?";
         try (PreparedStatement st = conexao.prepareStatement(sql)) {
             st.setInt(1, id);
             try (ResultSet rs = st.executeQuery()) {
@@ -72,7 +76,11 @@ public class UserDAO extends DAO {
                             rs.getString("last_name"),
                             rs.getString("email"),
                             rs.getString("password"),
-                            rs.getString("gender").charAt(0));
+                            rs.getString("gender").charAt(0),
+                            rs.getBoolean("is_admin"));
+                    user.setGoogleConnected(rs.getBoolean("google_connected"));
+                    user.setGithubConnected(rs.getBoolean("github_connected"));
+                    user.setHasPassword(rs.getBoolean("has_password"));
                 }
             }
         } catch (SQLException e) {
@@ -88,9 +96,9 @@ public class UserDAO extends DAO {
      */
     public List<User> getAll() {
         List<User> users = new ArrayList<>();
-        String sql = "SELECT id, first_name, last_name, email, password, gender FROM users";
-        try (Statement st = conexao.createStatement();
-                ResultSet rs = st.executeQuery(sql)) {
+        String sql = "SELECT id, first_name, last_name, email, password, gender, is_admin FROM users";
+        try (PreparedStatement st = conexao.prepareStatement(sql);
+                ResultSet rs = st.executeQuery()) {
 
             while (rs.next()) {
                 users.add(new User(
@@ -99,7 +107,8 @@ public class UserDAO extends DAO {
                         rs.getString("last_name"),
                         rs.getString("email"),
                         rs.getString("password"),
-                        rs.getString("gender").charAt(0)));
+                        rs.getString("gender").charAt(0),
+                        rs.getBoolean("is_admin")));
             }
         } catch (SQLException e) {
             System.err.println("Erro ao buscar todos os usuários: " + e.getMessage());
@@ -121,7 +130,7 @@ public class UserDAO extends DAO {
                 ? user.getPassword()
                 : PasswordUtil.hashPassword(user.getPassword());
         String sql = "UPDATE users SET " +
-                "first_name = ?, last_name = ?, email = ?, password = ?, gender = ? " +
+                "first_name = ?, last_name = ?, email = ?, password = ?, gender = ?, is_admin = ?, google_connected = ?, github_connected = ?, has_password = ? " +
                 "WHERE id = ?";
         try (PreparedStatement st = conexao.prepareStatement(sql)) {
             st.setString(1, user.getFirstName());
@@ -129,7 +138,11 @@ public class UserDAO extends DAO {
             st.setString(3, user.getEmail());
             st.setString(4, senhaParaSalvar);
             st.setString(5, String.valueOf(user.getGender()));
-            st.setInt(6, user.getId());
+            st.setBoolean(6, user.isAdmin());
+            st.setBoolean(7, user.isGoogleConnected());
+            st.setBoolean(8, user.isGithubConnected());
+            st.setBoolean(9, user.hasPassword());
+            st.setInt(10, user.getId());
 
             status = st.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -207,7 +220,7 @@ public class UserDAO extends DAO {
      */
     public User getByEmail(String email) {
         User user = null;
-        String sql = "SELECT id, first_name, last_name, password, gender FROM users WHERE email = ?";
+        String sql = "SELECT id, first_name, last_name, password, gender, is_admin, google_connected, github_connected, has_password FROM users WHERE email = ?";
         try (PreparedStatement st = conexao.prepareStatement(sql)) {
             st.setString(1, email);
             try (ResultSet rs = st.executeQuery()) {
@@ -218,7 +231,11 @@ public class UserDAO extends DAO {
                             rs.getString("last_name"),
                             email,
                             rs.getString("password"),
-                            rs.getString("gender").charAt(0));
+                            rs.getString("gender").charAt(0),
+                            rs.getBoolean("is_admin"));
+                    user.setGoogleConnected(rs.getBoolean("google_connected"));
+                    user.setGithubConnected(rs.getBoolean("github_connected"));
+                    user.setHasPassword(rs.getBoolean("has_password"));
                 }
             }
         } catch (SQLException e) {
@@ -238,7 +255,7 @@ public class UserDAO extends DAO {
     public ArrayList<User> search(String query, int page, int limit) {
         ArrayList<User> users = new ArrayList<>();
 
-        String sql = "SELECT id, first_name, last_name, email FROM users " +
+        String sql = "SELECT id, first_name, last_name, email, is_admin FROM users " +
                 "WHERE LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(email) LIKE ? " +
                 "ORDER BY first_name ASC " +
                 "LIMIT ? OFFSET ?";
@@ -259,6 +276,7 @@ public class UserDAO extends DAO {
                 user.setFirstName(rs.getString("first_name"));
                 user.setLastName(rs.getString("last_name"));
                 user.setEmail(rs.getString("email"));
+                user.setAdmin(rs.getBoolean("is_admin"));
                 users.add(user);
             }
             rs.close();

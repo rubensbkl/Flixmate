@@ -151,6 +151,34 @@ public class MovieDAO extends DAO {
     }
 
     /**
+     * Busca IDs de filmes que o usuário ainda não avaliou
+     * 
+     * @param userId O ID do usuário
+     * @param limit O limite de filmes a serem retornados
+     * @param offset O offset para paginação
+     * @return Uma lista de IDs
+     */
+    public ArrayList<Integer> getUnratedMovieIds(int userId, int limit, int offset) {
+        ArrayList<Integer> ids = new ArrayList<>();
+        try {
+            String sql = "SELECT id FROM movies WHERE id NOT IN (SELECT movie_id FROM feedbacks WHERE user_id = ?) ORDER BY popularity DESC LIMIT ? OFFSET ?";
+            PreparedStatement st = conexao.prepareStatement(sql);
+            st.setInt(1, userId);
+            st.setInt(2, limit);
+            st.setInt(3, offset);
+            ResultSet rs = st.executeQuery();
+            while (rs.next()) {
+                ids.add(rs.getInt("id"));
+            }
+            rs.close();
+            st.close();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar IDs não avaliados: " + e.getMessage(), e);
+        }
+        return ids;
+    }
+
+    /**
      * Busca filmes com base em uma consulta de pesquisa.
      * 
      * @param query A consulta de pesquisa

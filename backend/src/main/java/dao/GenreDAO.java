@@ -77,8 +77,8 @@ public class GenreDAO extends DAO {
         List<Genre> genres = new ArrayList<>();
         try {
             String sql = "SELECT * FROM genres ORDER BY name";
-            Statement st = conexao.createStatement();
-            ResultSet rs = st.executeQuery(sql);
+            PreparedStatement st = conexao.prepareStatement(sql);
+            ResultSet rs = st.executeQuery();
 
             while (rs.next()) {
                 Genre genre = new Genre(
