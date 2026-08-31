@@ -7,7 +7,7 @@ from typing import List, Optional
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from fastapi import Query
+from fastapi import Query, status
 
 # Import do sistema de recomendação COM REDIS
 from recommender import (auto_retrain_if_needed, debug_ratings_data, get_cache_stats, load_model, recommend, train)
@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Iniciando sistema de recomendação COM REDIS...")
     try:
         # Carrega o modelo na inicialização com tratamento robusto
-        model = load_model()
+        model = load_model(force_model=False)
         if model:
             logger.info("✅ Sistema de recomendação iniciado com sucesso")
         else:
@@ -205,7 +205,7 @@ async def feed_endpoint(request: FeedRequest):
         )
 
 
-@app.post("/train", response_model=TrainResponse)
+@app.post("/train", response_model=TrainResponse, status_code=status.HTTP_202_ACCEPTED)
 async def train_endpoint(request: TrainRequest, background_tasks: BackgroundTasks):
     """
     🎓 Treina o modelo de recomendação e INVALIDA cache Redis
@@ -287,7 +287,7 @@ async def train_model_background(ratings_data):
 
 
 @app.post("/recommend", response_model=RecommendResponse)
-async def recommend_endpoint(request: RecommendRequest):
+async def recommend_endpoint(request: RecommendRequest, background_tasks: BackgroundTasks):
     """
     🎯 Gera recomendações com cache Redis inteligente
 
@@ -333,9 +333,9 @@ async def recommend_endpoint(request: RecommendRequest):
         from recommender import recommender
 
         if recommender is None:
-            # Tentar carregar o modelo novamente
+            # Tentar carregar modelo existente sem forçar erro fatal
             try:
-                load_model()
+                load_model(force_model=False)
                 from recommender import recommender
             except Exception as load_error:
                 logger.error(f"❌ Erro ao carregar modelo: {load_error}")
@@ -346,11 +346,11 @@ async def recommend_endpoint(request: RecommendRequest):
                 detail="Modelo não está disponível. Tente executar /train primeiro.",
             )
 
-        # Auto retreinamento se necessário (não bloqueia a resposta)
+        # Auto retreinamento se necessário (em background para não bloquear a resposta)
         try:
-            auto_retrain_if_needed()
+            background_tasks.add_task(auto_retrain_if_needed)
         except Exception as retrain_error:
-            logger.warning(f"⚠️ Erro no auto-retreinamento: {retrain_error}")
+            logger.warning(f"⚠️ Erro ao engatilhar auto-retreinamento: {retrain_error}")
 
         # Gerar recomendações (com cache automático)
         result = recommend(request.user, valid_candidates, request.top_n)

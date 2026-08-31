@@ -322,8 +322,12 @@ class HybridRecommender:
             cached_matrix = cache.get("content_matrix", "tfidf")
             if cached_matrix:
                 logger.info("💾 Matriz TF-IDF carregada do cache")
-                # Reconstruir matriz sparse se necessário
-                pass
+                self.content_matrix = csr_matrix(
+                    (cached_matrix["data"], cached_matrix["indices"], cached_matrix["indptr"]),
+                    shape=cached_matrix["shape"]
+                )
+                self.genre_vectorizer = None
+                return
 
             # Garantir que as colunas existem
             if 'genres' not in self.movies_df.columns:
@@ -363,6 +367,15 @@ class HybridRecommender:
             content_matrix = tfidf.fit_transform(self.movies_df["content_features"])
             self.content_matrix = content_matrix
             self.genre_vectorizer = tfidf
+            
+            # Salvar no cache
+            cache_data = {
+                "data": content_matrix.data.tolist(),
+                "indices": content_matrix.indices.tolist(),
+                "indptr": content_matrix.indptr.tolist(),
+                "shape": content_matrix.shape
+            }
+            cache.set("content_matrix", "tfidf", value=cache_data, ttl=3600)
             
             logger.info(f"📊 Matriz de conteúdo criada: {content_matrix.shape}")
             logger.info("✅ Features de conteúdo preparadas com sucesso")
@@ -406,26 +419,27 @@ class HybridRecommender:
                     logger.warning(f"⚠️ Erro ao restaurar cache: {cache_error}")
                     # Continuar para criar novo modelo
 
-            # Criar matriz usuário-item com tratamento robusto
-            user_item = self.ratings_df.pivot(
-                index="user_id", columns="movie_id", values="rating"
-            )
+            # Criar matriz usuário-item otimizada com CSR direto sem pivot
+            users = self.ratings_df["user_id"].astype("category")
+            movies = self.ratings_df["movie_id"].astype("category")
             
-            # Usar infer_objects para evitar o warning de downcast
-            user_item = user_item.infer_objects(copy=False).fillna(0)
+            self.user_ids = users.cat.categories.tolist()
+            self.movie_ids = movies.cat.categories.tolist()
+            
+            user_indices = users.cat.codes.values
+            movie_indices = movies.cat.codes.values
+            ratings = self.ratings_df["rating"].values
+            
+            self.user_item_matrix = csr_matrix((ratings, (user_indices, movie_indices)),
+                                             shape=(len(self.user_ids), len(self.movie_ids)))
             
             # Debug da matriz criada
-            logger.info(f"📐 Matriz usuário-item: {user_item.shape}")
-            logger.info(f"📊 Valores não-zero: {np.count_nonzero(user_item.values)}")
-            logger.info(f"📈 Densidade da matriz: {np.count_nonzero(user_item.values) / user_item.size:.2%}")
-
-            self.user_item_matrix = csr_matrix(user_item.values)
-            self.user_ids = user_item.index.tolist()
-            self.movie_ids = user_item.columns.tolist()
+            logger.info(f"📐 Matriz usuário-item: {self.user_item_matrix.shape}")
+            non_zero_entries = self.user_item_matrix.nnz
+            logger.info(f"📊 Valores não-zero: {non_zero_entries}")
 
             # SVD com condições mais permissivas
             min_shape = min(self.user_item_matrix.shape)
-            non_zero_entries = np.count_nonzero(user_item.values)
             
             logger.info(f"🔍 Min shape: {min_shape}")
             logger.info(f"🔍 Entradas não-zero: {non_zero_entries}")
