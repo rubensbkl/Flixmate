@@ -10,7 +10,7 @@ function SimpleAuthGuard({ children }) {
     const [isAuthorized, setIsAuthorized] = useState(null); // null = checking
 
     // Rotas públicas
-    const publicRoutes = ['/login', '/signup'];
+    const publicRoutes = ['/login', '/signup', '/oauth/callback'];
     const isPublicRoute = publicRoutes.includes(pathname);
 
     useEffect(() => {

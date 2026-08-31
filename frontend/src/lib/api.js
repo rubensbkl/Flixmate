@@ -214,6 +214,11 @@ export const fetchPrivate = async () => {
             }
         );
 
+        if (res.status === 404 || res.status === 401) {
+            clearAuth();
+            window.location.href = '/login';
+            throw new Error(`Usuário não encontrado ou sessão expirada (Status: ${res.status})`);
+        }
         if (!res.ok) {
             throw new Error(`Erro na API: ${res.status}`);
         }
@@ -268,6 +273,11 @@ export const fetchUserProfile = async (userId) => {
             }
         );
 
+        if (res.status === 404 || res.status === 401) {
+            clearAuth();
+            window.location.href = '/login';
+            throw new Error(`Usuário não encontrado ou sessão expirada (Status: ${res.status})`);
+        }
         if (!res.ok) throw new Error(`Erro na API: ${res.status}`);
 
         const data = await res.json();

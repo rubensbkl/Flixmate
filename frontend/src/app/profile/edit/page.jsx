@@ -8,7 +8,7 @@ export default function EditProfilePage() {
     // Dados do usuário
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
-    const [email, setEmail] = useState("");
+    
     const [gender, setGender] = useState("");
     const [genres, setGenres] = useState([]); // IDs selecionados
 
@@ -71,7 +71,7 @@ export default function EditProfilePage() {
                 // Dados básicos
                 setFirstName(data.firstName || "");
                 setLastName(data.lastName || "");
-                setEmail(data.email || "");
+                
                 setGender(data.gender || "");
 
                 // Gêneros preferidos
@@ -132,17 +132,9 @@ export default function EditProfilePage() {
             return false;
         }
 
-        if (!email.trim()) {
-            setError("Email é obrigatório");
-            return false;
-        }
 
-        // Validar formato de email com expressão regular simples
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            setError("Formato de email inválido");
-            return false;
-        }
+
+
 
         // Validar seleção de gênero (dropdown)
         if (!gender) {
@@ -180,7 +172,6 @@ export default function EditProfilePage() {
             const userData = {
                 firstName,
                 lastName,
-                email,
                 gender,
                 genres,
             };
@@ -282,20 +273,7 @@ export default function EditProfilePage() {
                                 />
                             </div>
 
-                            {/* Email */}
-                            <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-secondary mb-1">
-                                    Email *
-                                </label>
-                                <input
-                                    type="email"
-                                    id="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full px-3 py-2 bg-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-accent text-primary"
-                                    required
-                                />
-                            </div>
+
 
                             {/* Gênero */}
                             <div>

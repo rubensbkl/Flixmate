@@ -7,6 +7,7 @@ import {
   getCurrentUser,
   clearAuth,
   saveToken,
+  getToken,
 } from "@/lib/auth";
 
 const AuthContext = createContext();
@@ -17,26 +18,73 @@ export function AuthProvider({ children }) {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    const initAuth = () => {
+    const initAuth = async () => {
       try {
-        const userData = getCurrentUser();
-        setUser(userData);
-      } catch {
+        const token = getToken();
+        if (!token) {
+            setUser(null);
+            setLoading(false);
+            setIsInitialized(true);
+            return;
+        }
+
+        const decoded = decodeToken(token);
+        if (!decoded) {
+            clearAuth();
+            setUser(null);
+            setLoading(false);
+            setIsInitialized(true);
+            return;
+        }
+
+        // Tentar obter dados iniciais rápidos do localStorage
+        const sessionDataStr = localStorage.getItem('session_data');
+        let initialUser = { ...decoded };
+        if (sessionDataStr) {
+          try {
+              initialUser = { ...initialUser, ...JSON.parse(sessionDataStr) };
+          } catch(e) {}
+        }
+        setUser(initialUser);
+
+        // Buscar dados completos e atualizados do backend
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/verify`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.valid && data.user) {
+                    const fullUser = { ...decoded, ...data.user, userId: data.user.id };
+                    setUser(fullUser);
+                    localStorage.setItem('session_data', JSON.stringify(fullUser));
+                }
+            } else {
+                clearAuth();
+                setUser(null);
+            }
+        } catch (fetchErr) {
+            console.error("Erro ao verificar token no backend:", fetchErr);
+        }
+      } catch (err) {
         setUser(null);
       } finally {
         setLoading(false);
         setIsInitialized(true);
       }
     };
-    const timer = setTimeout(initAuth, 0);
-    return () => clearTimeout(timer);
+    initAuth();
   }, []);
 
   const login = async (userData, token) => {
     try {
+      if (!token) throw new Error("Token não fornecido");
+      if (!userData) throw new Error("Dados de usuário não fornecidos");
+
       saveToken(token);
+      localStorage.setItem('session_data', JSON.stringify(userData));
       const decodedUser = decodeToken(token);
-      if (!decodedUser) throw new Error("Token inválido");
+      if (!decodedUser) throw new Error(`Falha ao decodificar token: ${token.substring(0, 10)}...`);
 
       const fullUser = {
         ...userData,
@@ -46,7 +94,8 @@ export function AuthProvider({ children }) {
       setUser(fullUser);
       setLoading(false);
     } catch (error) {
-      logout();
+      console.error("Erro no login:", error);
+      throw error;
     }
   };
 

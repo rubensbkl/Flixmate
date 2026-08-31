@@ -306,8 +306,7 @@ export default function MovieProfilePage() {
                         <Image
                             src={`https://image.tmdb.org/t/p/original${movieInfo.backdropPath}`}
                             alt={movieInfo.title}
-                            fill
-                            priority
+                            fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                             className={`object-cover transition-opacity duration-500 ${backdropLoading ? 'opacity-0' : 'opacity-100'}`}
                             onLoad={() => setBackdropLoading(false)}
                         />
@@ -336,8 +335,7 @@ export default function MovieProfilePage() {
                                     <Image
                                         src={`https://image.tmdb.org/t/p/original${movieInfo.posterPath}`}
                                         alt={movieInfo.title}
-                                        fill
-                                        sizes="(max-width: 768px) 384px, (max-width: 1200px) 512px, 512px"
+                                        fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                         priority
                                         className={`object-cover rounded-2xl shadow-xl transition-opacity duration-500 ${posterLoading ? 'opacity-0' : 'opacity-100'}`}
                                         onLoad={() => setPosterLoading(false)}
