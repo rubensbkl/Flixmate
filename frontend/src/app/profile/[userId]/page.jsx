@@ -67,15 +67,12 @@ export default function UserProfilePage() {
                 // Carregar TODOS os dados em paralelo para os contadores
                 const [recommendations, watchlist, favorites] = await Promise.all([
                     fetchRecommendations(userId).catch(err => {
-                        console.error("Erro ao carregar recomendações:", err);
                         return [];
                     }),
                     fetchUserWatchList(userId).catch(err => {
-                        console.error("Erro ao carregar watchlist:", err);
                         return [];
                     }),
                     fetchUserFavorites(userId).catch(err => {
-                        console.error("Erro ao carregar favoritos:", err);
                         return [];
                     })
                 ]);
@@ -86,7 +83,6 @@ export default function UserProfilePage() {
                 setFavoriteMovies(favorites);
 
             } catch (err) {
-                console.error("Erro ao buscar informações do usuário:", err);
                 setError("Não foi possível carregar as informações do usuário.");
             } finally {
                 setLoadingUser(false);
@@ -108,7 +104,6 @@ export default function UserProfilePage() {
                     setIsCurrentUser(true);
                 }
             } catch (err) {
-                console.error("Erro ao verificar usuário:", err);
             }
         };
 

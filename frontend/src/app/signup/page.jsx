@@ -181,9 +181,6 @@ export default function SignUpPage() {
         // Calcular se é maior de idade
         const isUserAdult = isAdult(formData.birthdate);
 
-        console.log("isUserAdult", isUserAdult);
-        console.log("formData", formData);
-
         try {
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/api/register`,
