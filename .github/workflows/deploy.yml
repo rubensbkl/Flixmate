@@ -1,8 +1,8 @@
-# O ambiente de produção (flixmate.com.br) foi desligado depois da entrega do trabalho.
-# O workflow fica aqui como registro do deploy que existia e só roda sob acionamento manual.
 name: Deploy to Production
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
